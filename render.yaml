@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: society-management-app
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false

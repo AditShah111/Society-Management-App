@@ -1,0 +1,1623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Society Management System</title>
+    <!-- Tailwind CSS for rapid, corporate styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for Financial Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom Tailwind Configuration for Corporate Theme -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        corporate: {
+                            900: '#0f172a', // Deep Navy
+                            800: '#1e293b',
+                            600: '#475569',
+                            100: '#f8fafc', // Very light gray background
+                        },
+                        brand: {
+                            500: '#2563eb', // Royal Blue
+                            600: '#1d4ed8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Hide all views by default except the active one */
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
+        /* Smooth transitions for interactive elements */
+        .nav-item { transition: all 0.2s ease-in-out; }
+        .nav-item.active { background-color: #2563eb; color: white; }
+        .nav-item:not(.active):hover { background-color: #1e293b; color: white; }
+    </style>
+</head>
+<body class="bg-corporate-100 font-sans antialiased text-gray-800 h-screen overflow-hidden">
+
+    <!-- Toast Container for custom notifications -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- Login View (shown when unauthorized) -->
+    <div id="view-login" class="h-screen w-screen flex items-center justify-center bg-gradient-to-br from-corporate-900 via-corporate-800 to-brand-600 p-4">
+        <div class="w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-2xl shadow-2xl text-white">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-brand-500 text-white rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg shadow-brand-500/50">
+                    <i class="fa-solid fa-building"></i>
+                </div>
+                <h2 class="text-2xl font-bold tracking-tight text-white">Society Manager</h2>
+                <p class="text-sm text-gray-300 mt-1">Please sign in to access the dashboard</p>
+            </div>
+            
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label for="login-email" class="block text-xs font-bold uppercase tracking-wider text-gray-300 mb-2">Email Address</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                            <i class="fa-solid fa-envelope"></i>
+                        </span>
+                        <input id="login-email" type="email" required class="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-3 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all outline-none" placeholder="admin@society.com">
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="login-password" class="block text-xs font-bold uppercase tracking-wider text-gray-300 mb-2">Password</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                            <i class="fa-solid fa-lock"></i>
+                        </span>
+                        <input id="login-password" type="password" required class="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-3 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all outline-none" placeholder="••••••••">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-brand-500 text-white hover:bg-brand-600 font-bold py-3 px-4 rounded-xl shadow-lg shadow-brand-500/30 transition-all hover:scale-[1.02] focus:outline-none">
+                    Sign In
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- App Container -->
+    <div id="app-container" class="h-screen w-screen flex overflow-hidden hidden">
+
+        <!-- Mobile Sidebar Backdrop -->
+        <div id="mobile-sidebar-backdrop" onclick="toggleMobileMenu(false)" class="fixed inset-0 bg-black/50 z-30 hidden lg:hidden"></div>
+
+        <!-- Mobile Sidebar Drawer -->
+        <aside id="mobile-sidebar" class="fixed inset-y-0 left-0 w-64 bg-corporate-900 text-gray-300 flex flex-col shadow-2xl z-40 transform -translate-x-full transition-transform duration-300 lg:hidden">
+            <div class="h-16 flex items-center justify-between px-6 border-b border-gray-700 bg-corporate-900">
+                <div class="flex items-center">
+                    <i class="fa-solid fa-building text-brand-500 text-xl mr-3"></i>
+                    <span class="text-lg font-bold text-white tracking-wide">CHS Admin</span>
+                </div>
+                <button onclick="toggleMobileMenu(false)" class="text-gray-400 hover:text-white" title="Close Menu">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Single Wing Mode
+            </div>
+
+            <nav class="flex-1 px-4 space-y-2 overflow-y-auto">
+                <button onclick="switchView('dashboard'); toggleMobileMenu(false)" id="mobile-nav-dashboard" class="mobile-nav-item nav-item active w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium text-left">
+                    <i class="fa-solid fa-chart-pie w-6 flex-shrink-0"></i> <span class="ml-2">Dashboard</span>
+                </button>
+                <button onclick="switchView('maintenance'); toggleMobileMenu(false)" id="mobile-nav-maintenance" class="mobile-nav-item nav-item w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium text-left">
+                    <i class="fa-solid fa-file-invoice-dollar w-6 flex-shrink-0"></i> <span class="ml-2">Maintenance</span>
+                </button>
+                <button onclick="switchView('accounts'); toggleMobileMenu(false)" id="mobile-nav-accounts" class="mobile-nav-item nav-item w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium text-left">
+                    <i class="fa-solid fa-book w-6 flex-shrink-0"></i> <span class="ml-2">Books of Accounts</span>
+                </button>
+                <button onclick="switchView('agm'); toggleMobileMenu(false)" id="mobile-nav-agm" class="mobile-nav-item nav-item w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium text-left">
+                    <i class="fa-solid fa-users-cog w-6 flex-shrink-0"></i> <span class="ml-2">AGM & Minutes</span>
+                </button>
+                <button onclick="switchView('redevelopment'); toggleMobileMenu(false)" id="mobile-nav-redevelopment" class="mobile-nav-item nav-item w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium text-left">
+                    <i class="fa-solid fa-tools w-6 flex-shrink-0"></i> <span class="ml-2">Redevelopment</span>
+                </button>
+                <button onclick="switchView('documents'); toggleMobileMenu(false)" id="mobile-nav-documents" class="mobile-nav-item nav-item w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium text-left">
+                    <i class="fa-solid fa-folder-open w-6 flex-shrink-0"></i> <span class="ml-2">Statutory Docs</span>
+                </button>
+                <button onclick="switchView('legal'); toggleMobileMenu(false)" id="mobile-nav-legal" class="mobile-nav-item nav-item w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium text-left">
+                    <i class="fa-solid fa-scale-balanced w-6 flex-shrink-0"></i> <span class="ml-2">Legal Sources</span>
+                </button>
+            </nav>
+
+            <div class="p-4 border-t border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center min-w-0">
+                        <div class="w-8 h-8 flex-shrink-0 rounded-full bg-brand-500 flex items-center justify-center text-white">
+                            <i class="fa-solid fa-user-tie text-sm"></i>
+                        </div>
+                        <div class="ml-3 truncate">
+                            <p class="text-sm font-medium text-white truncate">System Admin</p>
+                            <p class="text-xs text-gray-400 truncate">admin@society.com</p>
+                        </div>
+                    </div>
+                    <button onclick="logout()" class="text-gray-400 hover:text-red-500 p-2" title="Logout">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Desktop Sidebar -->
+        <aside class="hidden lg:flex w-64 flex-shrink-0 bg-corporate-900 text-gray-300 flex flex-col shadow-2xl z-20">
+            <div class="h-16 flex items-center px-6 border-b border-gray-700 bg-corporate-900">
+                <i class="fa-solid fa-building text-brand-500 text-xl mr-3"></i>
+                <span class="text-lg font-bold text-white tracking-wide">CHS Admin</span>
+            </div>
+            
+            <div class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Single Wing Mode
+            </div>
+
+            <nav class="flex-1 px-4 space-y-2 overflow-y-auto">
+                <button onclick="switchView('dashboard')" id="nav-dashboard" class="nav-item active w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium text-left">
+                    <i class="fa-solid fa-chart-pie w-6 flex-shrink-0"></i> <span class="ml-2">Dashboard</span>
+                </button>
+                <button onclick="switchView('maintenance')" id="nav-maintenance" class="nav-item w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium text-left">
+                    <i class="fa-solid fa-file-invoice-dollar w-6 flex-shrink-0"></i> <span class="ml-2">Maintenance</span>
+                </button>
+                <button onclick="switchView('accounts')" id="nav-accounts" class="nav-item w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium text-left">
+                    <i class="fa-solid fa-book w-6 flex-shrink-0"></i> <span class="ml-2">Books of Accounts</span>
+                </button>
+                <button onclick="switchView('agm')" id="nav-agm" class="nav-item w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium text-left">
+                    <i class="fa-solid fa-users-cog w-6 flex-shrink-0"></i> <span class="ml-2">AGM & Minutes</span>
+                </button>
+                <button onclick="switchView('redevelopment')" id="nav-redevelopment" class="nav-item w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium text-left">
+                    <i class="fa-solid fa-tools w-6 flex-shrink-0"></i> <span class="ml-2">Redevelopment</span>
+                </button>
+                <button onclick="switchView('documents')" id="nav-documents" class="nav-item w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium text-left">
+                    <i class="fa-solid fa-folder-open w-6 flex-shrink-0"></i> <span class="ml-2">Statutory Docs</span>
+                </button>
+                <button onclick="switchView('legal')" id="nav-legal" class="nav-item w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium text-left">
+                    <i class="fa-solid fa-scale-balanced w-6 flex-shrink-0"></i> <span class="ml-2">Legal Sources</span>
+                </button>
+            </nav>
+
+            <div class="p-4 border-t border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center min-w-0">
+                        <div class="w-8 h-8 flex-shrink-0 rounded-full bg-brand-500 flex items-center justify-center text-white">
+                            <i class="fa-solid fa-user-tie text-sm"></i>
+                        </div>
+                        <div class="ml-3 truncate">
+                            <p class="text-sm font-medium text-white truncate">System Admin</p>
+                            <p class="text-xs text-gray-400 truncate">admin@society.com</p>
+                        </div>
+                    </div>
+                    <button onclick="logout()" class="text-gray-400 hover:text-red-500 p-2" title="Logout">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+            
+            <!-- Topbar -->
+            <header class="h-16 flex-shrink-0 bg-white shadow-sm flex items-center justify-between px-4 md:px-8 z-10 border-b border-gray-200">
+                <div class="flex items-center">
+                    <button onclick="toggleMobileMenu(true)" class="lg:hidden text-gray-500 hover:text-brand-500 mr-3 focus:outline-none" title="Open Menu">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                    <h1 id="page-title" class="text-lg md:text-xl font-bold text-gray-800">Dashboard Overview</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="text-gray-500 hover:text-brand-500 transition-colors relative">
+                        <i class="fa-solid fa-bell text-xl"></i>
+                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">2</span>
+                    </button>
+                    <button class="bg-gray-100 text-gray-700 border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors whitespace-nowrap">
+                        <i class="fa-solid fa-download mr-2"></i> Export PDF
+                    </button>
+                </div>
+            </header>
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 overflow-y-auto p-4 md:p-8">
+
+                <!-- ================= VIEW: DASHBOARD ================= -->
+                <div id="view-dashboard" class="view-section active">
+                    
+                    <!-- KPI Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
+                            <p class="text-sm font-medium text-gray-500 mb-1">Total Flats (Wing A)</p>
+                            <h3 class="text-3xl font-bold text-gray-800">48</h3>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 border-l-4 border-l-emerald-500 hover:shadow-md transition-shadow">
+                            <p class="text-sm font-medium text-gray-500 mb-1">MTD Collection</p>
+                            <h3 class="text-3xl font-bold text-gray-800">₹3,45,000</h3>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 border-l-4 border-l-red-500 hover:shadow-md transition-shadow">
+                            <p class="text-sm font-medium text-gray-500 mb-1">Outstanding Dues</p>
+                            <h3 class="text-3xl font-bold text-gray-800">₹42,500</h3>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 border-l-4 border-l-amber-500 hover:shadow-md transition-shadow">
+                            <p class="text-sm font-medium text-gray-500 mb-1">Active Complaints</p>
+                            <h3 class="text-3xl font-bold text-gray-800">2</h3>
+                        </div>
+                    </div>
+
+                    <!-- Chart & AGM Notices -->
+                    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                        <!-- Chart -->
+                        <div class="bg-white rounded-xl shadow-sm p-6 xl:col-span-2 border border-gray-100">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-lg font-bold text-gray-800">Income & Expenditure</h2>
+                                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">FY 2026-27</span>
+                            </div>
+                            <div class="h-64 relative w-full">
+                                <canvas id="financeChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Notices -->
+                        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                            <h2 class="text-lg font-bold text-gray-800 mb-4">Upcoming Events</h2>
+                            
+                            <div class="bg-blue-50 rounded-lg p-4 mb-4 border border-blue-100">
+                                <div class="flex items-center text-brand-600 font-bold mb-1 text-sm">
+                                    <i class="fa-solid fa-gavel mr-2"></i> Annual General Meeting
+                                </div>
+                                <p class="text-xs text-blue-800 mb-2">Scheduled: 30th September 2026</p>
+                                <button class="text-xs bg-brand-500 text-white px-3 py-1 rounded shadow hover:bg-brand-600">View Draft Agenda</button>
+                            </div>
+
+                            <div class="space-y-3 mt-4 border-t border-gray-100 pt-4">
+                                <div class="flex items-start">
+                                    <div class="bg-amber-100 text-amber-600 p-2 rounded-lg mt-1 mr-3 flex-shrink-0">
+                                        <i class="fa-solid fa-tools text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-sm font-bold text-gray-800">Elevator AMC Service</h4>
+                                        <p class="text-xs text-gray-500">Tomorrow, 10:00 AM</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= VIEW: MAINTENANCE COLLECTION ================= -->
+                <div id="view-maintenance" class="view-section">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div class="p-6 border-b border-gray-100 flex flex-wrap gap-4 justify-between items-center bg-gray-50">
+                            <h2 class="text-lg font-bold text-gray-800">Maintenance Bills (July 2026)</h2>
+                            <div class="flex space-x-2 w-full sm:w-auto">
+                                <input type="text" placeholder="Search flat..." class="text-sm border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-brand-500 flex-1 sm:flex-none w-full sm:w-auto">
+                                <button class="bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-600 transition-colors whitespace-nowrap">
+                                    Generate New
+                                </button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse whitespace-nowrap">
+                                <thead>
+                                    <tr class="bg-white text-gray-500 text-xs uppercase tracking-wider border-b border-gray-200">
+                                        <th class="px-6 py-4 font-bold">Flat No.</th>
+                                        <th class="px-6 py-4 font-bold">Member Name</th>
+                                        <th class="px-6 py-4 font-bold">Bill Amount</th>
+                                        <th class="px-6 py-4 font-bold">Status</th>
+                                        <th class="px-6 py-4 font-bold text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-sm divide-y divide-gray-100">
+                                    <tr class="hover:bg-gray-50 transition-colors">
+                                        <td class="px-6 py-4 font-bold text-gray-800">A-101</td>
+                                        <td class="px-6 py-4 text-gray-600">Rajesh Sharma</td>
+                                        <td class="px-6 py-4 font-semibold text-gray-800">₹4,500</td>
+                                        <td class="px-6 py-4"><span class="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs rounded-md font-bold">Paid</span></td>
+                                        <td class="px-6 py-4 text-right">
+                                            <button class="text-gray-400 hover:text-brand-500"><i class="fa-solid fa-file-pdf"></i> Receipt</button>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50 transition-colors">
+                                        <td class="px-6 py-4 font-bold text-gray-800">A-102</td>
+                                        <td class="px-6 py-4 text-gray-600">Priya Desai</td>
+                                        <td class="px-6 py-4 font-semibold text-red-600">₹9,000</td>
+                                        <td class="px-6 py-4"><span class="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-md font-bold">Overdue</span></td>
+                                        <td class="px-6 py-4 text-right space-x-3">
+                                            <button class="text-green-600 hover:text-green-700 text-xs font-bold" onclick="showToast('WhatsApp reminder sent!', 'success')"><i class="fa-brands fa-whatsapp mr-1"></i> Remind</button>
+                                            <button class="text-blue-600 hover:text-blue-700 text-xs font-bold" onclick="showToast('Email reminder sent!', 'success')"><i class="fa-solid fa-envelope mr-1"></i> Remind</button>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50 transition-colors">
+                                        <td class="px-6 py-4 font-bold text-gray-800">A-103</td>
+                                        <td class="px-6 py-4 text-gray-600">Amit Patel</td>
+                                        <td class="px-6 py-4 font-semibold text-gray-800">₹4,500</td>
+                                        <td class="px-6 py-4"><span class="px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded-md font-bold">Pending</span></td>
+                                        <td class="px-6 py-4 text-right space-x-3">
+                                            <button class="text-green-600 hover:text-green-700 text-xs font-bold" onclick="showToast('WhatsApp reminder sent!', 'success')"><i class="fa-brands fa-whatsapp mr-1"></i> Remind</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= VIEW: BOOKS OF ACCOUNTS ================= -->
+                <div id="view-accounts" class="view-section">
+                    <!-- Sub Navigation -->
+                    <div class="flex space-x-4 mb-6 border-b border-gray-200 pb-2 overflow-x-auto">
+                        <button onclick="switchSubView('ledger')" id="subnav-ledger" class="subnav-item whitespace-nowrap text-brand-600 font-bold border-b-2 border-brand-600 pb-2 px-1">General Ledger</button>
+                        <button onclick="switchSubView('income')" id="subnav-income" class="subnav-item whitespace-nowrap text-gray-500 hover:text-gray-800 font-medium pb-2 px-1">Income & Exp</button>
+                        <button onclick="switchSubView('balance')" id="subnav-balance" class="subnav-item whitespace-nowrap text-gray-500 hover:text-gray-800 font-medium pb-2 px-1">Balance Sheet</button>
+                    </div>
+
+                    <!-- SUB VIEW: GENERAL LEDGER -->
+                    <div id="subview-ledger" class="subview-section block">
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div class="p-6 border-b border-gray-100 flex flex-wrap gap-4 justify-between items-center bg-gray-50">
+                                <h2 class="text-lg font-bold text-gray-800">General Ledger (Recent Entries)</h2>
+                                <button class="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-md shadow-brand-500/10 whitespace-nowrap">
+                                    <i class="fa-solid fa-plus mr-2"></i>Add Financial Entry
+                                </button>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse whitespace-nowrap">
+                                    <thead>
+                                        <tr class="bg-white text-gray-500 text-xs uppercase tracking-wider border-b border-gray-200">
+                                            <th class="px-6 py-4 font-bold">Date</th>
+                                            <th class="px-6 py-4 font-bold">Particulars (Account Head)</th>
+                                            <th class="px-6 py-4 font-bold">Voucher No.</th>
+                                            <th class="px-6 py-4 font-bold text-right text-green-600">Credit (₹)</th>
+                                            <th class="px-6 py-4 font-bold text-right text-red-600">Debit (₹)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-sm divide-y divide-gray-100">
+                                        <tr class="hover:bg-gray-50 transition-colors">
+                                            <td class="px-6 py-4 text-gray-600">10 Jul 2026</td>
+                                            <td class="px-6 py-4">
+                                                <div class="font-bold text-gray-800">Maintenance Collection (Bank A/c)</div>
+                                                <div class="text-xs text-gray-500">Being maintenance received via NEFT from A-101</div>
+                                            </td>
+                                            <td class="px-6 py-4 text-gray-600 text-xs font-mono">RV-1024</td>
+                                            <td class="px-6 py-4 text-right font-bold text-green-600">4,500.00</td>
+                                            <td class="px-6 py-4 text-right text-gray-400">-</td>
+                                        </tr>
+                                        <tr class="hover:bg-gray-50 transition-colors">
+                                            <td class="px-6 py-4 text-gray-600">08 Jul 2026</td>
+                                            <td class="px-6 py-4">
+                                                <div class="font-bold text-gray-800">Repairs & Maintenance Fund</div>
+                                                <div class="text-xs text-gray-500">Being payment made to Apex Elevators for AMC</div>
+                                            </td>
+                                            <td class="px-6 py-4 text-gray-600 text-xs font-mono">PV-0842</td>
+                                            <td class="px-6 py-4 text-right text-gray-400">-</td>
+                                            <td class="px-6 py-4 text-right font-bold text-red-600">15,000.00</td>
+                                        </tr>
+                                        <tr class="hover:bg-gray-50 transition-colors">
+                                            <td class="px-6 py-4 text-gray-600">05 Jul 2026</td>
+                                            <td class="px-6 py-4">
+                                                <div class="font-bold text-gray-800">Sinking Fund</div>
+                                                <div class="text-xs text-gray-500">Mandatory statutory transfer for July</div>
+                                            </td>
+                                            <td class="px-6 py-4 text-gray-600 text-xs font-mono">JV-0112</td>
+                                            <td class="px-6 py-4 text-right font-bold text-green-600">12,500.00</td>
+                                            <td class="px-6 py-4 text-right text-gray-400">-</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SUB VIEW: INCOME & EXPENDITURE -->
+                    <div id="subview-income" class="subview-section hidden">
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div class="p-6 border-b border-gray-100 flex flex-wrap gap-4 justify-between items-center bg-gray-50">
+                                <div>
+                                    <h2 class="text-lg font-bold text-gray-800">Income & Expenditure Statement</h2>
+                                    <p class="text-xs text-gray-500">For the period: 1 Apr 2026 to 31 Jul 2026</p>
+                                </div>
+                                <button class="bg-gray-100 text-gray-700 border border-gray-300 px-3 py-1.5 rounded text-sm font-medium hover:bg-gray-200 whitespace-nowrap">
+                                    <i class="fa-solid fa-print mr-1"></i> Print
+                                </button>
+                            </div>
+                            <div class="grid grid-cols-1 xl:grid-cols-2 divide-y xl:divide-y-0 xl:divide-x divide-gray-200 overflow-x-auto">
+                                <!-- Expenditure Side -->
+                                <div class="p-0 min-w-[300px]">
+                                    <div class="bg-gray-100 p-3 border-b border-gray-200 text-center font-bold text-gray-700 uppercase text-xs tracking-wider">Expenditure (Debit)</div>
+                                    <table class="w-full text-sm">
+                                        <tbody class="divide-y divide-gray-100">
+                                            <tr class="hover:bg-gray-50"><td class="p-3 text-gray-700">To Property Taxes</td><td class="p-3 text-right font-medium">₹45,000.00</td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 text-gray-700">To Water Charges</td><td class="p-3 text-right font-medium">₹28,500.00</td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 text-gray-700">To Common Electricity</td><td class="p-3 text-right font-medium">₹32,100.00</td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 text-gray-700">To Salary & Wages (Security)</td><td class="p-3 text-right font-medium">₹1,15,000.00</td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 text-gray-700">To Repairs & Maintenance</td><td class="p-3 text-right font-medium">₹42,000.00</td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 text-gray-700">To Audit Fees</td><td class="p-3 text-right font-medium">₹10,000.00</td></tr>
+                                            <tr class="hover:bg-gray-50 bg-emerald-50"><td class="p-3 text-gray-800 font-bold">To Excess of Income over Expenditure</td><td class="p-3 text-right font-bold text-emerald-600">₹73,400.00</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <!-- Income Side -->
+                                <div class="p-0 min-w-[300px]">
+                                    <div class="bg-gray-100 p-3 border-b border-gray-200 text-center font-bold text-gray-700 uppercase text-xs tracking-wider">Income (Credit)</div>
+                                    <table class="w-full text-sm">
+                                        <tbody class="divide-y divide-gray-100">
+                                            <tr class="hover:bg-gray-50"><td class="p-3 text-gray-700">By Member Contributions</td><td class="p-3 text-right font-medium">₹3,25,000.00</td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 text-gray-700">By Non-Occupancy Charges</td><td class="p-3 text-right font-medium">₹12,000.00</td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 text-gray-700">By Bank Interest</td><td class="p-3 text-right font-medium">₹6,500.00</td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 text-gray-700">By Transfer Fees</td><td class="p-3 text-right font-medium">₹2,500.00</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="bg-gray-800 text-white p-3 flex justify-between font-bold text-sm min-w-[600px]">
+                                <span>Total</span>
+                                <span>₹3,46,000.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SUB VIEW: BALANCE SHEET -->
+                    <div id="subview-balance" class="subview-section hidden">
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div class="p-6 border-b border-gray-100 flex flex-wrap gap-4 justify-between items-center bg-gray-50">
+                                <div>
+                                    <h2 class="text-lg font-bold text-gray-800">Balance Sheet</h2>
+                                    <p class="text-xs text-gray-500">As on 31 Jul 2026</p>
+                                </div>
+                                <button class="bg-gray-100 text-gray-700 border border-gray-300 px-3 py-1.5 rounded text-sm font-medium hover:bg-gray-200 whitespace-nowrap">
+                                    <i class="fa-solid fa-print mr-1"></i> Print
+                                </button>
+                            </div>
+                            <div class="grid grid-cols-1 xl:grid-cols-2 divide-y xl:divide-y-0 xl:divide-x divide-gray-200 overflow-x-auto">
+                                <!-- Liabilities Side -->
+                                <div class="p-0 min-w-[300px]">
+                                    <div class="bg-gray-100 p-3 border-b border-gray-200 text-center font-bold text-gray-700 uppercase text-xs tracking-wider">Capital & Liabilities</div>
+                                    <table class="w-full text-sm">
+                                        <tbody class="divide-y divide-gray-100">
+                                            <tr class="hover:bg-gray-50"><td class="p-3 font-bold text-gray-800">Share Capital</td><td class="p-3 text-right font-bold">₹24,000.00</td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 font-bold text-gray-800">Reserve & Surplus</td><td class="p-3 text-right font-bold"></td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-gray-600">Reserve Fund</td><td class="p-3 text-right font-medium">₹1,50,000.00</td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-gray-600">Sinking Fund</td><td class="p-3 text-right font-medium">₹8,45,000.00</td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-gray-600">Building Repair Fund</td><td class="p-3 text-right font-medium">₹3,20,000.00</td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-emerald-600 font-semibold">+ Current Year Surplus</td><td class="p-3 text-right font-medium text-emerald-600">₹73,400.00</td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 font-bold text-gray-800">Current Liabilities</td><td class="p-3 text-right font-bold"></td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-gray-600">Sundry Creditors</td><td class="p-3 text-right font-medium">₹18,500.00</td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-gray-600">Advance Maintenance</td><td class="p-3 text-right font-medium">₹12,000.00</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <!-- Assets Side -->
+                                <div class="p-0 min-w-[300px]">
+                                    <div class="bg-gray-100 p-3 border-b border-gray-200 text-center font-bold text-gray-700 uppercase text-xs tracking-wider">Property & Assets</div>
+                                    <table class="w-full text-sm">
+                                        <tbody class="divide-y divide-gray-100">
+                                            <tr class="hover:bg-gray-50"><td class="p-3 font-bold text-gray-800">Fixed Assets</td><td class="p-3 text-right font-bold"></td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-gray-600">Land & Building (Nominal)</td><td class="p-3 text-right font-medium">₹1,000.00</td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-gray-600">Water Pumps & Equip.</td><td class="p-3 text-right font-medium">₹85,000.00</td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-gray-600">CCTV & Security</td><td class="p-3 text-right font-medium">₹45,000.00</td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 font-bold text-gray-800">Investments</td><td class="p-3 text-right font-bold"></td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-gray-600">FD (Sinking Fund)</td><td class="p-3 text-right font-medium">₹8,00,000.00</td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-gray-600">FD (Reserve Fund)</td><td class="p-3 text-right font-medium">₹1,50,000.00</td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 font-bold text-gray-800">Current Assets</td><td class="p-3 text-right font-bold"></td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-gray-600">Maintenance Arrears</td><td class="p-3 text-right font-medium">₹42,500.00</td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-gray-600">Cash at Bank</td><td class="p-3 text-right font-medium">₹3,18,400.00</td></tr>
+                                            <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-gray-600">Cash in Hand</td><td class="p-3 text-right font-medium">₹1,000.00</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="bg-gray-800 text-white p-3 flex justify-between font-bold text-sm min-w-[600px]">
+                                <span>Total</span>
+                                <span>₹14,42,900.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= VIEW: AGM & MINUTES ================= -->
+                <div id="view-agm" class="view-section">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div class="p-6 border-b border-gray-100 flex flex-wrap gap-4 justify-between items-center bg-gray-50">
+                            <h2 class="text-lg font-bold text-gray-800">General Body Meetings & Resolutions</h2>
+                            <button class="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-md shadow-brand-500/10 whitespace-nowrap">
+                                <i class="fa-solid fa-calendar-plus mr-2"></i>Schedule Meeting
+                            </button>
+                        </div>
+                        <div class="p-6">
+                            <!-- Meeting List -->
+                            <div class="border border-gray-200 rounded-lg p-5 mb-4 hover:shadow-md transition-shadow bg-blue-50/30">
+                                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                    <div>
+                                        <div class="flex items-center space-x-3 mb-2">
+                                            <h3 class="text-lg font-bold text-brand-700">Annual General Meeting 2026</h3>
+                                            <span class="bg-amber-100 text-amber-700 text-[10px] uppercase font-bold px-2 py-1 rounded">Scheduled</span>
+                                        </div>
+                                        <p class="text-sm text-gray-600 mb-1"><i class="fa-regular fa-calendar mr-2"></i> Date: 30th September 2026</p>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <button class="border border-brand-500 text-brand-600 hover:bg-brand-50 px-3 py-1.5 rounded text-sm font-bold whitespace-nowrap">Edit Agenda</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow">
+                                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                    <div>
+                                        <div class="flex items-center space-x-3 mb-2">
+                                            <h3 class="text-lg font-bold text-gray-800">Special General Meeting</h3>
+                                            <span class="bg-emerald-100 text-emerald-700 text-[10px] uppercase font-bold px-2 py-1 rounded">Minutes Finalized</span>
+                                        </div>
+                                        <p class="text-sm text-gray-600 mb-1"><i class="fa-regular fa-calendar mr-2"></i> Date: 15th April 2026</p>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <button class="bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300 px-3 py-1.5 rounded text-sm font-bold whitespace-nowrap"><i class="fa-solid fa-file-pdf text-red-500 mr-1"></i> View Minutes</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= VIEW: REDEVELOPMENT ================= -->
+                <div id="view-redevelopment" class="view-section">
+                    <!-- Status Timeline -->
+                    <div class="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-100">
+                        <h2 class="text-lg font-bold text-gray-800 mb-6">Redevelopment Project Status (Bye-Law 174)</h2>
+                        <div class="overflow-x-auto pb-6">
+                            <div class="relative flex items-start w-full min-w-[600px] pt-2">
+                                <!-- Background Track -->
+                                <div class="absolute left-[12.5%] right-[12.5%] top-[1.75rem] transform -translate-y-1/2 h-1 bg-gray-200 z-0"></div>
+                                <!-- Progress Track (Extends to Step 3) -->
+                                <div class="absolute left-[12.5%] top-[1.75rem] transform -translate-y-1/2 w-[50%] h-1 bg-brand-500 z-0"></div>
+                                
+                                <!-- Step 1 -->
+                                <div class="relative z-10 flex flex-col items-center w-1/4 px-2">
+                                    <div class="w-10 h-10 bg-brand-500 text-white rounded-full flex items-center justify-center font-bold shadow-md"><i class="fa-solid fa-check"></i></div>
+                                    <p class="text-xs font-bold mt-3 text-gray-800 text-center">Feasibility Report</p>
+                                    <p class="text-[10px] text-gray-500 text-center">Approved 79(A)</p>
+                                </div>
+                                <!-- Step 2 -->
+                                <div class="relative z-10 flex flex-col items-center w-1/4 px-2">
+                                    <div class="w-10 h-10 bg-brand-500 text-white rounded-full flex items-center justify-center font-bold shadow-md"><i class="fa-solid fa-check"></i></div>
+                                    <p class="text-xs font-bold mt-3 text-gray-800 text-center">PMC Appointed</p>
+                                    <p class="text-[10px] text-gray-500 text-center">Arch & Co.</p>
+                                </div>
+                                <!-- Step 3 -->
+                                <div class="relative z-10 flex flex-col items-center w-1/4 px-2">
+                                    <div class="w-10 h-10 bg-white border-4 border-brand-500 text-brand-500 rounded-full flex items-center justify-center font-bold shadow-md animate-pulse"><i class="fa-solid fa-spinner"></i></div>
+                                    <p class="text-xs font-bold mt-3 text-brand-600 text-center">Tendering</p>
+                                    <p class="text-[10px] text-gray-500 text-center">Quotations Open</p>
+                                </div>
+                                <!-- Step 4 -->
+                                <div class="relative z-10 flex flex-col items-center w-1/4 px-2">
+                                    <div class="w-10 h-10 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center font-bold border-2 border-gray-200 shadow-sm">4</div>
+                                    <p class="text-xs font-bold mt-3 text-gray-400 text-center">Builder Selection</p>
+                                    <p class="text-[10px] text-gray-400 text-center">Pending GBM</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                        <!-- Received Tenders -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                                <h2 class="text-md font-bold text-gray-800">Received Tenders (Builders)</h2>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-left whitespace-nowrap">
+                                    <tbody class="divide-y divide-gray-100">
+                                        <tr class="hover:bg-gray-50 transition-colors">
+                                            <td class="p-4">
+                                                <p class="font-bold text-gray-800">Rustomjee Developers</p>
+                                                <p class="text-xs text-gray-500">Extra Area: 35% | Corpus: ₹15L</p>
+                                            </td>
+                                            <td class="p-4 text-right">
+                                                <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded">Under Review</span>
+                                            </td>
+                                        </tr>
+                                        <tr class="hover:bg-gray-50 transition-colors">
+                                            <td class="p-4">
+                                                <p class="font-bold text-gray-800">Lodha Group</p>
+                                                <p class="text-xs text-gray-500">Extra Area: 40% | Corpus: ₹12L</p>
+                                            </td>
+                                            <td class="p-4 text-right">
+                                                <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded">Under Review</span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Redevelopment Documents -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                                <h2 class="text-md font-bold text-gray-800">Statutory Documents</h2>
+                                <button class="text-xs text-brand-600 font-bold hover:text-brand-800 transition-colors whitespace-nowrap"><i class="fa-solid fa-plus mr-1"></i> Upload</button>
+                            </div>
+                            <div class="p-5 space-y-3">
+                                <div class="flex items-center justify-between p-3 border border-gray-200 rounded hover:shadow-sm transition-shadow">
+                                    <div class="flex items-center overflow-hidden mr-4">
+                                        <i class="fa-solid fa-file-pdf text-red-500 text-2xl mr-3 flex-shrink-0"></i>
+                                        <div class="truncate">
+                                            <p class="text-sm font-bold text-gray-800 truncate">Initial Feasibility Report.pdf</p>
+                                            <p class="text-xs text-gray-500 truncate">Uploaded by PMC on 12 May 2026</p>
+                                        </div>
+                                    </div>
+                                    <button class="text-gray-400 hover:text-brand-500 flex-shrink-0"><i class="fa-solid fa-download"></i></button>
+                                </div>
+                                <div class="flex items-center justify-between p-3 border border-gray-200 rounded hover:shadow-sm transition-shadow">
+                                    <div class="flex items-center overflow-hidden mr-4">
+                                        <i class="fa-solid fa-file-pdf text-red-500 text-2xl mr-3 flex-shrink-0"></i>
+                                        <div class="truncate">
+                                            <p class="text-sm font-bold text-gray-800 truncate">Tender Document Draft.pdf</p>
+                                            <p class="text-xs text-gray-500 truncate">Uploaded by Admin on 01 Jun 2026</p>
+                                        </div>
+                                    </div>
+                                    <button class="text-gray-400 hover:text-brand-500 flex-shrink-0"><i class="fa-solid fa-download"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= VIEW: STATUTORY DOCUMENTS ================= -->
+                <div id="view-documents" class="view-section">
+                    <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800">Mandatory Registers & Records</h2>
+                            <p class="text-sm text-gray-500">As per Maharashtra Co-operative Societies Act 1960 & Rules 1961</p>
+                        </div>
+                        <button onclick="toggleUploadPanel()" class="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-md shadow-brand-500/10 flex items-center gap-2">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <span>Upload File</span>
+                        </button>
+                    </div>
+
+                    <!-- Upload Panel -->
+                    <div id="document-upload-panel" class="mb-8 bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden hidden transition-all duration-300">
+                        <div class="p-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                            <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Upload Society File</h3>
+                            <button onclick="toggleUploadPanel(false)" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <form id="document-upload-form" class="p-6 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-[1fr_200px_1fr_auto] gap-4 items-end">
+                            <label class="block">
+                                <span class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Document title</span>
+                                <input id="document-upload-title" type="text" required class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50/50 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all" placeholder="e.g. July 2026 Financial Statement">
+                            </label>
+                            <label class="block">
+                                <span class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Category</span>
+                                <select id="document-upload-category" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50/50 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all">
+                                    <option value="Financials">Financials</option>
+                                    <option value="AGM Minutes">AGM Minutes</option>
+                                    <option value="Statutory">Statutory</option>
+                                    <option value="Others">Others</option>
+                                </select>
+                            </label>
+                            <label class="block">
+                                <span class="block text-xs font-bold text-gray-500 uppercase mb-1.5">PDF, Word, or text file</span>
+                                <input id="document-upload-file" type="file" required accept=".pdf,.doc,.docx,.txt,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all">
+                            </label>
+                            <button type="submit" class="bg-brand-500 hover:bg-brand-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-brand-500/10 whitespace-nowrap flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-upload"></i>
+                                <span>Upload</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Uploaded Data Files Panel -->
+                    <div id="uploaded-documents-panel" class="mb-8 bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden">
+                        <div class="p-5 border-b border-gray-100 bg-gray-50/50">
+                            <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Uploaded Data Files</h3>
+                        </div>
+                        <div class="p-6 space-y-3" id="uploaded-documents-list">
+                            <!-- JS will populate this -->
+                        </div>
+                    </div>
+
+                    <!-- Hidden file input for card uploads -->
+                    <input id="backend-document-upload" type="file" accept=".pdf,.doc,.docx,.txt,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="hidden" onclick="window.activeStatutoryForm = window.activeStatutoryForm || null;">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        
+                        <!-- Form I (Register of Members) -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-6 relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 w-16 h-16 bg-blue-50 rounded-bl-full flex items-start justify-end p-3 transition-transform group-hover:scale-110">
+                                <i class="fa-solid fa-book-open text-brand-500 text-xl"></i>
+                            </div>
+                            <h3 class="font-bold text-lg text-gray-800 mb-1">Form 'I'</h3>
+                            <p class="text-brand-600 font-semibold text-sm mb-4">Register of Members</p>
+                            <p class="text-xs text-gray-500 mb-4 h-12">Maintained under Rule 32 and Section 38(1) of the Act. Contains detailed records of all society members.</p>
+                            <div class="flex space-x-2">
+                                <button class="flex-1 bg-gray-50 text-gray-700 border border-gray-200 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">View Digital</button>
+                                <button class="bg-gray-50 text-gray-700 border border-gray-200 px-3 py-2 rounded-lg text-sm hover:bg-gray-100 transition-colors" title="Download"><i class="fa-solid fa-download"></i></button>
+                                <button class="bg-brand-50 text-brand-600 border border-brand-200 px-3 py-2 rounded-lg text-sm hover:bg-brand-100 transition-colors" title="Upload Document"><i class="fa-solid fa-upload"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Form J (Register of Active Members) -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-6 relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 w-16 h-16 bg-emerald-50 rounded-bl-full flex items-start justify-end p-3 transition-transform group-hover:scale-110">
+                                <i class="fa-solid fa-user-check text-emerald-500 text-xl"></i>
+                            </div>
+                            <h3 class="font-bold text-lg text-gray-800 mb-1">Form 'J'</h3>
+                            <p class="text-emerald-600 font-semibold text-sm mb-4">Register of Active Members</p>
+                            <p class="text-xs text-gray-500 mb-4 h-12">List of active members eligible to vote and participate in general body meetings.</p>
+                            <div class="flex space-x-2">
+                                <button class="flex-1 bg-gray-50 text-gray-700 border border-gray-200 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">View Digital</button>
+                                <button class="bg-gray-50 text-gray-700 border border-gray-200 px-3 py-2 rounded-lg text-sm hover:bg-gray-100 transition-colors" title="Download"><i class="fa-solid fa-download"></i></button>
+                                <button class="bg-brand-50 text-brand-600 border border-brand-200 px-3 py-2 rounded-lg text-sm hover:bg-brand-100 transition-colors" title="Upload Document"><i class="fa-solid fa-upload"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Share Register -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-6 relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 w-16 h-16 bg-amber-50 rounded-bl-full flex items-start justify-end p-3 transition-transform group-hover:scale-110">
+                                <i class="fa-solid fa-certificate text-amber-500 text-xl"></i>
+                            </div>
+                            <h3 class="font-bold text-lg text-gray-800 mb-1">Share Register</h3>
+                            <p class="text-amber-600 font-semibold text-sm mb-4">Capital Contribution</p>
+                            <p class="text-xs text-gray-500 mb-4 h-12">Details of share certificates issued, transferred, or surrendered by members.</p>
+                            <div class="flex space-x-2">
+                                <button class="flex-1 bg-gray-50 text-gray-700 border border-gray-200 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">View Digital</button>
+                                <button class="bg-gray-50 text-gray-700 border border-gray-200 px-3 py-2 rounded-lg text-sm hover:bg-gray-100 transition-colors" title="Download"><i class="fa-solid fa-download"></i></button>
+                                <button class="bg-brand-50 text-brand-600 border border-brand-200 px-3 py-2 rounded-lg text-sm hover:bg-brand-100 transition-colors" title="Upload Document"><i class="fa-solid fa-upload"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Nomination Register -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-6 relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 w-16 h-16 bg-purple-50 rounded-bl-full flex items-start justify-end p-3 transition-transform group-hover:scale-110">
+                                <i class="fa-solid fa-file-signature text-purple-500 text-xl"></i>
+                            </div>
+                            <h3 class="font-bold text-lg text-gray-800 mb-1">Nomination</h3>
+                            <p class="text-purple-600 font-semibold text-sm mb-4">Form 14 & Register</p>
+                            <p class="text-xs text-gray-500 mb-4 h-12">Record of nominations filed by members for transmission of shares post-demise.</p>
+                            <div class="flex space-x-2">
+                                <button class="flex-1 bg-gray-50 text-gray-700 border border-gray-200 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">View Digital</button>
+                                <button class="bg-gray-50 text-gray-700 border border-gray-200 px-3 py-2 rounded-lg text-sm hover:bg-gray-100 transition-colors" title="Download"><i class="fa-solid fa-download"></i></button>
+                                <button class="bg-brand-50 text-brand-600 border border-brand-200 px-3 py-2 rounded-lg text-sm hover:bg-brand-100 transition-colors" title="Upload Document"><i class="fa-solid fa-upload"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Property Register -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-6 relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 w-16 h-16 bg-cyan-50 rounded-bl-full flex items-start justify-end p-3 transition-transform group-hover:scale-110">
+                                <i class="fa-solid fa-building text-cyan-500 text-xl"></i>
+                            </div>
+                            <h3 class="font-bold text-lg text-gray-800 mb-1">Property Register</h3>
+                            <p class="text-cyan-600 font-semibold text-sm mb-4">Dead Stock & Assets</p>
+                            <p class="text-xs text-gray-500 mb-4 h-12">Inventory of all fixed assets, machinery, and properties owned by the society.</p>
+                            <div class="flex space-x-2">
+                                <button class="flex-1 bg-gray-50 text-gray-700 border border-gray-200 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">View Digital</button>
+                                <button class="bg-gray-50 text-gray-700 border border-gray-200 px-3 py-2 rounded-lg text-sm hover:bg-gray-100 transition-colors" title="Download"><i class="fa-solid fa-download"></i></button>
+                                <button class="bg-brand-50 text-brand-600 border border-brand-200 px-3 py-2 rounded-lg text-sm hover:bg-brand-100 transition-colors" title="Upload Document"><i class="fa-solid fa-upload"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= VIEW: LEGAL SOURCES ================= -->
+                <div id="view-legal" class="view-section">
+                    <div class="max-w-4xl mx-auto">
+                        <!-- Hero Banner -->
+                        <div class="bg-corporate-900 rounded-2xl shadow-lg overflow-hidden mb-8 relative text-white">
+                            <div class="absolute right-0 top-0 h-full w-1/2 bg-gradient-to-l from-brand-600/30 to-transparent pointer-events-none"></div>
+                            <div class="absolute -right-10 -top-10 text-9xl text-white opacity-5">
+                                <i class="fa-solid fa-scale-balanced"></i>
+                            </div>
+                            <div class="p-8 md:p-12 relative z-10">
+                                <span class="inline-block px-3 py-1 bg-brand-500 text-white text-xs font-bold rounded-full mb-4 tracking-wider uppercase">Reference Portal</span>
+                                <h2 class="text-3xl md:text-4xl font-bold mb-4">Model Bye-Laws (2014) & Amendments</h2>
+                                <p class="text-gray-300 mb-8 max-w-2xl text-lg leading-relaxed">
+                                    Access the comprehensive, updated, and interactive guide to Cooperative Housing Society regulations in Maharashtra. This external resource provides a structured breakdown of rules, responsibilities, and legal procedures.
+                                </p>
+                                <a href="https://byelaws-chs2026.lovable.app" target="_blank" class="inline-flex items-center px-6 py-3 bg-white text-corporate-900 font-bold rounded-lg shadow-md hover:bg-gray-100 transition-all hover:scale-105">
+                                    Visit Legal Reference Portal <i class="fa-solid fa-arrow-up-right-from-square ml-2"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Quick Links Grid -->
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Quick Legal References</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <a href="https://byelaws-chs2026.lovable.app" target="_blank" class="flex items-center p-4 bg-white border border-gray-200 rounded-xl hover:border-brand-500 hover:shadow-md transition-all group">
+                                <div class="w-12 h-12 bg-blue-50 text-brand-600 rounded-full flex items-center justify-center text-xl mr-4 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                                    <i class="fa-solid fa-gavel"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800 group-hover:text-brand-600 transition-colors">Dispute Resolution</h4>
+                                    <p class="text-xs text-gray-500">Section 91 MCS Act</p>
+                                </div>
+                            </a>
+                            <a href="https://byelaws-chs2026.lovable.app" target="_blank" class="flex items-center p-4 bg-white border border-gray-200 rounded-xl hover:border-brand-500 hover:shadow-md transition-all group">
+                                <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center text-xl mr-4 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+                                    <i class="fa-solid fa-hand-holding-dollar"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800 group-hover:text-emerald-600 transition-colors">Recovery of Dues</h4>
+                                    <p class="text-xs text-gray-500">Section 101/154B-29</p>
+                                </div>
+                            </a>
+                            <a href="https://byelaws-chs2026.lovable.app" target="_blank" class="flex items-center p-4 bg-white border border-gray-200 rounded-xl hover:border-brand-500 hover:shadow-md transition-all group">
+                                <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center text-xl mr-4 group-hover:bg-amber-500 group-hover:text-white transition-colors">
+                                    <i class="fa-solid fa-users"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800 group-hover:text-amber-600 transition-colors">Managing Committee</h4>
+                                    <p class="text-xs text-gray-500">Powers & Duties (Section 73)</p>
+                                </div>
+                            </a>
+                            <a href="https://byelaws-chs2026.lovable.app" target="_blank" class="flex items-center p-4 bg-white border border-gray-200 rounded-xl hover:border-brand-500 hover:shadow-md transition-all group">
+                                <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-full flex items-center justify-center text-xl mr-4 group-hover:bg-purple-500 group-hover:text-white transition-colors">
+                                    <i class="fa-solid fa-file-contract"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800 group-hover:text-purple-600 transition-colors">Leave & License</h4>
+                                    <p class="text-xs text-gray-500">Non-Occupancy Charges Rules</p>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div><!-- /#app-container -->
+
+    <!-- JavaScript for Interactivity -->
+    <script>
+        // Custom Toast Function (Replacing standard alerts)
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgClass = 'bg-brand-500';
+            let iconClass = 'fa-info-circle';
+            if (type === 'success') {
+                bgClass = 'bg-emerald-500';
+                iconClass = 'fa-check-circle';
+            } else if (type === 'error') {
+                bgClass = 'bg-red-500';
+                iconClass = 'fa-exclamation-circle';
+            } else if (type === 'info') {
+                bgClass = 'bg-blue-500';
+                iconClass = 'fa-info-circle';
+            }
+            
+            toast.className = `${bgClass} text-white px-4 py-3 rounded-lg shadow-lg text-sm font-medium transform transition-all duration-300 translate-y-4 opacity-0 flex items-center z-50`;
+            toast.innerHTML = `<i class="fa-solid ${iconClass} mr-2"></i> ${message}`;
+            
+            container.appendChild(toast);
+            
+            // Trigger animation in
+            setTimeout(() => {
+                toast.classList.remove('translate-y-4', 'opacity-0');
+            }, 10);
+            
+            // Trigger animation out and remove
+            setTimeout(() => {
+                toast.classList.add('translate-y-4', 'opacity-0');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        // Title mapping for the top header
+        const pageTitles = {
+            'dashboard': 'Dashboard Overview',
+            'maintenance': 'Maintenance & Invoicing',
+            'accounts': 'Books of Accounts',
+            'agm': 'AGM & Resolutions Management',
+            'redevelopment': 'Redevelopment Project Tracker',
+            'documents': 'Statutory Documents (MCS Act 1960)',
+            'legal': 'Legal Sources & Bye-laws'
+        };
+
+        // Function to toggle mobile menu visibility
+        function toggleMobileMenu(open) {
+            const sidebar = document.getElementById('mobile-sidebar');
+            const backdrop = document.getElementById('mobile-sidebar-backdrop');
+            if (open) {
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        }
+
+        // Function to switch between main views
+        function switchView(viewId) {
+            // Hide all views
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            // Remove active state from all nav buttons (desktop and mobile)
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            
+            // Show the selected view
+            document.getElementById('view-' + viewId).classList.add('active');
+            // Highlight the selected nav button (desktop)
+            const desktopNav = document.getElementById('nav-' + viewId);
+            if (desktopNav) desktopNav.classList.add('active');
+            
+            // Highlight the selected nav button (mobile)
+            const mobileNav = document.getElementById('mobile-nav-' + viewId);
+            if (mobileNav) mobileNav.classList.add('active');
+            
+            // Update the page title
+            document.getElementById('page-title').innerText = pageTitles[viewId];
+        }
+
+        // Function to switch sub-views in Books of Accounts
+        function switchSubView(subViewId) {
+            // Hide all subviews
+            document.querySelectorAll('.subview-section').forEach(el => {
+                el.classList.remove('block');
+                el.classList.add('hidden');
+            });
+            
+            // Reset all subnav items
+            document.querySelectorAll('.subnav-item').forEach(el => {
+                el.classList.remove('text-brand-600', 'font-bold', 'border-b-2', 'border-brand-600');
+                el.classList.add('text-gray-500', 'hover:text-gray-800', 'font-medium');
+            });
+            
+            // Show selected subview
+            document.getElementById('subview-' + subViewId).classList.remove('hidden');
+            document.getElementById('subview-' + subViewId).classList.add('block');
+            
+            // Highlight selected subnav item
+            const activeNav = document.getElementById('subnav-' + subViewId);
+            activeNav.classList.remove('text-gray-500', 'hover:text-gray-800', 'font-medium');
+            activeNav.classList.add('text-brand-600', 'font-bold', 'border-b-2', 'border-brand-600');
+        }
+
+        // Initialize Financial Chart for the Dashboard
+        document.addEventListener("DOMContentLoaded", function() {
+            const ctx = document.getElementById('financeChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
+                    datasets: [
+                        {
+                            label: 'Income (Maintenance)',
+                            data: [320000, 310000, 345000, 315000, 0, 0],
+                            backgroundColor: '#2563eb', // Brand Blue
+                            borderRadius: 4,
+                            barPercentage: 0.6
+                        },
+                        {
+                            label: 'Expenditure',
+                            data: [180000, 210000, 195000, 160000, 0, 0],
+                            backgroundColor: '#94a3b8', // Slate Gray
+                            borderRadius: 4,
+                            barPercentage: 0.6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', align: 'end' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { borderDash: [4, 4], color: '#e2e8f0' },
+                            ticks: { callback: function(value) { return '₹' + (value/1000) + 'k'; } }
+                        },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        });
+    </script>
+    <script>
+        const api = {
+            async login(email, password) {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.error || 'Invalid credentials');
+                }
+                return response.json();
+            },
+            async logout() {
+                const response = await fetch('/api/logout', { method: 'POST' });
+                if (!response.ok) throw new Error('Logout failed');
+                return response.json();
+            },
+            async state() {
+                const response = await fetch('/api/state');
+                if (!response.ok) throw new Error(response.status === 401 ? '401' : 'Unable to load backend data');
+                return response.json();
+            },
+            async createFinancialRecord(record) {
+                const response = await fetch('/api/financial-records', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify(record)
+                });
+                if (!response.ok) throw new Error('Unable to save financial record');
+                return response.json();
+            },
+            async createAgmMeeting(meeting) {
+                const response = await fetch('/api/agm-meetings', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify(meeting)
+                });
+                if (!response.ok) throw new Error('Unable to save AGM meeting');
+                return response.json();
+            },
+            async uploadDocument(formData) {
+                const response = await fetch('/api/documents', { method: 'POST', body: formData });
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.error || 'Unable to upload document');
+                }
+                return response.json();
+            },
+            async deleteDocument(documentId) {
+                const response = await fetch(`/api/documents/${encodeURIComponent(documentId)}`, { method: 'DELETE' });
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    const message = error.error === 'API route not found.'
+                        ? 'Delete route is not active yet. Restart the backend server and refresh the page.'
+                        : (error.error || 'Unable to delete document');
+                    throw new Error(message);
+                }
+                return response.json();
+            }
+        };
+
+        const money = value => `INR ${Number(value || 0).toLocaleString('en-IN')}`;
+        const shortDate = value => new Date(value).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+        function setText(selector, value) {
+            const element = document.querySelector(selector);
+            if (element) element.textContent = value;
+        }
+
+        const statutoryForms = [
+            { id: 'form-i', title: "Form 'I'", category: 'Register of Members' },
+            { id: 'form-j', title: "Form 'J'", category: 'Register of Active Members' },
+            { id: 'share-register', title: 'Share Register', category: 'Capital Contribution' },
+            { id: 'nomination', title: 'Nomination', category: 'Form 14 & Register' },
+            { id: 'property-register', title: 'Property Register', category: 'Dead Stock & Assets' }
+        ];
+
+        function getFormConfigFromCard(card) {
+            const heading = card.querySelector('h3')?.textContent.trim();
+            const subtitle = card.querySelector('p.font-semibold')?.textContent.trim();
+            return statutoryForms.find(form => form.title === heading && form.category === subtitle);
+        }
+
+        function latestDocumentForForm(documents, formId) {
+            return documents
+                .filter(document => document.formId === formId || document.category === `Statutory Form: ${formId}`)
+                .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt))[0];
+        }
+
+        function openDigitalDocument(document, form) {
+            if (!document) {
+                showToast(`No uploaded file found for ${form.title}. Use the upload icon on this card.`, 'info');
+                return;
+            }
+            window.open(document.url, '_blank');
+        }
+
+        function prepareStatutoryFormCards(documents = []) {
+            document.querySelectorAll('#view-documents .grid > .group').forEach(card => {
+                const form = getFormConfigFromCard(card);
+                if (!form) return;
+
+                card.dataset.formId = form.id;
+                const linkedDocument = latestDocumentForForm(documents, form.id);
+                let status = card.querySelector('[data-form-status]');
+                if (!status) {
+                    status = document.createElement('p');
+                    status.dataset.formStatus = 'true';
+                    status.className = 'text-[11px] text-gray-500 mb-3 truncate';
+                    card.querySelector('.flex.space-x-2')?.before(status);
+                }
+                status.textContent = linkedDocument ? `Digital file: ${linkedDocument.title}` : 'No digital file uploaded yet';
+
+                const buttons = card.querySelectorAll('button');
+                const viewButton = buttons[0];
+                const downloadButton = buttons[1];
+                const uploadButton = buttons[2];
+
+                if (viewButton && !viewButton.dataset.formBound) {
+                    viewButton.dataset.formBound = 'true';
+                    viewButton.addEventListener('click', () => openDigitalDocument(latestDocumentForForm(window.currentDocuments || [], form.id), form));
+                }
+                if (downloadButton && !downloadButton.dataset.formBound) {
+                    downloadButton.dataset.formBound = 'true';
+                    downloadButton.addEventListener('click', () => openDigitalDocument(latestDocumentForForm(window.currentDocuments || [], form.id), form));
+                }
+                if (uploadButton && !uploadButton.dataset.formBound) {
+                    uploadButton.dataset.formBound = 'true';
+                    uploadButton.addEventListener('click', () => {
+                        window.activeStatutoryForm = form;
+                        document.getElementById('backend-document-upload')?.click();
+                    });
+                }
+            });
+        }
+
+        function bindBackendButtons() {
+            document.querySelectorAll('button').forEach(button => {
+                const label = button.textContent.trim();
+                const title = button.getAttribute('title') || '';
+                if (!button.dataset.backendBound && (label.includes('Add Voucher') || label.includes('Add Financial Entry'))) {
+                    button.dataset.backendBound = 'true';
+                    button.addEventListener('click', () => openModal('financial-entry'));
+                }
+                if (!button.dataset.backendBound && label.includes('Schedule Meeting')) {
+                    button.dataset.backendBound = 'true';
+                    button.addEventListener('click', () => openModal('schedule-meeting'));
+                }
+                if (!button.dataset.backendBound && title.includes('Upload') && !button.closest('#view-documents .grid')) {
+                    button.dataset.backendBound = 'true';
+                    button.addEventListener('click', () => {
+                        window.activeStatutoryForm = null;
+                        document.getElementById('backend-document-upload')?.click();
+                    });
+                }
+            });
+        }
+
+        function renderDashboard(state) {
+            const cards = document.querySelectorAll('#view-dashboard .border-l-4 h3');
+            if (cards[0]) cards[0].textContent = state.dashboard.totalFlats;
+            if (cards[1]) cards[1].textContent = money(state.dashboard.mtdCollection);
+            if (cards[2]) cards[2].textContent = money(state.dashboard.outstandingDues);
+            if (cards[3]) cards[3].textContent = state.dashboard.activeComplaints;
+
+            const agm = state.dashboard.upcomingAgm;
+            const eventCard = document.querySelector('#view-dashboard .bg-blue-50');
+            if (eventCard && agm) {
+                eventCard.querySelector('.font-bold').innerHTML = `<i class="fa-solid fa-gavel mr-2"></i> ${agm.title}`;
+                eventCard.querySelector('p').textContent = `Scheduled: ${shortDate(agm.date)}`;
+            }
+
+            const chart = Chart.getChart('financeChart');
+            if (chart) {
+                chart.data.labels = state.dashboard.chart.map(item => item.month);
+                chart.data.datasets[0].data = state.dashboard.chart.map(item => item.income);
+                chart.data.datasets[1].data = state.dashboard.chart.map(item => item.expense);
+                chart.update();
+            }
+        }
+
+        function renderLedger(records) {
+            const tbody = document.querySelector('#subview-ledger tbody');
+            if (!tbody) return;
+            tbody.innerHTML = records.slice(0, 12).map(record => `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 text-gray-600">${shortDate(record.date)}</td>
+                    <td class="px-6 py-4">
+                        <div class="font-bold text-gray-800">${record.accountHead}</div>
+                        <div class="text-xs text-gray-500">${record.description || ''}</div>
+                    </td>
+                    <td class="px-6 py-4 text-gray-600 text-xs font-mono">${record.voucherNo || '-'}</td>
+                    <td class="px-6 py-4 text-right font-bold ${record.type === 'income' ? 'text-green-600' : 'text-gray-400'}">${record.type === 'income' ? Number(record.amount).toLocaleString('en-IN') : '-'}</td>
+                    <td class="px-6 py-4 text-right font-bold ${record.type === 'expense' ? 'text-red-600' : 'text-gray-400'}">${record.type === 'expense' ? Number(record.amount).toLocaleString('en-IN') : '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderAgm(meetings) {
+            const container = document.querySelector('#view-agm .p-6:not(.border-b)');
+            if (!container) return;
+            container.innerHTML = meetings.map(meeting => {
+                const finalized = meeting.status.toLowerCase().includes('final');
+                const badge = finalized ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700';
+                return `
+                    <div class="border border-gray-200 rounded-lg p-5 mb-4 hover:shadow-md transition-shadow ${finalized ? '' : 'bg-blue-50/30'}">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div>
+                                <div class="flex items-center space-x-3 mb-2">
+                                    <h3 class="text-lg font-bold ${finalized ? 'text-gray-800' : 'text-brand-700'}">${meeting.title}</h3>
+                                    <span class="${badge} text-[10px] uppercase font-bold px-2 py-1 rounded">${meeting.status}</span>
+                                </div>
+                                <p class="text-sm text-gray-600 mb-1"><i class="fa-regular fa-calendar mr-2"></i> Date: ${shortDate(meeting.date)}</p>
+                                <p class="text-xs text-gray-500">${meeting.agenda || ''}</p>
+                            </div>
+                            <button class="bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300 px-3 py-1.5 rounded text-sm font-bold whitespace-nowrap">
+                                <i class="fa-solid ${finalized ? 'fa-file-pdf text-red-500' : 'fa-pen-to-square text-brand-500'} mr-1"></i>${finalized ? 'View Minutes' : 'Edit Agenda'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderDocuments(documents) {
+            window.currentDocuments = documents;
+            prepareStatutoryFormCards(documents);
+            const list = document.getElementById('uploaded-documents-list');
+            if (!list) return;
+            list.innerHTML = documents.length ? documents.map(document => `
+                <div class="flex items-center justify-between p-3 border border-gray-200 rounded-xl hover:shadow-sm transition-all bg-gray-50/30">
+                    <div class="flex items-center overflow-hidden mr-4">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-white shadow-sm border border-gray-100">
+                            <i class="fa-solid ${document.mimeType.includes('pdf') ? 'fa-file-pdf text-red-500' : document.mimeType.includes('word') ? 'fa-file-word text-blue-500' : 'fa-file-lines text-gray-500'} text-xl"></i>
+                        </div>
+                        <div class="truncate ml-3">
+                            <p class="text-sm font-bold text-gray-800 truncate">${document.title}</p>
+                            <p class="text-xs text-gray-500 truncate">${document.category} | Uploaded ${shortDate(document.uploadedAt)}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <a href="${document.url}" target="_blank" class="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-brand-500 flex items-center justify-center transition-all" title="View or download"><i class="fa-solid fa-download"></i></a>
+                        <button class="w-8 h-8 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 flex items-center justify-center transition-all" title="Delete document" onclick="deleteUploadedDocument('${document.id}')"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+            `).join('') : '<p class="text-sm text-gray-500 text-center py-4">No files uploaded yet.</p>';
+        }
+
+        async function deleteUploadedDocument(documentId) {
+            const document = (window.currentDocuments || []).find(item => item.id === documentId);
+            if (!document) return showToast('Document not found in the current list', 'info');
+            if (!confirm(`Delete "${document.title}"? This removes the stored file too.`)) return;
+
+            try {
+                await api.deleteDocument(documentId);
+                showToast('Document deleted');
+                refreshLiveData();
+            } catch (error) {
+                showToast(error.message, 'info');
+            }
+        }
+
+        async function logout() {
+            try {
+                await api.logout();
+                showToast('Signed out successfully');
+                window.currentDocuments = [];
+                document.getElementById('view-login').classList.remove('hidden');
+                document.getElementById('app-container').classList.add('hidden');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function refreshLiveData() {
+            try {
+                const state = await api.state();
+                // User is authenticated
+                document.getElementById('view-login').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+                
+                renderDashboard(state);
+                renderLedger(state.financialRecords);
+                renderAgm(state.agmMeetings);
+                renderDocuments(state.documents);
+                bindBackendButtons();
+            } catch (error) {
+                if (error.message === '401') {
+                    // Force display of login view
+                    document.getElementById('view-login').classList.remove('hidden');
+                    document.getElementById('app-container').classList.add('hidden');
+                } else {
+                    showToast(`${error.message}. Start the backend with npm start.`, 'info');
+                }
+            }
+        }
+
+        // Modal triggers
+        function openModal(modalId) {
+            const modal = document.getElementById('modal-' + modalId);
+            const card = document.getElementById('modal-' + modalId + '-card');
+            if (modal && card) {
+                if (modalId === 'financial-entry') {
+                    document.getElementById('fin-date').value = new Date().toISOString().slice(0, 10);
+                    document.getElementById('fin-voucher').value = '';
+                    document.getElementById('fin-account-head').value = '';
+                    document.getElementById('fin-amount').value = '';
+                    document.getElementById('fin-desc').value = '';
+                } else if (modalId === 'schedule-meeting') {
+                    document.getElementById('meet-date').value = new Date().toISOString().slice(0, 10);
+                    document.getElementById('meet-title').value = '';
+                    document.getElementById('meet-agenda').value = '';
+                    document.getElementById('meet-status').value = 'Scheduled';
+                }
+                
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    card.classList.remove('scale-95', 'opacity-0');
+                    card.classList.add('scale-100', 'opacity-100');
+                }, 10);
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById('modal-' + modalId);
+            const card = document.getElementById('modal-' + modalId + '-card');
+            if (modal && card) {
+                card.classList.remove('scale-100', 'opacity-100');
+                card.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        function toggleUploadPanel(show) {
+            const panel = document.getElementById('document-upload-panel');
+            if (!panel) return;
+            if (show === undefined) {
+                panel.classList.toggle('hidden');
+            } else if (show) {
+                panel.classList.remove('hidden');
+            } else {
+                panel.classList.add('hidden');
+            }
+        }
+
+        async function submitFinancialEntry(event) {
+            event.preventDefault();
+            const accountHead = document.getElementById('fin-account-head').value;
+            const amount = Number(document.getElementById('fin-amount').value);
+            const type = document.getElementById('fin-type').value;
+            const date = document.getElementById('fin-date').value;
+            const voucherNo = document.getElementById('fin-voucher').value || (type === 'income' ? 'RV-NEW' : 'PV-NEW');
+            const description = document.getElementById('fin-desc').value;
+            const month = new Date(date).toLocaleString('en-US', { month: 'short' });
+
+            try {
+                await api.createFinancialRecord({
+                    date,
+                    month,
+                    accountHead,
+                    amount,
+                    type,
+                    voucherNo,
+                    description
+                });
+                showToast('Financial entry saved successfully');
+                closeModal('financial-entry');
+                refreshLiveData();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function submitScheduleMeeting(event) {
+            event.preventDefault();
+            const title = document.getElementById('meet-title').value;
+            const date = document.getElementById('meet-date').value;
+            const status = document.getElementById('meet-status').value;
+            const agenda = document.getElementById('meet-agenda').value;
+
+            try {
+                await api.createAgmMeeting({
+                    title,
+                    date,
+                    status,
+                    agenda
+                });
+                showToast('Meeting scheduled successfully');
+                closeModal('schedule-meeting');
+                refreshLiveData();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Redirection fallbacks for any dynamic button calls
+        function addFinancialRecord() {
+            openModal('financial-entry');
+        }
+
+        function addAgmMeeting() {
+            openModal('schedule-meeting');
+        }
+
+        async function uploadDocument(event) {
+            event.preventDefault?.();
+            const isFormSubmit = event.currentTarget?.id === 'document-upload-form';
+            const fileInput = isFormSubmit ? document.getElementById('document-upload-file') : event.target;
+            const file = fileInput?.files?.[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('file', file);
+            const titleInput = document.getElementById('document-upload-title');
+            const categoryInput = document.getElementById('document-upload-category');
+            const form = window.activeStatutoryForm;
+            const title = form ? `${form.title} - ${file.name}` : (isFormSubmit ? (titleInput.value || file.name) : (prompt('Document title', file.name) || file.name));
+            const category = form ? `Statutory Form: ${form.id}` : (isFormSubmit ? (categoryInput.value || 'Financials') : (prompt('Category', 'Statutory') || 'Statutory'));
+            formData.append('title', title);
+            formData.append('category', category);
+            if (form) {
+                formData.append('formId', form.id);
+                formData.append('formName', form.title);
+            }
+            try {
+                await api.uploadDocument(formData);
+                showToast(form ? `${form.title} digital file uploaded` : 'Document uploaded and stored');
+                if (isFormSubmit) {
+                    titleInput.value = '';
+                    categoryInput.value = 'Financials';
+                    toggleUploadPanel(false);
+                }
+                refreshLiveData();
+            } catch (error) {
+                showToast(error.message, 'info');
+            } finally {
+                if (fileInput) fileInput.value = '';
+                window.activeStatutoryForm = null;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Bind Login Form submit
+            const loginForm = document.getElementById('login-form');
+            if (loginForm) {
+                loginForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const email = document.getElementById('login-email').value;
+                    const password = document.getElementById('login-password').value;
+                    try {
+                        await api.login(email, password);
+                        showToast('Signed in successfully');
+                        document.getElementById('login-password').value = '';
+                        refreshLiveData();
+                    } catch (err) {
+                        showToast(err.message, 'error');
+                    }
+                });
+            }
+
+            // Bind file input change listener
+            const fileInput = document.getElementById('backend-document-upload');
+            if (fileInput) {
+                fileInput.addEventListener('change', uploadDocument);
+            }
+
+            // Bind document upload form submit
+            const docForm = document.getElementById('document-upload-form');
+            if (docForm) {
+                docForm.addEventListener('submit', uploadDocument);
+            }
+
+            // Bind Financial Entry form submit
+            const finForm = document.getElementById('form-financial-entry');
+            if (finForm) {
+                finForm.addEventListener('submit', submitFinancialEntry);
+            }
+
+            // Bind Schedule Meeting form submit
+            const meetForm = document.getElementById('form-schedule-meeting');
+            if (meetForm) {
+                meetForm.addEventListener('submit', submitScheduleMeeting);
+            }
+
+            setTimeout(refreshLiveData, 150);
+            setInterval(refreshLiveData, 15000);
+        });
+    </script>
+
+    <!-- Add Financial Entry Modal -->
+    <div id="modal-financial-entry" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('financial-entry')"></div>
+        <div class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-lg mx-4 z-10 overflow-hidden transform transition-all duration-300 scale-95 opacity-0" id="modal-financial-entry-card">
+            <div class="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fa-solid fa-file-invoice-dollar text-brand-500"></i>
+                    <span>Add Financial Entry</span>
+                </h3>
+                <button onclick="closeModal('financial-entry')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form id="form-financial-entry" class="p-6 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="fin-type" class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Entry Type</label>
+                        <select id="fin-type" required class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all">
+                            <option value="income">Income (Credit)</option>
+                            <option value="expense">Expense (Debit)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="fin-date" class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Date</label>
+                        <input id="fin-date" type="date" required class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all">
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="fin-account-head" class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Account Head / Particulars</label>
+                    <input id="fin-account-head" type="text" required class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all" placeholder="e.g. Repairs & Maintenance, Sinking Fund">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="fin-amount" class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Amount (₹)</label>
+                        <input id="fin-amount" type="number" required min="1" step="any" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all" placeholder="0.00">
+                    </div>
+                    <div>
+                        <label for="fin-voucher" class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Voucher Number</label>
+                        <input id="fin-voucher" type="text" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all" placeholder="e.g. RV-1025 or PV-0843">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="fin-desc" class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Description (Narration)</label>
+                    <textarea id="fin-desc" rows="3" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all resize-none" placeholder="Enter transaction narration..."></textarea>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeModal('financial-entry')" class="px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all">Cancel</button>
+                    <button type="submit" class="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-sm font-semibold transition-all shadow-md shadow-brand-500/10">Save Entry</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Schedule Meeting Modal -->
+    <div id="modal-schedule-meeting" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('schedule-meeting')"></div>
+        <div class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-lg mx-4 z-10 overflow-hidden transform transition-all duration-300 scale-95 opacity-0" id="modal-schedule-meeting-card">
+            <div class="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fa-solid fa-calendar-days text-brand-500"></i>
+                    <span>Schedule Meeting</span>
+                </h3>
+                <button onclick="closeModal('schedule-meeting')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form id="form-schedule-meeting" class="p-6 space-y-4">
+                <div>
+                    <label for="meet-title" class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Meeting Title</label>
+                    <input id="meet-title" type="text" required class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50/50 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all" placeholder="e.g. Annual General Meeting 2026, Special General Meeting">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="meet-date" class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Meeting Date</label>
+                        <input id="meet-date" type="date" required class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50/50 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all">
+                    </div>
+                    <div>
+                        <label for="meet-status" class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Status</label>
+                        <select id="meet-status" required class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50/50 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all">
+                            <option value="Scheduled">Scheduled</option>
+                            <option value="Minutes Finalized">Minutes Finalized</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="meet-agenda" class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Agenda / Meeting Notes</label>
+                    <textarea id="meet-agenda" rows="4" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50/50 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all resize-none" placeholder="Outline the meeting agenda items or minutes description..."></textarea>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeModal('schedule-meeting')" class="px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all">Cancel</button>
+                    <button type="submit" class="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-sm font-semibold transition-all shadow-md shadow-brand-500/10">Schedule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

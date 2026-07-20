@@ -1,0 +1,178 @@
+{
+  "society": {
+    "wing": "A",
+    "totalFlats": 48
+  },
+  "maintenanceBills": [
+    {
+      "flatNo": "A-101",
+      "memberName": "Rajesh Sharma",
+      "amount": 4500,
+      "status": "Paid"
+    },
+    {
+      "flatNo": "A-102",
+      "memberName": "Priya Desai",
+      "amount": 9000,
+      "status": "Overdue"
+    },
+    {
+      "flatNo": "A-103",
+      "memberName": "Amit Patel",
+      "amount": 4500,
+      "status": "Pending"
+    }
+  ],
+  "financialRecords": [
+    {
+      "date": "2026-04-10",
+      "month": "Apr",
+      "accountHead": "Maintenance Collection",
+      "description": "Maintenance received from members",
+      "voucherNo": "RV-1001",
+      "type": "income",
+      "amount": 320000
+    },
+    {
+      "date": "2026-04-18",
+      "month": "Apr",
+      "accountHead": "Repairs & Utilities",
+      "description": "Monthly society expenditure",
+      "voucherNo": "PV-0801",
+      "type": "expense",
+      "amount": 180000
+    },
+    {
+      "date": "2026-05-10",
+      "month": "May",
+      "accountHead": "Maintenance Collection",
+      "description": "Maintenance received from members",
+      "voucherNo": "RV-1002",
+      "type": "income",
+      "amount": 310000
+    },
+    {
+      "date": "2026-05-21",
+      "month": "May",
+      "accountHead": "Security, utilities and repairs",
+      "description": "Monthly society expenditure",
+      "voucherNo": "PV-0802",
+      "type": "expense",
+      "amount": 210000
+    },
+    {
+      "date": "2026-06-10",
+      "month": "Jun",
+      "accountHead": "Maintenance Collection",
+      "description": "Maintenance received from members",
+      "voucherNo": "RV-1003",
+      "type": "income",
+      "amount": 345000
+    },
+    {
+      "date": "2026-06-24",
+      "month": "Jun",
+      "accountHead": "Utilities and repairs",
+      "description": "Monthly society expenditure",
+      "voucherNo": "PV-0803",
+      "type": "expense",
+      "amount": 195000
+    },
+    {
+      "date": "2026-07-10",
+      "month": "Jul",
+      "accountHead": "Maintenance Collection (Bank A/c)",
+      "description": "Maintenance received via NEFT from A-101",
+      "voucherNo": "RV-1024",
+      "type": "income",
+      "amount": 4500
+    },
+    {
+      "date": "2026-07-08",
+      "month": "Jul",
+      "accountHead": "Repairs & Maintenance Fund",
+      "description": "Payment made to Apex Elevators for AMC",
+      "voucherNo": "PV-0842",
+      "type": "expense",
+      "amount": 15000
+    },
+    {
+      "date": "2026-07-05",
+      "month": "Jul",
+      "accountHead": "Sinking Fund",
+      "description": "Mandatory statutory transfer for July",
+      "voucherNo": "JV-0112",
+      "type": "income",
+      "amount": 12500
+    }
+  ],
+  "agmMeetings": [
+    {
+      "id": "agm-2026",
+      "title": "Annual General Meeting 2026",
+      "date": "2026-09-30",
+      "status": "Scheduled",
+      "agenda": "Audit adoption, budget approval, committee updates."
+    },
+    {
+      "id": "sgm-2026-04",
+      "title": "Special General Meeting",
+      "date": "2026-04-15",
+      "status": "Minutes Finalized",
+      "agenda": "Redevelopment and statutory compliance review."
+    }
+  ],
+  "documents": [
+    {
+      "id": "49ed25c1-7a42-4da5-8135-b77345f82bf4",
+      "title": "Financials",
+      "category": "Financials",
+      "originalName": "Revised - Balancesheet_Profit _ Loss Acc.pdf",
+      "storedName": "1784394121772-54965872-7b35-440a-8c08-8faf69f87c6d-Revised - Balancesheet_Profit _ Loss Acc.pdf",
+      "mimeType": "application/pdf",
+      "size": 405888,
+      "uploadedAt": "2026-07-18T17:02:01.777Z",
+      "url": "/uploads/1784394121772-54965872-7b35-440a-8c08-8faf69f87c6d-Revised%20-%20Balancesheet_Profit%20_%20Loss%20Acc.pdf"
+    },
+    {
+      "id": "71660d64-d9db-46a9-ba0d-e7e637352a6d",
+      "title": "Sample Financial Summary",
+      "category": "Sample Financials",
+      "originalName": "sample-financial-summary.pdf",
+      "storedName": "1784386665841-1e5757c7-b8e2-4652-a05e-71313f906b51-sample-financial-summary.pdf",
+      "mimeType": "application/pdf",
+      "size": 2309,
+      "uploadedAt": "2026-07-18T20:27:45.841181Z",
+      "url": "/uploads/1784386665841-1e5757c7-b8e2-4652-a05e-71313f906b51-sample-financial-summary.pdf"
+    },
+    {
+      "id": "c0674043-b0c0-4180-8dc4-5407b4f379c8",
+      "title": "Sample Financial Statement",
+      "category": "Sample Financials",
+      "originalName": "sample-financial-statement.docx",
+      "storedName": "1784386665831-5909c25b-4a1c-4f6d-8cc3-7a9071902e44-sample-financial-statement.docx",
+      "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "size": 37066,
+      "uploadedAt": "2026-07-18T20:27:45.841181Z",
+      "url": "/uploads/1784386665831-5909c25b-4a1c-4f6d-8cc3-7a9071902e44-sample-financial-statement.docx"
+    },
+    {
+      "id": "17d62c70-03e5-4cb9-b9ed-1e6e4dea01e7",
+      "title": "Sample Financial Ledger",
+      "category": "Sample Financials",
+      "originalName": "sample-financial-ledger.txt",
+      "storedName": "1784386665823-8de0ce9f-f380-4ea9-91b0-047c568fbe8d-sample-financial-ledger.txt",
+      "mimeType": "text/plain",
+      "size": 449,
+      "uploadedAt": "2026-07-18T20:27:45.831438Z",
+      "url": "/uploads/1784386665823-8de0ce9f-f380-4ea9-91b0-047c568fbe8d-sample-financial-ledger.txt"
+    }
+  ],
+  "users": [
+    {
+      "email": "admin@society.com",
+      "salt": "7259160533cd88b0a9f8f2b7fbb97f70",
+      "passwordHash": "07c9651f04f22816b5e0947745d0fbc664da9f7504007b9f400fe37e2b51b407c99bb28b4e1b2cfb5a392e590a539c9c4886a2075d89c7166b14be5e4a246a7b"
+    }
+  ]
+}

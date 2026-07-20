@@ -1,0 +1,9 @@
+CHS Admin - Sample Financial Ledger
+Period: July 2026
+
+Date | Account Head | Voucher | Type | Amount
+2026-07-01 | Maintenance Collection | RV-2001 | income | INR 96,000.00
+2026-07-05 | Sinking Fund Contribution | RV-2002 | income | INR 24,500.00
+2026-07-09 | Common Electricity | PV-2101 | expense | INR 18,750.00
+2026-07-12 | Security Salary | PV-2102 | expense | INR 54,000.00
+2026-07-15 | Bank Interest | RV-2003 | income | INR 6,200.00
