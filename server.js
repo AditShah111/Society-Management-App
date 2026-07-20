@@ -250,8 +250,27 @@ async function getFullStateFromDb() {
   return state;
 }
 
-function sendJson(res, status, payload) {
-  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
+const loginAttemptMap = new Map();
+function isLoginRateLimited(ip) {
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000;
+  const maxAttempts = 10;
+  const attempts = (loginAttemptMap.get(ip) || []).filter(t => now - t < windowMs);
+  if (attempts.length >= maxAttempts) return true;
+  attempts.push(now);
+  loginAttemptMap.set(ip, attempts);
+  return false;
+}
+
+function sendJson(res, status, payload, extraHeaders = {}) {
+  const securityHeaders = {
+    'content-type': 'application/json; charset=utf-8',
+    'x-content-type-options': 'nosniff',
+    'x-frame-options': 'DENY',
+    'x-xss-protection': '1; mode=block',
+    'referrer-policy': 'strict-origin-when-cross-origin'
+  };
+  res.writeHead(status, Object.assign(securityHeaders, extraHeaders));
   res.end(JSON.stringify(payload));
 }
 
@@ -404,6 +423,10 @@ async function handleApi(req, res, url) {
 
     // 1. Authentication Endpoints
     if (req.method === 'POST' && url.pathname === '/api/login') {
+      const clientIp = req.socket.remoteAddress || '127.0.0.1';
+      if (isLoginRateLimited(clientIp)) {
+        return sendJson(res, 429, { error: 'Too many authentication attempts. Please try again after 15 minutes.' });
+      }
       const { email, password } = await readJsonBody(req);
       if (!email || !password) {
         return sendJson(res, 400, { error: 'Email and password are required.' });
