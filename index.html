@@ -248,10 +248,26 @@
                 <!-- ================= VIEW: DASHBOARD ================= -->
                 <div id="view-dashboard" class="view-section active">
                     
+                    <!-- Society Master Profile Card -->
+                    <div class="bg-gradient-to-r from-corporate-800 to-corporate-900 rounded-2xl shadow-lg p-6 mb-8 text-white border border-corporate-700 relative overflow-hidden">
+                        <div class="absolute -right-10 -top-10 w-40 h-40 bg-brand-500/10 rounded-full blur-2xl"></div>
+                        <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div>
+                                <span class="bg-brand-500/20 text-brand-300 text-xs font-bold px-3 py-1 rounded-full border border-brand-500/30 uppercase tracking-wider">Master Data Centre Profile</span>
+                                <h2 id="society-registered-name" class="text-xl md:text-2xl font-bold mt-2">Lotus Co-operative Housing Society Ltd.</h2>
+                                <p id="society-address" class="text-sm text-gray-300 mt-1 flex items-center gap-2"><i class="fa-solid fa-location-dot text-brand-400"></i> Plot 42, Sector 15, Vashi, Navi Mumbai, Maharashtra 400703</p>
+                            </div>
+                            <div class="flex-shrink-0 bg-white/10 px-4 py-2.5 rounded-xl border border-white/10">
+                                <p class="text-[10px] uppercase text-gray-400 tracking-wider font-semibold">Registration Number</p>
+                                <p id="society-registration-no" class="text-sm font-mono font-bold text-brand-300">MUM/WP/HSG/TC/12345/2026</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- KPI Cards -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
                         <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
-                            <p class="text-sm font-medium text-gray-500 mb-1">Total Flats (Wing A)</p>
+                            <p id="kpi-flats-title" class="text-sm font-medium text-gray-500 mb-1">Total Flats (Wing A)</p>
                             <h3 class="text-3xl font-bold text-gray-800">48</h3>
                         </div>
                         <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 border-l-4 border-l-emerald-500 hover:shadow-md transition-shadow">
@@ -588,36 +604,8 @@
                     <div class="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-100">
                         <h2 class="text-lg font-bold text-gray-800 mb-6">Redevelopment Project Status (Bye-Law 174)</h2>
                         <div class="overflow-x-auto pb-6">
-                            <div class="relative flex items-start w-full min-w-[600px] pt-2">
-                                <!-- Background Track -->
-                                <div class="absolute left-[12.5%] right-[12.5%] top-[1.75rem] transform -translate-y-1/2 h-1 bg-gray-200 z-0"></div>
-                                <!-- Progress Track (Extends to Step 3) -->
-                                <div class="absolute left-[12.5%] top-[1.75rem] transform -translate-y-1/2 w-[50%] h-1 bg-brand-500 z-0"></div>
-                                
-                                <!-- Step 1 -->
-                                <div class="relative z-10 flex flex-col items-center w-1/4 px-2">
-                                    <div class="w-10 h-10 bg-brand-500 text-white rounded-full flex items-center justify-center font-bold shadow-md"><i class="fa-solid fa-check"></i></div>
-                                    <p class="text-xs font-bold mt-3 text-gray-800 text-center">Feasibility Report</p>
-                                    <p class="text-[10px] text-gray-500 text-center">Approved 79(A)</p>
-                                </div>
-                                <!-- Step 2 -->
-                                <div class="relative z-10 flex flex-col items-center w-1/4 px-2">
-                                    <div class="w-10 h-10 bg-brand-500 text-white rounded-full flex items-center justify-center font-bold shadow-md"><i class="fa-solid fa-check"></i></div>
-                                    <p class="text-xs font-bold mt-3 text-gray-800 text-center">PMC Appointed</p>
-                                    <p class="text-[10px] text-gray-500 text-center">Arch & Co.</p>
-                                </div>
-                                <!-- Step 3 -->
-                                <div class="relative z-10 flex flex-col items-center w-1/4 px-2">
-                                    <div class="w-10 h-10 bg-white border-4 border-brand-500 text-brand-500 rounded-full flex items-center justify-center font-bold shadow-md animate-pulse"><i class="fa-solid fa-spinner"></i></div>
-                                    <p class="text-xs font-bold mt-3 text-brand-600 text-center">Tendering</p>
-                                    <p class="text-[10px] text-gray-500 text-center">Quotations Open</p>
-                                </div>
-                                <!-- Step 4 -->
-                                <div class="relative z-10 flex flex-col items-center w-1/4 px-2">
-                                    <div class="w-10 h-10 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center font-bold border-2 border-gray-200 shadow-sm">4</div>
-                                    <p class="text-xs font-bold mt-3 text-gray-400 text-center">Builder Selection</p>
-                                    <p class="text-[10px] text-gray-400 text-center">Pending GBM</p>
-                                </div>
+                            <div id="redevelopment-steps-container" class="relative flex items-start w-full min-w-[600px] pt-2">
+                                <!-- Rendered dynamically from Master Data Centre -->
                             </div>
                         </div>
                     </div>
@@ -630,25 +618,8 @@
                             </div>
                             <div class="overflow-x-auto">
                                 <table class="w-full text-sm text-left whitespace-nowrap">
-                                    <tbody class="divide-y divide-gray-100">
-                                        <tr class="hover:bg-gray-50 transition-colors">
-                                            <td class="p-4">
-                                                <p class="font-bold text-gray-800">Rustomjee Developers</p>
-                                                <p class="text-xs text-gray-500">Extra Area: 35% | Corpus: ₹15L</p>
-                                            </td>
-                                            <td class="p-4 text-right">
-                                                <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded">Under Review</span>
-                                            </td>
-                                        </tr>
-                                        <tr class="hover:bg-gray-50 transition-colors">
-                                            <td class="p-4">
-                                                <p class="font-bold text-gray-800">Lodha Group</p>
-                                                <p class="text-xs text-gray-500">Extra Area: 40% | Corpus: ₹12L</p>
-                                            </td>
-                                            <td class="p-4 text-right">
-                                                <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded">Under Review</span>
-                                            </td>
-                                        </tr>
+                                    <tbody id="redevelopment-tenders-list" class="divide-y divide-gray-100">
+                                        <!-- Rendered dynamically from Master Data Centre -->
                                     </tbody>
                                 </table>
                             </div>
@@ -657,30 +628,11 @@
                         <!-- Redevelopment Documents -->
                         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                             <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                                <h2 class="text-md font-bold text-gray-800">Statutory Documents</h2>
-                                <button class="text-xs text-brand-600 font-bold hover:text-brand-800 transition-colors whitespace-nowrap"><i class="fa-solid fa-plus mr-1"></i> Upload</button>
+                                <h2 class="text-md font-bold text-gray-800">Project Documents & Reports</h2>
+                                <button id="redevelopment-upload-btn" onclick="switchView('documents'); toggleUploadPanel(true);" class="text-xs text-brand-600 font-bold hover:text-brand-800 transition-colors whitespace-nowrap"><i class="fa-solid fa-plus mr-1"></i> Upload</button>
                             </div>
-                            <div class="p-5 space-y-3">
-                                <div class="flex items-center justify-between p-3 border border-gray-200 rounded hover:shadow-sm transition-shadow">
-                                    <div class="flex items-center overflow-hidden mr-4">
-                                        <i class="fa-solid fa-file-pdf text-red-500 text-2xl mr-3 flex-shrink-0"></i>
-                                        <div class="truncate">
-                                            <p class="text-sm font-bold text-gray-800 truncate">Initial Feasibility Report.pdf</p>
-                                            <p class="text-xs text-gray-500 truncate">Uploaded by PMC on 12 May 2026</p>
-                                        </div>
-                                    </div>
-                                    <button class="text-gray-400 hover:text-brand-500 flex-shrink-0"><i class="fa-solid fa-download"></i></button>
-                                </div>
-                                <div class="flex items-center justify-between p-3 border border-gray-200 rounded hover:shadow-sm transition-shadow">
-                                    <div class="flex items-center overflow-hidden mr-4">
-                                        <i class="fa-solid fa-file-pdf text-red-500 text-2xl mr-3 flex-shrink-0"></i>
-                                        <div class="truncate">
-                                            <p class="text-sm font-bold text-gray-800 truncate">Tender Document Draft.pdf</p>
-                                            <p class="text-xs text-gray-500 truncate">Uploaded by Admin on 01 Jun 2026</p>
-                                        </div>
-                                    </div>
-                                    <button class="text-gray-400 hover:text-brand-500 flex-shrink-0"><i class="fa-solid fa-download"></i></button>
-                                </div>
+                            <div id="redevelopment-documents-list" class="p-5 space-y-3">
+                                <!-- Rendered dynamically from Master Data Centre -->
                             </div>
                         </div>
                     </div>
@@ -1241,6 +1193,11 @@
             if (cards[2]) cards[2].textContent = money(state.dashboard.outstandingDues);
             if (cards[3]) cards[3].textContent = state.dashboard.activeComplaints;
 
+            const flatsTitle = document.getElementById('kpi-flats-title');
+            if (flatsTitle && state.society.wing) {
+                flatsTitle.textContent = `Total Flats (Wing ${state.society.wing})`;
+            }
+
             const agm = state.dashboard.upcomingAgm;
             const eventCard = document.querySelector('#view-dashboard .bg-blue-50');
             if (eventCard && agm) {
@@ -1254,6 +1211,122 @@
                 chart.data.datasets[0].data = state.dashboard.chart.map(item => item.income);
                 chart.data.datasets[1].data = state.dashboard.chart.map(item => item.expense);
                 chart.update();
+            }
+
+            // Call Master Data Centre renderer for Redevelopment
+            renderRedevelopment(state);
+        }
+
+        function renderRedevelopment(state) {
+            const addressSpan = document.getElementById('society-address');
+            if (addressSpan && state.society.address) {
+                addressSpan.innerHTML = `<i class="fa-solid fa-location-dot text-brand-400"></i> ${state.society.address}`;
+            }
+            const regNoSpan = document.getElementById('society-registration-no');
+            if (regNoSpan && state.society.registrationNo) {
+                regNoSpan.innerText = state.society.registrationNo;
+            }
+            const regNameSpan = document.getElementById('society-registered-name');
+            if (regNameSpan && state.society.registeredName) {
+                regNameSpan.innerText = state.society.registeredName;
+            }
+
+            // Render Timeline Steps
+            const stepsContainer = document.getElementById('redevelopment-steps-container');
+            if (stepsContainer && state.redevelopmentStages) {
+                const stages = state.redevelopmentStages;
+                const totalStages = stages.length;
+                let activeIndex = -1; // last completed or in-progress index
+                
+                stages.forEach((stage, idx) => {
+                    if (stage.status === 'Completed' || stage.status === 'In Progress') {
+                        activeIndex = idx;
+                    }
+                });
+
+                // Progress track percentage (scaled down slightly to match visual track spacing)
+                const progressWidth = totalStages > 1 ? (activeIndex / (totalStages - 1)) * 75 : 0;
+
+                let html = `
+                    <!-- Background Track -->
+                    <div class="absolute left-[12.5%] right-[12.5%] top-[1.75rem] transform -translate-y-1/2 h-1 bg-gray-200 z-0"></div>
+                    <!-- Progress Track -->
+                    <div class="absolute left-[12.5%] top-[1.75rem] transform -translate-y-1/2 h-1 bg-brand-500 z-0 transition-all duration-500" style="width: ${progressWidth}%"></div>
+                `;
+
+                stages.forEach((stage, idx) => {
+                    const isCompleted = stage.status === 'Completed';
+                    const isInProgress = stage.status === 'In Progress';
+                    
+                    let iconHtml = '';
+                    let circleClass = '';
+                    let textClass = 'text-gray-400';
+                    
+                    if (isCompleted) {
+                        iconHtml = '<i class="fa-solid fa-check"></i>';
+                        circleClass = 'bg-brand-500 text-white shadow-md';
+                        textClass = 'text-gray-800 font-bold';
+                    } else if (isInProgress) {
+                        iconHtml = '<i class="fa-solid fa-spinner"></i>';
+                        circleClass = 'bg-white border-4 border-brand-500 text-brand-500 shadow-md animate-pulse';
+                        textClass = 'text-brand-600 font-bold';
+                    } else {
+                        iconHtml = `${idx + 1}`;
+                        circleClass = 'bg-gray-100 text-gray-400 border-2 border-gray-200 shadow-sm';
+                    }
+
+                    html += `
+                        <div class="relative z-10 flex flex-col items-center w-1/4 px-2">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold ${circleClass}">
+                                ${iconHtml}
+                            </div>
+                            <p class="text-xs mt-3 text-center ${textClass}">${stage.name}</p>
+                            <p class="text-[10px] text-gray-500 text-center">${stage.subText}</p>
+                        </div>
+                    `;
+                });
+                
+                stepsContainer.innerHTML = html;
+            }
+
+            // Render Tenders List
+            const tendersContainer = document.getElementById('redevelopment-tenders-list');
+            if (tendersContainer && state.redevelopmentTenders) {
+                tendersContainer.innerHTML = state.redevelopmentTenders.length ? state.redevelopmentTenders.map(t => `
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="p-4">
+                            <p class="font-bold text-gray-800">${t.builderName}</p>
+                            <p class="text-xs text-gray-500">Extra Area: ${t.extraAreaPct}% | Corpus: ₹${t.corpusAmountLakhs}L</p>
+                        </td>
+                        <td class="p-4 text-right">
+                            <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded">${t.status}</span>
+                        </td>
+                    </tr>
+                `).join('') : `
+                    <tr>
+                        <td colspan="2" class="p-4 text-center text-sm text-gray-500">No active tender submissions yet.</td>
+                    </tr>
+                `;
+            }
+
+            // Render Redevelopment Documents
+            const redevelopmentDocsList = document.getElementById('redevelopment-documents-list');
+            if (redevelopmentDocsList && state.documents) {
+                const redevDocs = state.documents.filter(d => d.category === 'Redevelopment');
+                redevelopmentDocsList.innerHTML = redevDocs.length ? redevDocs.map(d => `
+                    <div class="flex items-center justify-between p-3 border border-gray-200 rounded hover:shadow-sm transition-shadow">
+                        <div class="flex items-center overflow-hidden mr-4">
+                            <i class="fa-solid fa-file-pdf text-red-500 text-2xl mr-3 flex-shrink-0"></i>
+                            <div class="truncate">
+                                <p class="text-sm font-bold text-gray-800 truncate">${d.title}</p>
+                                <p class="text-xs text-gray-500 truncate">Uploaded on ${shortDate(d.uploadedAt)}</p>
+                            </div>
+                        </div>
+                        <a href="${d.url}" target="_blank" class="text-gray-400 hover:text-brand-500 flex-shrink-0"><i class="fa-solid fa-download"></i></a>
+                    </div>
+                `).join('') : `
+                    <p class="text-xs text-gray-500 text-center py-4">No redevelopment documents uploaded yet.</p>
+                `;
             }
         }
 

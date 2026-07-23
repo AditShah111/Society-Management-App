@@ -174,6 +174,41 @@ async function initializeDatabase() {
       );
     `);
 
+    await client.query('ALTER TABLE society ADD COLUMN IF NOT EXISTS registered_name VARCHAR(255) DEFAULT \'Lotus Co-operative Housing Society Ltd.\';');
+    await client.query('ALTER TABLE society ADD COLUMN IF NOT EXISTS registration_no VARCHAR(100) DEFAULT \'MUM/WP/HSG/TC/12345/2026\';');
+    await client.query('ALTER TABLE society ADD COLUMN IF NOT EXISTS address TEXT DEFAULT \'Plot 42, Sector 15, Vashi, Navi Mumbai, Maharashtra 400703\';');
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS redevelopment_stages (
+        stage_id INT PRIMARY KEY,
+        stage_name VARCHAR(100) NOT NULL,
+        sub_text VARCHAR(255) NOT NULL,
+        status VARCHAR(50) DEFAULT 'Pending',
+        completed_at TIMESTAMP WITH TIME ZONE
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS redevelopment_tenders (
+        id UUID PRIMARY KEY,
+        builder_name VARCHAR(255) UNIQUE NOT NULL,
+        extra_area_pct NUMERIC(5,2) NOT NULL,
+        corpus_amount_lakhs NUMERIC(10,2) NOT NULL,
+        status VARCHAR(50) DEFAULT 'Under Review'
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS complaints (
+        id UUID PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        member_name VARCHAR(100) NOT NULL,
+        status VARCHAR(50) DEFAULT 'Open',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     // Enable Row Level Security (RLS) to lock down the tables against direct Supabase REST API calls
     await client.query('ALTER TABLE society ENABLE ROW LEVEL SECURITY;');
     await client.query('ALTER TABLE users ENABLE ROW LEVEL SECURITY;');
@@ -181,11 +216,48 @@ async function initializeDatabase() {
     await client.query('ALTER TABLE financial_records ENABLE ROW LEVEL SECURITY;');
     await client.query('ALTER TABLE agm_meetings ENABLE ROW LEVEL SECURITY;');
     await client.query('ALTER TABLE statutory_documents ENABLE ROW LEVEL SECURITY;');
+    await client.query('ALTER TABLE redevelopment_stages ENABLE ROW LEVEL SECURITY;');
+    await client.query('ALTER TABLE redevelopment_tenders ENABLE ROW LEVEL SECURITY;');
+    await client.query('ALTER TABLE complaints ENABLE ROW LEVEL SECURITY;');
 
     // Seed Data check & insertion
     const socCount = await client.query('SELECT count(*) FROM society');
     if (parseInt(socCount.rows[0].count) === 0) {
-      await client.query('INSERT INTO society (wing, total_flats) VALUES ($1, $2)', [seedData.society.wing, seedData.society.totalFlats]);
+      await client.query('INSERT INTO society (wing, total_flats, registered_name, registration_no, address) VALUES ($1, $2, $3, $4, $5)', [
+        seedData.society.wing,
+        seedData.society.totalFlats,
+        'Lotus Co-operative Housing Society Ltd.',
+        'MUM/WP/HSG/TC/12345/2026',
+        'Plot 42, Sector 15, Vashi, Navi Mumbai, Maharashtra 400703'
+      ]);
+    } else {
+      // Ensure registration details exist in older rows
+      await client.query(`
+        UPDATE society SET 
+          registered_name = COALESCE(registered_name, 'Lotus Co-operative Housing Society Ltd.'),
+          registration_no = COALESCE(registration_no, 'MUM/WP/HSG/TC/12345/2026'),
+          address = COALESCE(address, 'Plot 42, Sector 15, Vashi, Navi Mumbai, Maharashtra 400703')
+      `);
+    }
+
+    const stageCount = await client.query('SELECT count(*) FROM redevelopment_stages');
+    if (parseInt(stageCount.rows[0].count) === 0) {
+      await client.query("INSERT INTO redevelopment_stages (stage_id, stage_name, sub_text, status) VALUES (1, 'Feasibility Report', 'Approved 79(A)', 'Completed')");
+      await client.query("INSERT INTO redevelopment_stages (stage_id, stage_name, sub_text, status) VALUES (2, 'PMC Appointed', 'Arch & Co.', 'Completed')");
+      await client.query("INSERT INTO redevelopment_stages (stage_id, stage_name, sub_text, status) VALUES (3, 'Tendering', 'Quotations Open', 'In Progress')");
+      await client.query("INSERT INTO redevelopment_stages (stage_id, stage_name, sub_text, status) VALUES (4, 'Builder Selection', 'Pending GBM', 'Pending')");
+    }
+
+    const tenderCount = await client.query('SELECT count(*) FROM redevelopment_tenders');
+    if (parseInt(tenderCount.rows[0].count) === 0) {
+      await client.query("INSERT INTO redevelopment_tenders (id, builder_name, extra_area_pct, corpus_amount_lakhs, status) VALUES ($1, 'Rustomjee Developers', 35.00, 15.00, 'Under Review')", [crypto.randomUUID()]);
+      await client.query("INSERT INTO redevelopment_tenders (id, builder_name, extra_area_pct, corpus_amount_lakhs, status) VALUES ($1, 'Lodha Group', 40.00, 12.00, 'Under Review')", [crypto.randomUUID()]);
+    }
+
+    const complaintCount = await client.query('SELECT count(*) FROM complaints');
+    if (parseInt(complaintCount.rows[0].count) === 0) {
+      await client.query("INSERT INTO complaints (id, title, description, member_name, status) VALUES ($1, 'Water leakage in Wing A elevator shaft', 'Water dripping from overhead tank', 'Ramesh Kumar', 'Open')", [crypto.randomUUID()]);
+      await client.query("INSERT INTO complaints (id, title, description, member_name, status) VALUES ($1, 'Main gate intercom connection static noise', 'Intercom has crackling noise during calls', 'Suresh Patel', 'Open')", [crypto.randomUUID()]);
     }
 
     const userCount = await client.query('SELECT count(*) FROM users');
@@ -239,16 +311,19 @@ async function initializeDatabase() {
 
 async function getFullStateFromDb() {
   const state = {
-    society: { wing: 'A', totalFlats: 48 },
+    society: { wing: 'A', totalFlats: 48, registeredName: 'Lotus Co-operative Housing Society Ltd.', registrationNo: 'MUM/WP/HSG/TC/12345/2026', address: 'Plot 42, Sector 15, Vashi, Navi Mumbai, Maharashtra 400703' },
     maintenanceBills: [],
     financialRecords: [],
     agmMeetings: [],
-    documents: []
+    documents: [],
+    redevelopmentStages: [],
+    redevelopmentTenders: [],
+    complaints: []
   };
 
   if (!pool) return state;
 
-  const resSoc = await pool.query('SELECT wing, total_flats as "totalFlats" FROM society LIMIT 1');
+  const resSoc = await pool.query('SELECT wing, total_flats as "totalFlats", registered_name as "registeredName", registration_no as "registrationNo", address FROM society LIMIT 1');
   if (resSoc.rows[0]) state.society = resSoc.rows[0];
 
   const resBills = await pool.query('SELECT flat_no as "flatNo", member_name as "memberName", amount, status FROM maintenance_bills');
@@ -265,6 +340,19 @@ async function getFullStateFromDb() {
     ...r,
     url: `/uploads/${r.id}`
   }));
+
+  const resStages = await pool.query('SELECT stage_id as "id", stage_name as "name", sub_text as "subText", status, to_char(completed_at, \'YYYY-MM-DD\') as "completedAt" FROM redevelopment_stages ORDER BY stage_id ASC');
+  state.redevelopmentStages = resStages.rows;
+
+  const resTenders = await pool.query('SELECT id, builder_name as "builderName", extra_area_pct as "extraAreaPct", corpus_amount_lakhs as "corpusAmountLakhs", status FROM redevelopment_tenders ORDER BY extra_area_pct DESC');
+  state.redevelopmentTenders = resTenders.rows.map(r => ({
+    ...r,
+    extraAreaPct: Number(r.extraAreaPct),
+    corpusAmountLakhs: Number(r.corpusAmountLakhs)
+  }));
+
+  const resComplaints = await pool.query('SELECT id, title, description, member_name as "memberName", status FROM complaints');
+  state.complaints = resComplaints.rows;
 
   return state;
 }
@@ -333,7 +421,7 @@ function deriveDashboard(data) {
     totalFlats: data.society.totalFlats,
     mtdCollection,
     outstandingDues,
-    activeComplaints: 2,
+    activeComplaints: data.complaints ? data.complaints.filter(c => c.status.toLowerCase() === 'open').length : 0,
     chart,
     upcomingAgm
   };
