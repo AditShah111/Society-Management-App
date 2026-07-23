@@ -28,17 +28,13 @@ const allowedUploadTypes = new Set([
 ]);
 const allowedUploadExtensions = new Set(['.pdf', '.txt', '.doc', '.docx']);
 
-const ADMIN_SALT = '7259160533cd88b0a9f8f2b7fbb97f70';
-const ADMIN_HASH = crypto.scryptSync('admin123', ADMIN_SALT, 64).toString('hex');
-
 const seedData = {
   society: { wing: 'A', totalFlats: 48 },
   users: [
-    {
-      email: 'admin@society.com',
-      salt: ADMIN_SALT,
-      passwordHash: ADMIN_HASH
-    }
+    { email: 'admin@society.com', password: 'admin123', role: 'super_admin' },
+    { email: 'committee@society.com', password: 'committee123', role: 'society_admin' },
+    { email: 'guard@society.com', password: 'guard123', role: 'gate_guard' },
+    { email: 'resident@society.com', password: 'resident123', role: 'member' }
   ],
   maintenanceBills: [
     { flatNo: 'A-101', memberName: 'Rajesh Sharma', amount: 4500, status: 'Paid' },
@@ -117,9 +113,18 @@ async function initializeDatabase() {
       CREATE TABLE IF NOT EXISTS users (
         email VARCHAR(255) PRIMARY KEY,
         salt VARCHAR(255) NOT NULL,
-        password_hash VARCHAR(255) NOT NULL
+        password_hash VARCHAR(255) NOT NULL,
+        auth_method VARCHAR(50) DEFAULT 'password',
+        otp_code VARCHAR(10),
+        otp_expires_at TIMESTAMP WITH TIME ZONE,
+        role VARCHAR(50) DEFAULT 'member'
       );
     `);
+
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_method VARCHAR(50) DEFAULT \'password\';');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_code VARCHAR(10);');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_expires_at TIMESTAMP WITH TIME ZONE;');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT \'member\';');
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS maintenance_bills (
@@ -169,6 +174,14 @@ async function initializeDatabase() {
       );
     `);
 
+    // Enable Row Level Security (RLS) to lock down the tables against direct Supabase REST API calls
+    await client.query('ALTER TABLE society ENABLE ROW LEVEL SECURITY;');
+    await client.query('ALTER TABLE users ENABLE ROW LEVEL SECURITY;');
+    await client.query('ALTER TABLE maintenance_bills ENABLE ROW LEVEL SECURITY;');
+    await client.query('ALTER TABLE financial_records ENABLE ROW LEVEL SECURITY;');
+    await client.query('ALTER TABLE agm_meetings ENABLE ROW LEVEL SECURITY;');
+    await client.query('ALTER TABLE statutory_documents ENABLE ROW LEVEL SECURITY;');
+
     // Seed Data check & insertion
     const socCount = await client.query('SELECT count(*) FROM society');
     if (parseInt(socCount.rows[0].count) === 0) {
@@ -176,9 +189,15 @@ async function initializeDatabase() {
     }
 
     const userCount = await client.query('SELECT count(*) FROM users');
-    if (parseInt(userCount.rows[0].count) === 0) {
+    if (parseInt(userCount.rows[0].count) <= 1) {
+      await client.query('DELETE FROM users');
       for (const u of seedData.users) {
-        await client.query('INSERT INTO users (email, salt, password_hash) VALUES ($1, $2, $3)', [u.email, u.salt, u.passwordHash]);
+        const salt = crypto.randomBytes(16).toString('hex');
+        const passwordHash = crypto.scryptSync(u.password, salt, 64).toString('hex');
+        await client.query(
+          'INSERT INTO users (email, salt, password_hash, role) VALUES ($1, $2, $3, $4)',
+          [u.email, salt, passwordHash, u.role]
+        );
       }
     }
 
@@ -434,7 +453,7 @@ async function handleApi(req, res, url) {
 
       if (!pool) return sendJson(res, 500, { error: 'Database connection not initialized.' });
 
-      const result = await pool.query('SELECT salt, password_hash FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+      const result = await pool.query('SELECT salt, password_hash, role FROM users WHERE LOWER(email) = LOWER($1)', [email]);
       const user = result.rows[0];
       if (!user) {
         return sendJson(res, 401, { error: 'Invalid email or password.' });
@@ -446,13 +465,69 @@ async function handleApi(req, res, url) {
       }
 
       const token = crypto.randomUUID();
-      SESSIONS.set(token, { email, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
+      SESSIONS.set(token, { email, role: user.role, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
 
       res.writeHead(200, {
         'Set-Cookie': `session_token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`,
         'content-type': 'application/json; charset=utf-8'
       });
-      return res.end(JSON.stringify({ success: true, user: { email } }));
+      return res.end(JSON.stringify({ success: true, user: { email, role: user.role } }));
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/auth/send-otp') {
+      const { email } = await readJsonBody(req);
+      if (!email) {
+        return sendJson(res, 400, { error: 'Email is required.' });
+      }
+      if (!pool) return sendJson(res, 500, { error: 'Database connection not initialized.' });
+
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 min expiry
+      
+      const exists = await pool.query('SELECT email FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+      if (exists.rows.length === 0) {
+        // Auto-register new resident/user for dynamic access
+        const dummySalt = crypto.randomBytes(16).toString('hex');
+        const dummyHash = crypto.scryptSync(crypto.randomUUID(), dummySalt, 64).toString('hex');
+        await pool.query(
+          'INSERT INTO users (email, salt, password_hash, auth_method, otp_code, otp_expires_at) VALUES ($1, $2, $3, $4, $5, $6)',
+          [email, dummySalt, dummyHash, 'otp', otp, expiresAt]
+        );
+      } else {
+        await pool.query(
+          'UPDATE users SET otp_code = $1, otp_expires_at = $2, auth_method = \'otp\' WHERE LOWER(email) = LOWER($3)',
+          [otp, expiresAt, email]
+        );
+      }
+
+      console.log(`[AUTH-OTP] Generated passcode ${otp} for resident ${email}`);
+      return sendJson(res, 200, { success: true, message: 'OTP passcode generated successfully.', otp }); // returns otp directly for simulation
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/auth/verify-otp') {
+      const { email, code } = await readJsonBody(req);
+      if (!email || !code) {
+        return sendJson(res, 400, { error: 'Email and verification code are required.' });
+      }
+      if (!pool) return sendJson(res, 500, { error: 'Database connection not initialized.' });
+
+      const result = await pool.query('SELECT otp_code, otp_expires_at, role FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+      const user = result.rows[0];
+      if (!user || user.otp_code !== code || new Date(user.otp_expires_at) < new Date()) {
+        return sendJson(res, 401, { error: 'Invalid or expired passcode. Please request a new one.' });
+      }
+
+      // Clear OTP on success
+      await pool.query('UPDATE users SET otp_code = NULL, otp_expires_at = NULL WHERE LOWER(email) = LOWER($1)', [email]);
+
+      const token = crypto.randomUUID();
+      SESSIONS.set(token, { email, role: user.role, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
+
+      res.writeHead(200, {
+        'Set-Cookie': `session_token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`,
+        'content-type': 'application/json; charset=utf-8'
+      });
+      return res.end(JSON.stringify({ success: true, user: { email, role: user.role } }));
     }
 
     if (req.method === 'POST' && url.pathname === '/api/logout') {
@@ -478,9 +553,20 @@ async function handleApi(req, res, url) {
       return sendJson(res, 401, { error: 'Unauthorized' });
     }
 
+    // Role-Based Access Control (RBAC) - Block non-admin mutations
+    if (['POST', 'DELETE', 'PUT'].includes(req.method)) {
+      if (session.role !== 'super_admin' && session.role !== 'society_admin') {
+        return sendJson(res, 403, { error: 'Forbidden: Admin authorization is required to modify backend data.' });
+      }
+    }
+
     if (req.method === 'GET' && url.pathname === '/api/state') {
       const db = await getFullStateFromDb();
-      return sendJson(res, 200, { ...db, dashboard: deriveDashboard(db) });
+      return sendJson(res, 200, { 
+        ...db, 
+        dashboard: deriveDashboard(db),
+        currentUser: { email: session.email, role: session.role }
+      });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/financial-records') {

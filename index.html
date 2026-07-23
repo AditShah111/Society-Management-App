@@ -59,6 +59,12 @@
                 <p class="text-sm text-gray-300 mt-1">Please sign in to access the dashboard</p>
             </div>
             
+            <!-- Auth Mode Tabs -->
+            <div class="flex space-x-1 bg-white/5 p-1 rounded-xl mb-6">
+                <button type="button" onclick="setAuthMode('password')" id="tab-password" class="w-1/2 py-2 text-xs font-bold text-center rounded-lg bg-brand-500 text-white focus:outline-none transition-all">Password Login</button>
+                <button type="button" onclick="setAuthMode('otp')" id="tab-otp" class="w-1/2 py-2 text-xs font-bold text-center rounded-lg text-gray-400 hover:text-white focus:outline-none transition-all">Resident OTP</button>
+            </div>
+            
             <form id="login-form" class="space-y-6">
                 <div>
                     <label for="login-email" class="block text-xs font-bold uppercase tracking-wider text-gray-300 mb-2">Email Address</label>
@@ -66,21 +72,31 @@
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
                             <i class="fa-solid fa-envelope"></i>
                         </span>
-                        <input id="login-email" type="email" required class="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-3 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all outline-none" placeholder="admin@society.com">
+                        <input id="login-email" type="email" required class="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-3 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all outline-none" placeholder="member@society.com">
                     </div>
                 </div>
                 
-                <div>
+                <div id="login-password-group">
                     <label for="login-password" class="block text-xs font-bold uppercase tracking-wider text-gray-300 mb-2">Password</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
                             <i class="fa-solid fa-lock"></i>
                         </span>
-                        <input id="login-password" type="password" required class="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-3 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all outline-none" placeholder="••••••••">
+                        <input id="login-password" type="password" class="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-3 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all outline-none" placeholder="••••••••">
                     </div>
                 </div>
 
-                <button type="submit" class="w-full bg-brand-500 text-white hover:bg-brand-600 font-bold py-3 px-4 rounded-xl shadow-lg shadow-brand-500/30 transition-all hover:scale-[1.02] focus:outline-none">
+                <div id="login-otp-group" class="hidden">
+                    <label for="login-otp-code" class="block text-xs font-bold uppercase tracking-wider text-gray-300 mb-2">6-Digit Verification PIN</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                            <i class="fa-solid fa-key"></i>
+                        </span>
+                        <input id="login-otp-code" type="text" maxlength="6" class="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-3 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all outline-none" placeholder="123456">
+                    </div>
+                </div>
+
+                <button type="submit" id="login-submit-btn" class="w-full bg-brand-500 text-white hover:bg-brand-600 font-bold py-3 px-4 rounded-xl shadow-lg shadow-brand-500/30 transition-all hover:scale-[1.02] focus:outline-none">
                     Sign In
                 </button>
             </form>
@@ -140,8 +156,8 @@
                             <i class="fa-solid fa-user-tie text-sm"></i>
                         </div>
                         <div class="ml-3 truncate">
-                            <p class="text-sm font-medium text-white truncate">System Admin</p>
-                            <p class="text-xs text-gray-400 truncate">admin@society.com</p>
+                            <p class="text-sm font-medium text-white truncate user-role-display">System Admin</p>
+                            <p class="text-xs text-gray-400 truncate user-email-display">admin@society.com</p>
                         </div>
                     </div>
                     <button onclick="logout()" class="text-gray-400 hover:text-red-500 p-2" title="Logout">
@@ -193,8 +209,8 @@
                             <i class="fa-solid fa-user-tie text-sm"></i>
                         </div>
                         <div class="ml-3 truncate">
-                            <p class="text-sm font-medium text-white truncate">System Admin</p>
-                            <p class="text-xs text-gray-400 truncate">admin@society.com</p>
+                            <p class="text-sm font-medium text-white truncate user-role-display">System Admin</p>
+                            <p class="text-xs text-gray-400 truncate user-email-display">admin@society.com</p>
                         </div>
                     </div>
                     <button onclick="logout()" class="text-gray-400 hover:text-red-500 p-2" title="Logout">
@@ -364,7 +380,7 @@
                         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                             <div class="p-6 border-b border-gray-100 flex flex-wrap gap-4 justify-between items-center bg-gray-50">
                                 <h2 class="text-lg font-bold text-gray-800">General Ledger (Recent Entries)</h2>
-                                <button class="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-md shadow-brand-500/10 whitespace-nowrap">
+                                <button id="add-fin-entry-btn" class="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-md shadow-brand-500/10 whitespace-nowrap">
                                     <i class="fa-solid fa-plus mr-2"></i>Add Financial Entry
                                 </button>
                             </div>
@@ -527,7 +543,7 @@
                     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                         <div class="p-6 border-b border-gray-100 flex flex-wrap gap-4 justify-between items-center bg-gray-50">
                             <h2 class="text-lg font-bold text-gray-800">General Body Meetings & Resolutions</h2>
-                            <button class="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-md shadow-brand-500/10 whitespace-nowrap">
+                            <button id="schedule-meeting-btn" class="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-md shadow-brand-500/10 whitespace-nowrap">
                                 <i class="fa-solid fa-calendar-plus mr-2"></i>Schedule Meeting
                             </button>
                         </div>
@@ -677,7 +693,7 @@
                             <h2 class="text-xl font-bold text-gray-800">Mandatory Registers & Records</h2>
                             <p class="text-sm text-gray-500">As per Maharashtra Co-operative Societies Act 1960 & Rules 1961</p>
                         </div>
-                        <button onclick="toggleUploadPanel()" class="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-md shadow-brand-500/10 flex items-center gap-2">
+                        <button id="upload-doc-btn" onclick="toggleUploadPanel()" class="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-md shadow-brand-500/10 flex items-center gap-2">
                             <i class="fa-solid fa-cloud-arrow-up"></i>
                             <span>Upload File</span>
                         </button>
@@ -1026,6 +1042,35 @@
         });
     </script>
     <script>
+        let authMode = 'password';
+        let otpSent = false;
+
+        function setAuthMode(mode) {
+            authMode = mode;
+            otpSent = false;
+            
+            const tabPassword = document.getElementById('tab-password');
+            const tabOtp = document.getElementById('tab-otp');
+            const passGroup = document.getElementById('login-password-group');
+            const otpGroup = document.getElementById('login-otp-group');
+            const submitBtn = document.getElementById('login-submit-btn');
+            
+            if (mode === 'password') {
+                tabPassword.className = 'w-1/2 py-2 text-xs font-bold text-center rounded-lg bg-brand-500 text-white focus:outline-none transition-all';
+                tabOtp.className = 'w-1/2 py-2 text-xs font-bold text-center rounded-lg text-gray-400 hover:text-white focus:outline-none transition-all';
+                passGroup.classList.remove('hidden');
+                otpGroup.classList.add('hidden');
+                submitBtn.innerText = 'Sign In';
+            } else {
+                tabPassword.className = 'w-1/2 py-2 text-xs font-bold text-center rounded-lg text-gray-400 hover:text-white focus:outline-none transition-all';
+                tabOtp.className = 'w-1/2 py-2 text-xs font-bold text-center rounded-lg bg-brand-500 text-white focus:outline-none transition-all';
+                passGroup.classList.add('hidden');
+                otpGroup.classList.add('hidden');
+                submitBtn.innerText = 'Send Verification PIN';
+            }
+        }
+        window.setAuthMode = setAuthMode;
+
         const api = {
             async login(email, password) {
                 const response = await fetch('/api/login', {
@@ -1153,12 +1198,16 @@
                     downloadButton.dataset.formBound = 'true';
                     downloadButton.addEventListener('click', () => openDigitalDocument(latestDocumentForForm(window.currentDocuments || [], form.id), form));
                 }
-                if (uploadButton && !uploadButton.dataset.formBound) {
-                    uploadButton.dataset.formBound = 'true';
-                    uploadButton.addEventListener('click', () => {
-                        window.activeStatutoryForm = form;
-                        document.getElementById('backend-document-upload')?.click();
-                    });
+                if (uploadButton) {
+                    const isAdmin = window.currentUserRole === 'super_admin' || window.currentUserRole === 'society_admin';
+                    uploadButton.style.display = isAdmin ? 'block' : 'none';
+                    if (!uploadButton.dataset.formBound) {
+                        uploadButton.dataset.formBound = 'true';
+                        uploadButton.addEventListener('click', () => {
+                            window.activeStatutoryForm = form;
+                            document.getElementById('backend-document-upload')?.click();
+                        });
+                    }
                 }
             });
         }
@@ -1256,6 +1305,7 @@
             prepareStatutoryFormCards(documents);
             const list = document.getElementById('uploaded-documents-list');
             if (!list) return;
+            const isAdmin = window.currentUserRole === 'super_admin' || window.currentUserRole === 'society_admin';
             list.innerHTML = documents.length ? documents.map(document => `
                 <div class="flex items-center justify-between p-3 border border-gray-200 rounded-xl hover:shadow-sm transition-all bg-gray-50/30">
                     <div class="flex items-center overflow-hidden mr-4">
@@ -1269,7 +1319,7 @@
                     </div>
                     <div class="flex items-center gap-2 flex-shrink-0">
                         <a href="${document.url}" target="_blank" class="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-brand-500 flex items-center justify-center transition-all" title="View or download"><i class="fa-solid fa-download"></i></a>
-                        <button class="w-8 h-8 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 flex items-center justify-center transition-all" title="Delete document" onclick="deleteUploadedDocument('${document.id}')"><i class="fa-solid fa-trash"></i></button>
+                        ${isAdmin ? `<button class="w-8 h-8 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 flex items-center justify-center transition-all" title="Delete document" onclick="deleteUploadedDocument('${document.id}')"><i class="fa-solid fa-trash"></i></button>` : ''}
                     </div>
                 </div>
             `).join('') : '<p class="text-sm text-gray-500 text-center py-4">No files uploaded yet.</p>';
@@ -1307,6 +1357,30 @@
                 // User is authenticated
                 document.getElementById('view-login').classList.add('hidden');
                 document.getElementById('app-container').classList.remove('hidden');
+                
+                // RBAC UI Control - Hide actions if not admin
+                window.currentUserRole = state.currentUser.role;
+                const isAdmin = state.currentUser.role === 'super_admin' || state.currentUser.role === 'society_admin';
+                const addFinBtn = document.getElementById('add-fin-entry-btn');
+                const schedMeetBtn = document.getElementById('schedule-meeting-btn');
+                const uploadDocBtn = document.getElementById('upload-doc-btn');
+                
+                if (addFinBtn) addFinBtn.style.display = isAdmin ? 'block' : 'none';
+                if (schedMeetBtn) schedMeetBtn.style.display = isAdmin ? 'block' : 'none';
+                if (uploadDocBtn) uploadDocBtn.style.display = isAdmin ? 'flex' : 'none';
+                
+                // Update sidebar displays
+                const userEmails = document.querySelectorAll('.user-email-display');
+                userEmails.forEach(el => el.innerText = state.currentUser.email);
+                
+                const userRoles = document.querySelectorAll('.user-role-display');
+                const roleLabels = {
+                    'super_admin': 'Super Admin',
+                    'society_admin': 'Committee Admin',
+                    'gate_guard': 'Gate Guard',
+                    'member': 'Resident'
+                };
+                userRoles.forEach(el => el.innerText = roleLabels[state.currentUser.role] || 'Resident');
                 
                 renderDashboard(state);
                 renderLedger(state.financialRecords);
@@ -1476,14 +1550,54 @@
                 loginForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const email = document.getElementById('login-email').value;
-                    const password = document.getElementById('login-password').value;
-                    try {
-                        await api.login(email, password);
-                        showToast('Signed in successfully');
-                        document.getElementById('login-password').value = '';
-                        refreshLiveData();
-                    } catch (err) {
-                        showToast(err.message, 'error');
+                    
+                    if (authMode === 'password') {
+                        const password = document.getElementById('login-password').value;
+                        try {
+                            const data = await api.login(email, password);
+                            showToast(`Signed in successfully! Role: ${data.user.role}`);
+                            document.getElementById('login-password').value = '';
+                            refreshLiveData();
+                        } catch (err) {
+                            showToast(err.message, 'error');
+                        }
+                    } else {
+                        // OTP Mode
+                        if (!otpSent) {
+                            try {
+                                const res = await fetch('/api/auth/send-otp', {
+                                    method: 'POST',
+                                    headers: { 'content-type': 'application/json' },
+                                    body: JSON.stringify({ email })
+                                });
+                                const data = await res.json();
+                                if (!res.ok) throw new Error(data.error);
+                                
+                                otpSent = true;
+                                document.getElementById('login-otp-group').classList.remove('hidden');
+                                document.getElementById('login-submit-btn').innerText = 'Verify & Sign In';
+                                showToast(`Verification PIN sent: ${data.otp}`, 'info');
+                            } catch (err) {
+                                showToast(err.message, 'error');
+                            }
+                        } else {
+                            const code = document.getElementById('login-otp-code').value;
+                            try {
+                                const res = await fetch('/api/auth/verify-otp', {
+                                    method: 'POST',
+                                    headers: { 'content-type': 'application/json' },
+                                    body: JSON.stringify({ email, code })
+                                });
+                                const data = await res.json();
+                                if (!res.ok) throw new Error(data.error);
+                                
+                                showToast(`Signed in successfully! Role: ${data.user.role}`);
+                                document.getElementById('login-otp-code').value = '';
+                                refreshLiveData();
+                            } catch (err) {
+                                showToast(err.message, 'error');
+                            }
+                        }
                     }
                 });
             }
