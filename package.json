@@ -13,5 +13,8 @@
   "dependencies": {
     "dotenv": "^17.4.2",
     "pg": "^8.22.0"
+  },
+  "devDependencies": {
+    "cloudflared": "^0.7.1"
   }
 }

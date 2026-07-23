@@ -468,7 +468,7 @@ async function handleApi(req, res, url) {
       SESSIONS.set(token, { email, role: user.role, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
 
       res.writeHead(200, {
-        'Set-Cookie': `session_token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`,
+        'Set-Cookie': `session_token=${token}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=86400`,
         'content-type': 'application/json; charset=utf-8'
       });
       return res.end(JSON.stringify({ success: true, user: { email, role: user.role } }));
@@ -524,7 +524,7 @@ async function handleApi(req, res, url) {
       SESSIONS.set(token, { email, role: user.role, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
 
       res.writeHead(200, {
-        'Set-Cookie': `session_token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`,
+        'Set-Cookie': `session_token=${token}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=86400`,
         'content-type': 'application/json; charset=utf-8'
       });
       return res.end(JSON.stringify({ success: true, user: { email, role: user.role } }));
@@ -537,7 +537,7 @@ async function handleApi(req, res, url) {
         SESSIONS.delete(token);
       }
       res.writeHead(200, {
-        'Set-Cookie': `session_token=; Path=/; HttpOnly; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT`,
+        'Set-Cookie': `session_token=; Path=/; HttpOnly; SameSite=Lax; Secure; Expires=Thu, 01 Jan 1970 00:00:00 GMT`,
         'content-type': 'application/json; charset=utf-8'
       });
       return res.end(JSON.stringify({ success: true }));
