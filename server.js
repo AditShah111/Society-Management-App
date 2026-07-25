@@ -340,6 +340,13 @@ async function initializeDatabase() {
     }
 
     // ── STEP 10: Clear legacy rows backfill (removed mock seeds so workspace starts empty)
+    await pool.query(`DELETE FROM agm_meetings WHERE id IN ('agm-2026', 'sgm-2026-04')`);
+    await pool.query(`DELETE FROM complaints WHERE title IN ('Water leakage in Wing A elevator shaft', 'Main gate intercom connection static noise', 'Main gate intercom static noise')`);
+    await pool.query(`DELETE FROM maintenance_bills WHERE member_name IN ('Rajesh Sharma', 'Priya Desai', 'Amit Patel')`);
+    await pool.query(`DELETE FROM financial_records WHERE voucher_no IN ('RV-1001', 'PV-0801', 'RV-1002', 'PV-0801', 'RV-1003', 'PV-0803', 'RV-1024', 'PV-0842', 'JV-0112')`);
+    await pool.query(`DELETE FROM redevelopment_stages`);
+    await pool.query(`DELETE FROM redevelopment_tenders`);
+    
     console.log(`[DB] Schema ready. Default society: ${defaultSocietyId}`);
     console.log('[DB] Seed users: admin@society.com / committee@society.com / accountant@society.com / resident@society.com');
   } catch (error) {
@@ -616,16 +623,63 @@ async function handleApi(req, res, url) {
       return res.end(JSON.stringify({ success: true, user: { email, role: profile.role } }));
     }
 
+function validateSocietyRegistrationNo(regNo) {
+  if (!regNo) return { valid: false, error: 'Registration number is required.' };
+  
+  const parts = regNo.split('/');
+  if (parts.length < 5 || parts.length > 6) {
+    return { valid: false, error: 'Invalid registration number layout. Official Maharashtra format: DISTRICT/WARD/HSG/[TC|TA|GN]/NUMBER/YEAR (e.g. MUM/WP/HSG/TC/12345/2026)' };
+  }
+
+  const [district, ward, classification, subtype, numberStr, yearStr] = parts.length === 6 
+    ? parts 
+    : [parts[0], parts[1], parts[2], 'GN', parts[3], parts[4]];
+
+  // 1. Validate District Code
+  const validDistricts = new Set(['MUM', 'PNE', 'TNA', 'NGP', 'KGD', 'NAS', 'AMD', 'SAT', 'SOL', 'KOP', 'LAT', 'AUR', 'NND', 'JAL', 'DHU', 'NSA', 'KBD', 'YAT', 'CHA', 'BND', 'GND', 'GAD', 'AMR', 'BUL', 'WAS', 'AKO', 'PAR', 'BEED', 'OSM', 'JLG', 'RAT', 'SNG', 'SIN']);
+  if (!validDistricts.has(district.toUpperCase())) {
+    return { valid: false, error: `Invalid District code "${district}". Must be a valid Maharashtra district (e.g. MUM, PNE, TNA).` };
+  }
+
+  // 2. Validate Classification
+  if (classification.toUpperCase() !== 'HSG') {
+    return { valid: false, error: `Invalid Classification "${classification}". Housing societies must have classification code "HSG".` };
+  }
+
+  // 3. Validate Sub-classification
+  const validSubtypes = new Set(['TC', 'TA', 'GN', 'OD', 'MHS']);
+  if (!validSubtypes.has(subtype.toUpperCase())) {
+    return { valid: false, error: `Invalid Sub-classification "${subtype}". Must be one of: TC (Tenant Co-partnership), TA (Tenant Association), GN (General), OD (Other).` };
+  }
+
+  // 4. Validate Serial Number
+  if (!/^\d+$/.test(numberStr)) {
+    return { valid: false, error: `Invalid Serial Number "${numberStr}". Must be numeric.` };
+  }
+
+  // 5. Validate Year
+  if (!/^\d{4}$/.test(yearStr)) {
+    return { valid: false, error: `Invalid Registration Year "${yearStr}". Must be a 4-digit year.` };
+  }
+  const year = parseInt(yearStr);
+  const currentYear = new Date().getFullYear();
+  if (year < 1960 || year > currentYear) {
+    return { valid: false, error: `Invalid Year ${year}. Must be between 1960 and ${currentYear}.` };
+  }
+
+  return { valid: true };
+}
+
     if (req.method === 'POST' && url.pathname === '/api/auth/register-society') {
       const { email, password, name, societyName, registrationNo } = await readJsonBody(req);
       if (!email || !password || !name || !societyName || !registrationNo) {
         return sendJson(res, 400, { error: 'All fields are required.' });
       }
 
-      // Validate Registration Number pattern
-      const regNoPattern = /^[A-Z0-9]{2,10}(\/[A-Z0-9]{2,10}){2,5}$/i;
-      if (!regNoPattern.test(registrationNo)) {
-        return sendJson(res, 400, { error: 'Invalid Registration Number format. Example: MUM/WP/HSG/TC/12345/2026' });
+      // Validate Registration Number as per Indian Housing Society Laws
+      const valResult = validateSocietyRegistrationNo(registrationNo);
+      if (!valResult.valid) {
+        return sendJson(res, 400, { error: valResult.error });
       }
 
       if (!pool) return sendJson(res, 500, { error: 'Database connection not initialized.' });

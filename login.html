@@ -325,10 +325,41 @@
             const societyName = document.getElementById('reg-society-name').value;
             const registrationNo = document.getElementById('reg-regno').value;
 
-            // Validate Registration Number format
-            const regNoPattern = /^[A-Z0-9]{2,10}(\/[A-Z0-9]{2,10}){2,5}$/i;
-            if (!regNoPattern.test(registrationNo)) {
-                showToast('Invalid Registration Number format. Example: MUM/WP/HSG/TC/12345/2026', 'error');
+            // Validate Registration Number as per Indian Housing Society Laws
+            const parts = registrationNo.split('/');
+            if (parts.length < 5 || parts.length > 6) {
+                showToast('Invalid registration number layout. Must be DISTRICT/WARD/HSG/[TC|TA|GN]/NUMBER/YEAR (e.g. MUM/WP/HSG/TC/12345/2026)', 'error');
+                return;
+            }
+            const [dist, ward, cls, sub] = parts.length === 6 ? parts : [parts[0], parts[1], parts[2], 'GN'];
+            const validDists = new Set(['MUM', 'PNE', 'TNA', 'NGP', 'KGD', 'NAS', 'AMD', 'SAT', 'SOL', 'KOP', 'LAT', 'AUR', 'NND', 'JAL', 'DHU', 'NSA', 'KBD', 'YAT', 'CHA', 'BND', 'GND', 'GAD', 'AMR', 'BUL', 'WAS', 'AKO', 'PAR', 'BEED', 'OSM', 'JLG', 'RAT', 'SNG', 'SIN']);
+            if (!validDists.has(dist.toUpperCase())) {
+                showToast(`Invalid District code "${dist}". Must be a valid Maharashtra district (e.g. MUM, PNE, TNA)`, 'error');
+                return;
+            }
+            if (cls.toUpperCase() !== 'HSG') {
+                showToast(`Invalid Classification "${cls}". Housing societies must have classification code "HSG"`, 'error');
+                return;
+            }
+            const validSubs = new Set(['TC', 'TA', 'GN', 'OD', 'MHS']);
+            if (!validSubs.has(sub.toUpperCase())) {
+                showToast(`Invalid Sub-classification "${sub}". Must be one of: TC, TA, GN, OD`, 'error');
+                return;
+            }
+            const num = parts.length === 6 ? parts[4] : parts[3];
+            const yr = parts.length === 6 ? parts[5] : parts[4];
+            if (!/^\d+$/.test(num)) {
+                showToast(`Invalid Serial Number "${num}". Must be numeric`, 'error');
+                return;
+            }
+            if (!/^\d{4}$/.test(yr)) {
+                showToast(`Invalid Registration Year "${yr}". Must be a 4-digit year`, 'error');
+                return;
+            }
+            const yearVal = parseInt(yr);
+            const currentYear = new Date().getFullYear();
+            if (yearVal < 1960 || yearVal > currentYear) {
+                showToast(`Invalid Year ${yearVal}. Must be between 1960 and ${currentYear}`, 'error');
                 return;
             }
 

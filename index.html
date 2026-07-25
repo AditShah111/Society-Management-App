@@ -345,7 +345,7 @@
                                 <div class="p-0 min-w-[300px]">
                                     <div class="bg-gray-100 p-3 border-b border-gray-200 text-center font-bold text-gray-700 uppercase text-xs tracking-wider">Expenditure (Debit)</div>
                                     <table class="w-full text-sm">
-                                        <tbody class="divide-y divide-gray-100">
+                                        <tbody id="expense-tbody" class="divide-y divide-gray-100">
                                             <tr class="hover:bg-gray-50"><td class="p-3 text-gray-700">To Property Taxes</td><td class="p-3 text-right font-medium">₹45,000.00</td></tr>
                                             <tr class="hover:bg-gray-50"><td class="p-3 text-gray-700">To Water Charges</td><td class="p-3 text-right font-medium">₹28,500.00</td></tr>
                                             <tr class="hover:bg-gray-50"><td class="p-3 text-gray-700">To Common Electricity</td><td class="p-3 text-right font-medium">₹32,100.00</td></tr>
@@ -360,7 +360,7 @@
                                 <div class="p-0 min-w-[300px]">
                                     <div class="bg-gray-100 p-3 border-b border-gray-200 text-center font-bold text-gray-700 uppercase text-xs tracking-wider">Income (Credit)</div>
                                     <table class="w-full text-sm">
-                                        <tbody class="divide-y divide-gray-100">
+                                        <tbody id="income-tbody" class="divide-y divide-gray-100">
                                             <tr class="hover:bg-gray-50"><td class="p-3 text-gray-700">By Member Contributions</td><td class="p-3 text-right font-medium">₹3,25,000.00</td></tr>
                                             <tr class="hover:bg-gray-50"><td class="p-3 text-gray-700">By Non-Occupancy Charges</td><td class="p-3 text-right font-medium">₹12,000.00</td></tr>
                                             <tr class="hover:bg-gray-50"><td class="p-3 text-gray-700">By Bank Interest</td><td class="p-3 text-right font-medium">₹6,500.00</td></tr>
@@ -393,7 +393,7 @@
                                 <div class="p-0 min-w-[300px]">
                                     <div class="bg-gray-100 p-3 border-b border-gray-200 text-center font-bold text-gray-700 uppercase text-xs tracking-wider">Capital & Liabilities</div>
                                     <table class="w-full text-sm">
-                                        <tbody class="divide-y divide-gray-100">
+                                        <tbody id="liabilities-tbody" class="divide-y divide-gray-100">
                                             <tr class="hover:bg-gray-50"><td class="p-3 font-bold text-gray-800">Share Capital</td><td class="p-3 text-right font-bold">₹24,000.00</td></tr>
                                             <tr class="hover:bg-gray-50"><td class="p-3 font-bold text-gray-800">Reserve & Surplus</td><td class="p-3 text-right font-bold"></td></tr>
                                             <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-gray-600">Reserve Fund</td><td class="p-3 text-right font-medium">₹1,50,000.00</td></tr>
@@ -410,7 +410,7 @@
                                 <div class="p-0 min-w-[300px]">
                                     <div class="bg-gray-100 p-3 border-b border-gray-200 text-center font-bold text-gray-700 uppercase text-xs tracking-wider">Property & Assets</div>
                                     <table class="w-full text-sm">
-                                        <tbody class="divide-y divide-gray-100">
+                                        <tbody id="assets-tbody" class="divide-y divide-gray-100">
                                             <tr class="hover:bg-gray-50"><td class="p-3 font-bold text-gray-800">Fixed Assets</td><td class="p-3 text-right font-bold"></td></tr>
                                             <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-gray-600">Land & Building (Nominal)</td><td class="p-3 text-right font-medium">₹1,000.00</td></tr>
                                             <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-gray-600">Water Pumps & Equip.</td><td class="p-3 text-right font-medium">₹85,000.00</td></tr>
@@ -1554,7 +1554,7 @@
             });
 
             // Expense Side Table
-            const expenseTbody = document.querySelector('#subview-income div.grid > div:nth-child(1) tbody');
+            const expenseTbody = document.getElementById('expense-tbody');
             if (expenseTbody) {
                 let expenseRows = Object.entries(groups)
                     .filter(([_, d]) => d.type === 'expense')
@@ -1569,7 +1569,7 @@
             }
 
             // Income Side Table
-            const incomeTbody = document.querySelector('#subview-income div.grid > div:nth-child(2) tbody');
+            const incomeTbody = document.getElementById('income-tbody');
             if (incomeTbody) {
                 let incomeRows = Object.entries(groups)
                     .filter(([_, d]) => d.type === 'income')
@@ -1591,7 +1591,7 @@
             }
 
             // Balance Sheet Liabilities
-            const liabTbody = document.querySelector('#subview-balance div.grid > div:nth-child(1) tbody');
+            const liabTbody = document.getElementById('liabilities-tbody');
             const surplus = incomeTotal - expenseTotal;
             if (liabTbody) {
                 const sinking = groups['Sinking Fund']?.amount || 0;
@@ -1608,7 +1608,7 @@
             }
 
             // Balance Sheet Assets
-            const assetTbody = document.querySelector('#subview-balance div.grid > div:nth-child(2) tbody');
+            const assetTbody = document.getElementById('assets-tbody');
             if (assetTbody) {
                 const cash = Math.max(0, surplus);
                 assetTbody.innerHTML = `
