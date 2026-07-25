@@ -675,7 +675,7 @@ async function handleApi(req, res, url) {
         'Set-Cookie': 'session_token=; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
         'content-type': 'application/json; charset=utf-8'
       });
-      return sendJson(res, 200, { success: true });
+      return res.end(JSON.stringify({ success: true }));
     }
 
 
