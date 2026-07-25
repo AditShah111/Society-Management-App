@@ -340,12 +340,6 @@ async function initializeDatabase() {
     }
 
     // ── STEP 10: Clear legacy rows backfill (removed mock seeds so workspace starts empty)
-    await pool.query(`DELETE FROM agm_meetings WHERE id IN ('agm-2026', 'sgm-2026-04')`);
-    await pool.query(`DELETE FROM complaints WHERE title IN ('Water leakage in Wing A elevator shaft', 'Main gate intercom connection static noise', 'Main gate intercom static noise')`);
-    await pool.query(`DELETE FROM maintenance_bills WHERE member_name IN ('Rajesh Sharma', 'Priya Desai', 'Amit Patel')`);
-    await pool.query(`DELETE FROM financial_records WHERE voucher_no IN ('RV-1001', 'PV-0801', 'RV-1002', 'PV-0801', 'RV-1003', 'PV-0803', 'RV-1024', 'PV-0842', 'JV-0112')`);
-    await pool.query(`DELETE FROM redevelopment_stages`);
-    await pool.query(`DELETE FROM redevelopment_tenders`);
     
     console.log(`[DB] Schema ready. Default society: ${defaultSocietyId}`);
     console.log('[DB] Seed users: admin@society.com / committee@society.com / accountant@society.com / resident@society.com');
