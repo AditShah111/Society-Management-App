@@ -248,19 +248,20 @@ async function initializeDatabase() {
       `);
     }
 
-    const stageCount = await client.query('SELECT count(*) FROM redevelopment_stages');
-    if (parseInt(stageCount.rows[0].count) === 0) {
-      await client.query("INSERT INTO redevelopment_stages (stage_id, stage_name, sub_text, status) VALUES (1, 'Feasibility Report', 'Approved 79(A)', 'Completed')");
-      await client.query("INSERT INTO redevelopment_stages (stage_id, stage_name, sub_text, status) VALUES (2, 'PMC Appointed', 'Arch & Co.', 'Completed')");
-      await client.query("INSERT INTO redevelopment_stages (stage_id, stage_name, sub_text, status) VALUES (3, 'Tendering', 'Quotations Open', 'In Progress')");
-      await client.query("INSERT INTO redevelopment_stages (stage_id, stage_name, sub_text, status) VALUES (4, 'Builder Selection', 'Pending GBM', 'Pending')");
-    }
+    // Seeding of redevelopment stages and tenders commented out to ensure UI starts clean and empty.
+    // const stageCount = await client.query('SELECT count(*) FROM redevelopment_stages');
+    // if (parseInt(stageCount.rows[0].count) === 0) {
+    //   await client.query("INSERT INTO redevelopment_stages (stage_id, stage_name, sub_text, status) VALUES (1, 'Feasibility Report', 'Approved 79(A)', 'Completed')");
+    //   await client.query("INSERT INTO redevelopment_stages (stage_id, stage_name, sub_text, status) VALUES (2, 'PMC Appointed', 'Arch & Co.', 'Completed')");
+    //   await client.query("INSERT INTO redevelopment_stages (stage_id, stage_name, sub_text, status) VALUES (3, 'Tendering', 'Quotations Open', 'In Progress')");
+    //   await client.query("INSERT INTO redevelopment_stages (stage_id, stage_name, sub_text, status) VALUES (4, 'Builder Selection', 'Pending GBM', 'Pending')");
+    // }
 
-    const tenderCount = await client.query('SELECT count(*) FROM redevelopment_tenders');
-    if (parseInt(tenderCount.rows[0].count) === 0) {
-      await client.query("INSERT INTO redevelopment_tenders (id, builder_name, extra_area_pct, corpus_amount_lakhs, status) VALUES ($1, 'Rustomjee Developers', 35.00, 15.00, 'Under Review')", [crypto.randomUUID()]);
-      await client.query("INSERT INTO redevelopment_tenders (id, builder_name, extra_area_pct, corpus_amount_lakhs, status) VALUES ($1, 'Lodha Group', 40.00, 12.00, 'Under Review')", [crypto.randomUUID()]);
-    }
+    // const tenderCount = await client.query('SELECT count(*) FROM redevelopment_tenders');
+    // if (parseInt(tenderCount.rows[0].count) === 0) {
+    //   await client.query("INSERT INTO redevelopment_tenders (id, builder_name, extra_area_pct, corpus_amount_lakhs, status) VALUES ($1, 'Rustomjee Developers', 35.00, 15.00, 'Under Review')", [crypto.randomUUID()]);
+    //   await client.query("INSERT INTO redevelopment_tenders (id, builder_name, extra_area_pct, corpus_amount_lakhs, status) VALUES ($1, 'Lodha Group', 40.00, 12.00, 'Under Review')", [crypto.randomUUID()]);
+    // }
 
     const complaintCount = await client.query('SELECT count(*) FROM complaints');
     if (parseInt(complaintCount.rows[0].count) === 0) {
@@ -782,7 +783,12 @@ async function handleApi(req, res, url) {
 }
 
 async function serveStatic(req, res, url) {
-  const requested = decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname);
+  let requested = decodeURIComponent(url.pathname);
+  if (requested === '/') {
+    requested = '/landing.html';
+  } else if (requested === '/login' || requested === '/app') {
+    requested = '/index.html';
+  }
   const target = path.normalize(path.join(ROOT, requested));
   if (!target.startsWith(ROOT)) {
     res.writeHead(403);
@@ -790,7 +796,11 @@ async function serveStatic(req, res, url) {
   }
   try {
     const data = await fs.readFile(target);
-    const type = MIME_TYPES[path.extname(target).toLowerCase()] || 'application/octet-stream';
+    let ext = path.extname(target).toLowerCase();
+    if (requested === '/login' || requested === '/app') {
+      ext = '.html';
+    }
+    const type = MIME_TYPES[ext] || 'application/octet-stream';
     res.writeHead(200, { 
       'content-type': type,
       'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0'

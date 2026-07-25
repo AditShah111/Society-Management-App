@@ -1350,6 +1350,14 @@
             if (stepsContainer && state.redevelopmentStages) {
                 const stages = state.redevelopmentStages;
                 const totalStages = stages.length;
+                if (totalStages === 0) {
+                    stepsContainer.innerHTML = `
+                        <div class="w-full text-center py-6 text-gray-500 text-sm">
+                            No redevelopment milestones configured. Configure them in the Master Data Centre.
+                        </div>
+                    `;
+                    return;
+                }
                 let activeIndex = -1; // last completed or in-progress index
                 
                 stages.forEach((stage, idx) => {
@@ -1460,7 +1468,16 @@
             // Populate Redevelopment stages grid
             const stagesGrid = document.getElementById('mdc-stages-grid');
             if (stagesGrid && state.redevelopmentStages) {
-                stagesGrid.innerHTML = state.redevelopmentStages.map(stage => {
+                let stagesToRender = state.redevelopmentStages;
+                if (!stagesToRender || stagesToRender.length === 0) {
+                    stagesToRender = [
+                        { id: 1, name: '', subText: '', status: 'Pending' },
+                        { id: 2, name: '', subText: '', status: 'Pending' },
+                        { id: 3, name: '', subText: '', status: 'Pending' },
+                        { id: 4, name: '', subText: '', status: 'Pending' }
+                    ];
+                }
+                stagesGrid.innerHTML = stagesToRender.map(stage => {
                     const statusOptions = ['Pending', 'In Progress', 'Completed'];
                     const optionsHtml = statusOptions.map(opt => `
                         <option value="${opt}" ${stage.status === opt ? 'selected' : ''}>${opt}</option>
