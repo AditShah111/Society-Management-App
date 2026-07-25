@@ -179,6 +179,23 @@ async function initializeDatabase() {
     `);
     await client.query('ALTER TABLE maintenance_bills ADD COLUMN IF NOT EXISTS id UUID DEFAULT gen_random_uuid();');
     await client.query('ALTER TABLE maintenance_bills ADD COLUMN IF NOT EXISTS society_id UUID;');
+    
+    // Auto Billing & Tracker migrations
+    await client.query('ALTER TABLE maintenance_bills ADD COLUMN IF NOT EXISTS billing_month VARCHAR(30);');
+    await client.query('ALTER TABLE maintenance_bills ADD COLUMN IF NOT EXISTS bill_date DATE;');
+    await client.query('ALTER TABLE maintenance_bills ADD COLUMN IF NOT EXISTS due_date DATE;');
+    await client.query('ALTER TABLE maintenance_bills ADD COLUMN IF NOT EXISTS paid_date DATE;');
+    await client.query('ALTER TABLE maintenance_bills ADD COLUMN IF NOT EXISTS service_charges NUMERIC(10,2) DEFAULT 0;');
+    await client.query('ALTER TABLE maintenance_bills ADD COLUMN IF NOT EXISTS sinking_fund NUMERIC(10,2) DEFAULT 0;');
+    await client.query('ALTER TABLE maintenance_bills ADD COLUMN IF NOT EXISTS repair_fund NUMERIC(10,2) DEFAULT 0;');
+    await client.query('ALTER TABLE maintenance_bills ADD COLUMN IF NOT EXISTS water_charges NUMERIC(10,2) DEFAULT 0;');
+    await client.query('ALTER TABLE maintenance_bills ADD COLUMN IF NOT EXISTS parking_charges NUMERIC(10,2) DEFAULT 0;');
+
+    await client.query('ALTER TABLE society ADD COLUMN IF NOT EXISTS rate_service NUMERIC(10,2) DEFAULT 1200;');
+    await client.query('ALTER TABLE society ADD COLUMN IF NOT EXISTS rate_sinking NUMERIC(10,2) DEFAULT 300;');
+    await client.query('ALTER TABLE society ADD COLUMN IF NOT EXISTS rate_repair NUMERIC(10,2) DEFAULT 500;');
+    await client.query('ALTER TABLE society ADD COLUMN IF NOT EXISTS rate_water NUMERIC(10,2) DEFAULT 250;');
+    await client.query('ALTER TABLE society ADD COLUMN IF NOT EXISTS rate_parking NUMERIC(10,2) DEFAULT 150;');
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS financial_records (
@@ -372,11 +389,39 @@ async function getFullStateFromDb(societyId) {
   }
   if (!activeSocietyId) return state;
 
-  const resSoc = await pool.query('SELECT wing, total_flats as "totalFlats", registered_name as "registeredName", registration_no as "registrationNo", address, mtd_collection as "mtdCollection", outstanding_dues as "outstandingDues", active_complaints as "activeComplaints" FROM society WHERE society_id = $1 LIMIT 1', [activeSocietyId]);
-  if (resSoc.rows[0]) state.society = resSoc.rows[0];
+  const resSoc = await pool.query('SELECT wing, total_flats as "totalFlats", registered_name as "registeredName", registration_no as "registrationNo", address, mtd_collection as "mtdCollection", outstanding_dues as "outstandingDues", active_complaints as "activeComplaints", rate_service as "rateService", rate_sinking as "rateSinking", rate_repair as "rateRepair", rate_water as "rateWater", rate_parking as "rateParking" FROM society WHERE society_id = $1 LIMIT 1', [activeSocietyId]);
+  if (resSoc.rows[0]) {
+    state.society = {
+      ...resSoc.rows[0],
+      rateService: Number(resSoc.rows[0].rateService || 1200),
+      rateSinking: Number(resSoc.rows[0].rateSinking || 300),
+      rateRepair: Number(resSoc.rows[0].rateRepair || 500),
+      rateWater: Number(resSoc.rows[0].rateWater || 250),
+      rateParking: Number(resSoc.rows[0].rateParking || 150)
+    };
+  }
 
-  const resBills = await pool.query('SELECT flat_no as "flatNo", member_name as "memberName", amount, status FROM maintenance_bills WHERE society_id = $1', [activeSocietyId]);
-  state.maintenanceBills = resBills.rows.map(r => ({ ...r, amount: Number(r.amount) }));
+  const resBills = await pool.query(`
+    SELECT 
+      id, flat_no as "flatNo", member_name as "memberName", amount, status,
+      billing_month as "billingMonth", to_char(bill_date, 'YYYY-MM-DD') as "billDate",
+      to_char(due_date, 'YYYY-MM-DD') as "dueDate", to_char(paid_date, 'YYYY-MM-DD') as "paidDate",
+      service_charges as "serviceCharges", sinking_fund as "sinkingFund",
+      repair_fund as "repairFund", water_charges as "waterCharges",
+      parking_charges as "parkingCharges"
+    FROM maintenance_bills 
+    WHERE society_id = $1 
+    ORDER BY bill_date DESC, flat_no ASC
+  `, [activeSocietyId]);
+  state.maintenanceBills = resBills.rows.map(r => ({
+    ...r,
+    amount: Number(r.amount || 0),
+    serviceCharges: Number(r.serviceCharges || 0),
+    sinkingFund: Number(r.sinkingFund || 0),
+    repairFund: Number(r.repairFund || 0),
+    waterCharges: Number(r.waterCharges || 0),
+    parkingCharges: Number(r.parkingCharges || 0)
+  }));
 
   const resRecords = await pool.query('SELECT id, to_char(date, \'YYYY-MM-DD\') as date, month, account_head as "accountHead", description, voucher_no as "voucherNo", type, amount FROM financial_records WHERE society_id = $1 ORDER BY date DESC, created_at DESC', [activeSocietyId]);
   state.financialRecords = resRecords.rows.map(r => ({ ...r, amount: Number(r.amount) }));
@@ -886,7 +931,11 @@ function validateSocietyRegistrationNo(regNo) {
 
     if (req.method === 'POST' && url.pathname === '/api/mdc/society') {
       const payload = await readJsonBody(req);
-      const { registeredName, registrationNo, address, wing, totalFlats, mtdCollection, outstandingDues, activeComplaints } = payload;
+      const { 
+        registeredName, registrationNo, address, wing, totalFlats, 
+        mtdCollection, outstandingDues, activeComplaints,
+        rateService, rateSinking, rateRepair, rateWater, rateParking 
+      } = payload;
       await pool.query(
         `UPDATE society SET 
           registered_name = $1,
@@ -896,9 +945,20 @@ function validateSocietyRegistrationNo(regNo) {
           total_flats = $5,
           mtd_collection = $6,
           outstanding_dues = $7,
-          active_complaints = $8
-         WHERE society_id = $9`,
-        [registeredName, registrationNo, address, wing, Number(totalFlats || 0), Number(mtdCollection || 0), Number(outstandingDues || 0), Number(activeComplaints || 0), session.society_id]
+          active_complaints = $8,
+          rate_service = $9,
+          rate_sinking = $10,
+          rate_repair = $11,
+          rate_water = $12,
+          rate_parking = $13
+         WHERE society_id = $14`,
+        [
+          registeredName, registrationNo, address, wing, Number(totalFlats || 0), 
+          Number(mtdCollection || 0), Number(outstandingDues || 0), Number(activeComplaints || 0),
+          Number(rateService || 1200), Number(rateSinking || 300), Number(rateRepair || 500),
+          Number(rateWater || 250), Number(rateParking || 150),
+          session.society_id
+        ]
       );
       const db = await getFullStateFromDb(session.society_id);
       return sendJson(res, 200, { success: true, society: db.society, dashboard: deriveDashboard(db) });
@@ -962,6 +1022,133 @@ function validateSocietyRegistrationNo(regNo) {
 
     if (req.method === 'POST' && url.pathname === '/api/documents') {
       return handleUpload(req, res, session.society_id);
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/maintenance/generate') {
+      const payload = await readJsonBody(req);
+      const { month } = payload;
+      if (!month) {
+        return sendJson(res, 400, { error: 'Billing month is required.' });
+      }
+
+      if (!pool) return sendJson(res, 500, { error: 'Database connection not initialized.' });
+
+      // Verify if bills already exist for this month
+      const existCheck = await pool.query(
+        'SELECT id FROM maintenance_bills WHERE society_id = $1 AND billing_month = $2 LIMIT 1',
+        [session.society_id, month]
+      );
+      if (existCheck.rows.length > 0) {
+        return sendJson(res, 400, { error: `Maintenance bills for ${month} have already been generated.` });
+      }
+
+      // Fetch society defaults
+      const socRes = await pool.query(
+        'SELECT wing, total_flats, rate_service, rate_sinking, rate_repair, rate_water, rate_parking FROM society WHERE society_id = $1 LIMIT 1',
+        [session.society_id]
+      );
+      const soc = socRes.rows[0] || { wing: 'A', total_flats: 50 };
+      const wing = soc.wing || 'A';
+      const totalFlats = Number(soc.total_flats || 50);
+      const service = Number(soc.rate_service || 1200);
+      const sinking = Number(soc.rate_sinking || 300);
+      const repair = Number(soc.rate_repair || 500);
+      const water = Number(soc.rate_water || 250);
+      const parking = Number(soc.rate_parking || 150);
+      const amount = service + sinking + repair + water + parking;
+
+      const billDate = new Date().toISOString().slice(0, 10);
+      const dueDateObj = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000);
+      const dueDate = dueDateObj.toISOString().slice(0, 10);
+
+      // Generate bills for each flat
+      for (let i = 1; i <= totalFlats; i++) {
+        const floor = Math.floor((i - 1) / 10) + 1;
+        const seq = ((i - 1) % 10) + 1;
+        const flatNo = `${wing}-${floor}${seq < 10 ? '0' + seq : seq}`;
+        const memberName = `Resident Flat ${flatNo}`;
+
+        await pool.query(
+          `INSERT INTO maintenance_bills (
+            flat_no, member_name, amount, status, billing_month, bill_date, due_date,
+            service_charges, sinking_fund, repair_fund, water_charges, parking_charges, society_id
+          ) VALUES ($1, $2, $3, 'Unpaid', $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+          [flatNo, memberName, amount, month, billDate, dueDate, service, sinking, repair, water, parking, session.society_id]
+        );
+      }
+
+      // Recalculate outstanding_dues
+      await pool.query(
+        `UPDATE society SET outstanding_dues = (
+          SELECT COALESCE(SUM(amount), 0) FROM maintenance_bills 
+          WHERE society_id = $1 AND status = 'Unpaid'
+        ) WHERE society_id = $1`,
+        [session.society_id]
+      );
+
+      const db = await getFullStateFromDb(session.society_id);
+      return sendJson(res, 201, { success: true, maintenanceBills: db.maintenanceBills, dashboard: deriveDashboard(db) });
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/maintenance/pay') {
+      const payload = await readJsonBody(req);
+      const { billId } = payload;
+      if (!billId) {
+        return sendJson(res, 400, { error: 'Bill ID is required.' });
+      }
+
+      if (!pool) return sendJson(res, 500, { error: 'Database connection not initialized.' });
+
+      // Look up target bill
+      const billRes = await pool.query(
+        'SELECT flat_no, amount, billing_month FROM maintenance_bills WHERE id = $1 AND society_id = $2 LIMIT 1',
+        [billId, session.society_id]
+      );
+      const bill = billRes.rows[0];
+      if (!bill) {
+        return sendJson(res, 404, { error: 'Maintenance bill not found.' });
+      }
+
+      const today = new Date().toISOString().slice(0, 10);
+      const todayMonth = new Date().toLocaleString('en-US', { month: 'short' });
+
+      // 1. Mark bill as Paid
+      await pool.query(
+        'UPDATE maintenance_bills SET status = \'Paid\', paid_date = $1 WHERE id = $2 AND society_id = $3',
+        [today, billId, session.society_id]
+      );
+
+      // 2. Add receipt to ledger
+      const voucherNo = `RV-M${Date.now().toString().slice(-6)}`;
+      await pool.query(
+        `INSERT INTO financial_records (id, date, month, account_head, description, voucher_no, type, amount, society_id)
+         VALUES ($1, $2, $3, 'Maintenance Collection', $4, $5, 'income', $6, $7)`,
+        [
+          crypto.randomUUID(), today, todayMonth,
+          `Maintenance payment for Flat ${bill.flat_no} - ${bill.billing_month}`,
+          voucherNo, Number(bill.amount), session.society_id
+        ]
+      );
+
+      // 3. Update society outstanding_dues & mtd_collection
+      await pool.query(
+        `UPDATE society SET outstanding_dues = (
+          SELECT COALESCE(SUM(amount), 0) FROM maintenance_bills 
+          WHERE society_id = $1 AND status = 'Unpaid'
+        ) WHERE society_id = $1`,
+        [session.society_id]
+      );
+
+      await pool.query(
+        `UPDATE society SET mtd_collection = (
+          SELECT COALESCE(SUM(amount), 0) FROM financial_records 
+          WHERE society_id = $1 AND type = 'income' AND date_trunc('month', date) = date_trunc('month', CURRENT_DATE)
+        ) WHERE society_id = $1`,
+        [session.society_id]
+      );
+
+      const db = await getFullStateFromDb(session.society_id);
+      return sendJson(res, 200, { success: true, maintenanceBills: db.maintenanceBills, dashboard: deriveDashboard(db) });
     }
 
     const documentDeleteMatch = url.pathname.match(/^\/api\/documents\/([^/]+)$/);
