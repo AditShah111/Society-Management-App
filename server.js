@@ -1031,6 +1031,24 @@ function validateSocietyRegistrationNo(regNo) {
         return sendJson(res, 400, { error: 'Billing month is required.' });
       }
 
+      // Layman-friendly future month check
+      const parts = month.split(' ');
+      const monthName = parts[0];
+      const year = Number(parts[1]);
+      const monthMap = {
+        'January': 0, 'February': 1, 'March': 2, 'April': 3, 'May': 4, 'June': 5,
+        'July': 6, 'August': 7, 'September': 8, 'October': 9, 'November': 10, 'December': 11
+      };
+      
+      if (monthMap[monthName] !== undefined && year) {
+        const activationDate = new Date(year, monthMap[monthName], 1);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (today < activationDate) {
+          return sendJson(res, 400, { error: `Billing for ${month} can only be activated on 1st ${month}.` });
+        }
+      }
+
       if (!pool) return sendJson(res, 500, { error: 'Database connection not initialized.' });
 
       // Verify if bills already exist for this month
