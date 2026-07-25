@@ -1,4 +1,6 @@
 require('dotenv').config();
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const http = require('http');
 const fs = require('fs/promises');
