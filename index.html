@@ -147,6 +147,9 @@
                 <button onclick="switchView('legal'); toggleMobileMenu(false)" id="mobile-nav-legal" class="mobile-nav-item nav-item w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium text-left">
                     <i class="fa-solid fa-scale-balanced w-6 flex-shrink-0"></i> <span class="ml-2">Legal Sources</span>
                 </button>
+                <button onclick="switchView('mdc-panel'); toggleMobileMenu(false)" id="mobile-nav-mdc-panel" class="mobile-nav-item nav-item w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium text-left">
+                    <i class="fa-solid fa-database w-6 flex-shrink-0"></i> <span class="ml-2">MDC Registry</span>
+                </button>
             </nav>
 
             <div class="p-4 border-t border-gray-700">
@@ -199,6 +202,9 @@
                 </button>
                 <button onclick="switchView('legal')" id="nav-legal" class="nav-item w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium text-left">
                     <i class="fa-solid fa-scale-balanced w-6 flex-shrink-0"></i> <span class="ml-2">Legal Sources</span>
+                </button>
+                <button onclick="switchView('mdc-panel')" id="nav-mdc-panel" class="nav-item w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium text-left">
+                    <i class="fa-solid fa-database w-6 flex-shrink-0"></i> <span class="ml-2">MDC Registry</span>
                 </button>
             </nav>
 
@@ -347,35 +353,8 @@
                                         <th class="px-6 py-4 font-bold text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody class="text-sm divide-y divide-gray-100">
-                                    <tr class="hover:bg-gray-50 transition-colors">
-                                        <td class="px-6 py-4 font-bold text-gray-800">A-101</td>
-                                        <td class="px-6 py-4 text-gray-600">Rajesh Sharma</td>
-                                        <td class="px-6 py-4 font-semibold text-gray-800">₹4,500</td>
-                                        <td class="px-6 py-4"><span class="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs rounded-md font-bold">Paid</span></td>
-                                        <td class="px-6 py-4 text-right">
-                                            <button class="text-gray-400 hover:text-brand-500"><i class="fa-solid fa-file-pdf"></i> Receipt</button>
-                                        </td>
-                                    </tr>
-                                    <tr class="hover:bg-gray-50 transition-colors">
-                                        <td class="px-6 py-4 font-bold text-gray-800">A-102</td>
-                                        <td class="px-6 py-4 text-gray-600">Priya Desai</td>
-                                        <td class="px-6 py-4 font-semibold text-red-600">₹9,000</td>
-                                        <td class="px-6 py-4"><span class="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-md font-bold">Overdue</span></td>
-                                        <td class="px-6 py-4 text-right space-x-3">
-                                            <button class="text-green-600 hover:text-green-700 text-xs font-bold" onclick="showToast('WhatsApp reminder sent!', 'success')"><i class="fa-brands fa-whatsapp mr-1"></i> Remind</button>
-                                            <button class="text-blue-600 hover:text-blue-700 text-xs font-bold" onclick="showToast('Email reminder sent!', 'success')"><i class="fa-solid fa-envelope mr-1"></i> Remind</button>
-                                        </td>
-                                    </tr>
-                                    <tr class="hover:bg-gray-50 transition-colors">
-                                        <td class="px-6 py-4 font-bold text-gray-800">A-103</td>
-                                        <td class="px-6 py-4 text-gray-600">Amit Patel</td>
-                                        <td class="px-6 py-4 font-semibold text-gray-800">₹4,500</td>
-                                        <td class="px-6 py-4"><span class="px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded-md font-bold">Pending</span></td>
-                                        <td class="px-6 py-4 text-right space-x-3">
-                                            <button class="text-green-600 hover:text-green-700 text-xs font-bold" onclick="showToast('WhatsApp reminder sent!', 'success')"><i class="fa-brands fa-whatsapp mr-1"></i> Remind</button>
-                                        </td>
-                                    </tr>
+                                <tbody id="maintenance-bills-tbody" class="text-sm divide-y divide-gray-100">
+                                    <!-- Dynamic Maintenance Bills -->
                                 </tbody>
                             </table>
                         </div>
@@ -838,6 +817,104 @@
                     </div>
                 </div>
 
+                <!-- ================= VIEW: MASTER DATA CENTRE (MDC PANEL) ================= -->
+                <div id="view-mdc-panel" class="view-section">
+                    <div class="mb-6">
+                        <h2 class="text-xl font-bold text-gray-800">Master Data Centre (MDC) Control Registry</h2>
+                        <p class="text-sm text-gray-500">Feed and configure live master registry files and timelines for the dashboard.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+                        <!-- Panel 1: Society Registration Profile -->
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                            <h3 class="text-md font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-hotel text-brand-500"></i> Society Profile Configuration</h3>
+                            <form id="mdc-profile-form" class="space-y-4" onsubmit="saveMdcProfile(event)">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Registered Society Name</label>
+                                    <input type="text" id="mdc-input-name" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:border-brand-500" required>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Registration Number</label>
+                                        <input type="text" id="mdc-input-reg" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:border-brand-500" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Target Wing</label>
+                                        <input type="text" id="mdc-input-wing" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:border-brand-500" required>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Total Flats Count</label>
+                                        <input type="number" id="mdc-input-flats" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:border-brand-500" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Upload Bulk Flat Layout (JSON)</label>
+                                        <button type="button" onclick="triggerMdcImport()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2 border border-gray-200">
+                                            <i class="fa-solid fa-file-import"></i> Import Flat Data
+                                        </button>
+                                        <input type="file" id="mdc-import-file" class="hidden" accept=".json" onchange="handleMdcImport(event)">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">MTD Collection (INR)</label>
+                                        <input type="number" id="mdc-input-mtd" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:border-brand-500" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Outstanding Dues (INR)</label>
+                                        <input type="number" id="mdc-input-dues" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:border-brand-500" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Active Complaints</label>
+                                        <input type="number" id="mdc-input-complaints" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:border-brand-500" required>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Registered Address</label>
+                                    <textarea id="mdc-input-address" rows="2" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:border-brand-500" required></textarea>
+                                </div>
+                                <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white py-3 rounded-xl font-bold transition-all shadow-md shadow-brand-500/10">Save Society Profile</button>
+                            </form>
+                        </div>
+
+                        <!-- Panel 2: Builder Tenders Quotes -->
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-md font-bold text-gray-800 flex items-center gap-2"><i class="fa-solid fa-gavel text-brand-500"></i> Redevelopment Tenders List</h3>
+                                    <button type="button" onclick="addNewTenderRow()" class="text-xs text-brand-500 font-bold hover:text-brand-700"><i class="fa-solid fa-plus mr-1"></i> Add Builder</button>
+                                </div>
+                                <div class="overflow-x-auto max-h-[280px] mb-4">
+                                    <table class="w-full text-sm text-left">
+                                        <thead>
+                                            <tr class="text-xs uppercase text-gray-400 border-b border-gray-100">
+                                                <th class="py-2">Builder Name</th>
+                                                <th class="py-2">Extra Area (%)</th>
+                                                <th class="py-2">Corpus (Lakhs)</th>
+                                                <th class="py-2 text-right">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="mdc-tenders-tbody" class="divide-y divide-gray-50">
+                                            <!-- Dynamic input rows -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <button type="button" onclick="saveMdcTenders()" class="w-full bg-brand-500 hover:bg-brand-600 text-white py-3 rounded-xl font-bold transition-all shadow-md shadow-brand-500/10">Update Redevelopment Tenders</button>
+                        </div>
+                    </div>
+
+                    <!-- Panel 3: Redevelopment Stages & Timeline -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+                        <h3 class="text-md font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-route text-brand-500"></i> Redevelopment Milestone Steps</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6" id="mdc-stages-grid">
+                            <!-- Dynamic Stage Fields -->
+                        </div>
+                        <button type="button" onclick="saveMdcStages()" class="w-full bg-brand-500 hover:bg-brand-600 text-white py-3 rounded-xl font-bold transition-all shadow-md shadow-brand-500/10">Save Milestone Timeline</button>
+                    </div>
+                </div>
+
             </div>
         </main>
     </div><!-- /#app-container -->
@@ -889,7 +966,8 @@
             'agm': 'AGM & Resolutions Management',
             'redevelopment': 'Redevelopment Project Tracker',
             'documents': 'Statutory Documents (MCS Act 1960)',
-            'legal': 'Legal Sources & Bye-laws'
+            'legal': 'Legal Sources & Bye-laws',
+            'mdc-panel': 'Master Data Centre Configuration'
         };
 
         // Function to toggle mobile menu visibility
@@ -1081,6 +1159,42 @@
                         : (error.error || 'Unable to delete document');
                     throw new Error(message);
                 }
+                return response.json();
+            },
+            async updateMdcSociety(society) {
+                const response = await fetch('/api/mdc/society', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify(society)
+                });
+                if (!response.ok) throw new Error('Unable to update society profile');
+                return response.json();
+            },
+            async updateMdcStages(stages) {
+                const response = await fetch('/api/mdc/stages', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify(stages)
+                });
+                if (!response.ok) throw new Error('Unable to update milestones');
+                return response.json();
+            },
+            async updateMdcTenders(tenders) {
+                const response = await fetch('/api/mdc/tenders', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify(tenders)
+                });
+                if (!response.ok) throw new Error('Unable to update builder tenders');
+                return response.json();
+            },
+            async importMdcBills(bills) {
+                const response = await fetch('/api/mdc/import', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify(bills)
+                });
+                if (!response.ok) throw new Error('Unable to import flat records');
                 return response.json();
             }
         };
@@ -1330,6 +1444,203 @@
             }
         }
 
+        function populateMdcFormInputs(state) {
+            // Populate profile
+            if (state.society) {
+                document.getElementById('mdc-input-name').value = state.society.registeredName || 'Lotus Co-operative Housing Society Ltd.';
+                document.getElementById('mdc-input-reg').value = state.society.registrationNo || 'MUM/WP/HSG/TC/12345/2026';
+                document.getElementById('mdc-input-wing').value = state.society.wing || 'A';
+                document.getElementById('mdc-input-flats').value = state.society.totalFlats || 48;
+                document.getElementById('mdc-input-address').value = state.society.address || 'Plot 42, Sector 15, Vashi, Navi Mumbai, Maharashtra 400703';
+                document.getElementById('mdc-input-mtd').value = state.society.mtdCollection || 345000;
+                document.getElementById('mdc-input-dues').value = state.society.outstandingDues || 42500;
+                document.getElementById('mdc-input-complaints').value = state.society.activeComplaints || 2;
+            }
+
+            // Populate Redevelopment stages grid
+            const stagesGrid = document.getElementById('mdc-stages-grid');
+            if (stagesGrid && state.redevelopmentStages) {
+                stagesGrid.innerHTML = state.redevelopmentStages.map(stage => {
+                    const statusOptions = ['Pending', 'In Progress', 'Completed'];
+                    const optionsHtml = statusOptions.map(opt => `
+                        <option value="${opt}" ${stage.status === opt ? 'selected' : ''}>${opt}</option>
+                    `).join('');
+                    return `
+                        <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3" data-stage-id="${stage.id}">
+                            <div class="flex justify-between items-center border-b border-gray-200 pb-2 mb-2">
+                                <span class="text-xs font-bold text-brand-600">Stage ${stage.id}</span>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Stage Name</label>
+                                <input type="text" class="stage-name-input w-full bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 focus:outline-none focus:border-brand-500" value="${stage.name}" required>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Sub Text / PMC</label>
+                                <input type="text" class="stage-sub-input w-full bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 focus:outline-none focus:border-brand-500" value="${stage.subText}" required>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Status</label>
+                                <select class="stage-status-input w-full bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 focus:outline-none focus:border-brand-500">
+                                    ${optionsHtml}
+                                </select>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Populate Redevelopment tenders
+            const tendersTbody = document.getElementById('mdc-tenders-tbody');
+            if (tendersTbody && state.redevelopmentTenders) {
+                tendersTbody.innerHTML = '';
+                state.redevelopmentTenders.forEach(t => addNewTenderRow(t));
+            }
+        }
+
+        function addNewTenderRow(data = {}) {
+            const tbody = document.getElementById('mdc-tenders-tbody');
+            if (!tbody) return;
+            const tr = document.createElement('tr');
+            tr.className = 'tender-row hover:bg-gray-50/50 transition-colors';
+            
+            const builderName = data.builderName || '';
+            const extraAreaPct = data.extraAreaPct || '';
+            const corpusAmountLakhs = data.corpusAmountLakhs || '';
+
+            tr.innerHTML = `
+                <td class="py-2.5 pr-2">
+                    <input type="text" class="tender-builder w-full bg-gray-50/50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-800 focus:outline-none focus:border-brand-500" value="${builderName}" placeholder="e.g. L&T Realty" required>
+                </td>
+                <td class="py-2.5 pr-2 w-28">
+                    <input type="number" step="0.01" class="tender-area w-full bg-gray-50/50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-800 focus:outline-none focus:border-brand-500" value="${extraAreaPct}" placeholder="%" required>
+                </td>
+                <td class="py-2.5 pr-2 w-28">
+                    <input type="number" step="0.01" class="tender-corpus w-full bg-gray-50/50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-800 focus:outline-none focus:border-brand-500" value="${corpusAmountLakhs}" placeholder="₹ Lakhs" required>
+                </td>
+                <td class="py-2.5 text-right w-16">
+                    <button type="button" onclick="this.closest('tr').remove()" class="text-red-500 hover:text-red-700 text-xs font-semibold p-1" title="Delete tender"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        async function saveMdcProfile(event) {
+            event.preventDefault();
+            const society = {
+                registeredName: document.getElementById('mdc-input-name').value,
+                registrationNo: document.getElementById('mdc-input-reg').value,
+                wing: document.getElementById('mdc-input-wing').value,
+                totalFlats: Number(document.getElementById('mdc-input-flats').value),
+                address: document.getElementById('mdc-input-address').value,
+                mtdCollection: Number(document.getElementById('mdc-input-mtd').value),
+                outstandingDues: Number(document.getElementById('mdc-input-dues').value),
+                activeComplaints: Number(document.getElementById('mdc-input-complaints').value)
+            };
+            try {
+                await api.updateMdcSociety(society);
+                showToast('Society profile updated successfully');
+                refreshLiveData();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function saveMdcStages() {
+            const stages = [];
+            const grid = document.getElementById('mdc-stages-grid');
+            const blocks = grid.querySelectorAll('[data-stage-id]');
+            blocks.forEach(block => {
+                stages.push({
+                    id: Number(block.dataset.stageId),
+                    name: block.querySelector('.stage-name-input').value,
+                    subText: block.querySelector('.stage-sub-input').value,
+                    status: block.querySelector('.stage-status-input').value
+                });
+            });
+            try {
+                await api.updateMdcStages(stages);
+                showToast('Milestone timeline updated successfully');
+                refreshLiveData();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function saveMdcTenders() {
+            const tenders = [];
+            const rows = document.querySelectorAll('#mdc-tenders-tbody .tender-row');
+            rows.forEach(row => {
+                tenders.push({
+                    builderName: row.querySelector('.tender-builder').value,
+                    extraAreaPct: Number(row.querySelector('.tender-area').value),
+                    corpusAmountLakhs: Number(row.querySelector('.tender-corpus').value),
+                    status: 'Under Review'
+                });
+            });
+            try {
+                await api.updateMdcTenders(tenders);
+                showToast('Redevelopment tenders updated successfully');
+                refreshLiveData();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        function triggerMdcImport() {
+            document.getElementById('mdc-import-file').click();
+        }
+
+        function handleMdcImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    await api.importMdcBills(data);
+                    showToast('Flat layout and maintenance records imported successfully');
+                    refreshLiveData();
+                } catch (error) {
+                    showToast('Invalid JSON file format. Make sure it matches flat/maintenance schema.', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function renderMaintenance(bills) {
+            const tbody = document.getElementById('maintenance-bills-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = bills.length ? bills.map(bill => {
+                const isPaid = bill.status.toLowerCase() === 'paid';
+                const isOverdue = bill.status.toLowerCase() === 'overdue';
+                
+                let badgeClass = 'bg-amber-100 text-amber-700';
+                if (isPaid) badgeClass = 'bg-emerald-100 text-emerald-700';
+                if (isOverdue) badgeClass = 'bg-red-100 text-red-700';
+
+                return `
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 font-bold text-gray-800">${bill.flatNo}</td>
+                        <td class="px-6 py-4 text-gray-600">${bill.memberName}</td>
+                        <td class="px-6 py-4 font-semibold text-gray-800">₹${Number(bill.amount).toLocaleString('en-IN')}</td>
+                        <td class="px-6 py-4"><span class="px-2 py-1 ${badgeClass} text-xs rounded-md font-bold">${bill.status}</span></td>
+                        <td class="px-6 py-4 text-right space-x-3">
+                            ${isPaid ? `
+                                <button class="text-gray-400 hover:text-brand-500"><i class="fa-solid fa-file-pdf"></i> Receipt</button>
+                            ` : `
+                                <button class="text-green-600 hover:text-green-700 text-xs font-bold" onclick="showToast('WhatsApp reminder sent!', 'success')"><i class="fa-brands fa-whatsapp mr-1"></i> Remind</button>
+                                <button class="text-blue-600 hover:text-blue-700 text-xs font-bold" onclick="showToast('Email reminder sent!', 'success')"><i class="fa-solid fa-envelope mr-1"></i> Remind</button>
+                            `}
+                        </td>
+                    </tr>
+                `;
+            }).join('') : `
+                <tr>
+                    <td colspan="5" class="text-center py-8 text-gray-500 text-sm">No maintenance bills found. Try importing dynamic layout.</td>
+                </tr>
+            `;
+        }
+
         function renderLedger(records) {
             const tbody = document.querySelector('#subview-ledger tbody');
             if (!tbody) return;
@@ -1442,6 +1753,11 @@
                 if (schedMeetBtn) schedMeetBtn.style.display = isAdmin ? 'block' : 'none';
                 if (uploadDocBtn) uploadDocBtn.style.display = isAdmin ? 'flex' : 'none';
                 
+                const navMdc = document.getElementById('nav-mdc-panel');
+                const mobMdc = document.getElementById('mobile-nav-mdc-panel');
+                if (navMdc) navMdc.style.display = isAdmin ? 'flex' : 'none';
+                if (mobMdc) mobMdc.style.display = isAdmin ? 'flex' : 'none';
+                
                 // Update sidebar displays
                 const userEmails = document.querySelectorAll('.user-email-display');
                 userEmails.forEach(el => el.innerText = state.currentUser.email);
@@ -1457,8 +1773,10 @@
                 
                 renderDashboard(state);
                 renderLedger(state.financialRecords);
+                renderMaintenance(state.maintenanceBills);
                 renderAgm(state.agmMeetings);
                 renderDocuments(state.documents);
+                populateMdcFormInputs(state);
                 bindBackendButtons();
             } catch (error) {
                 if (error.message === '401') {

@@ -15,6 +15,9 @@
     "pg": "^8.22.0"
   },
   "devDependencies": {
-    "cloudflared": "^0.7.1"
+    "@aws-sdk/client-ec2": "^3.1094.0",
+    "archiver": "^8.0.0",
+    "cloudflared": "^0.7.1",
+    "ssh2": "^1.17.0"
   }
 }

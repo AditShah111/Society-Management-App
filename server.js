@@ -177,6 +177,9 @@ async function initializeDatabase() {
     await client.query('ALTER TABLE society ADD COLUMN IF NOT EXISTS registered_name VARCHAR(255) DEFAULT \'Lotus Co-operative Housing Society Ltd.\';');
     await client.query('ALTER TABLE society ADD COLUMN IF NOT EXISTS registration_no VARCHAR(100) DEFAULT \'MUM/WP/HSG/TC/12345/2026\';');
     await client.query('ALTER TABLE society ADD COLUMN IF NOT EXISTS address TEXT DEFAULT \'Plot 42, Sector 15, Vashi, Navi Mumbai, Maharashtra 400703\';');
+    await client.query('ALTER TABLE society ADD COLUMN IF NOT EXISTS mtd_collection NUMERIC(15,2) DEFAULT 345000;');
+    await client.query('ALTER TABLE society ADD COLUMN IF NOT EXISTS outstanding_dues NUMERIC(15,2) DEFAULT 42500;');
+    await client.query('ALTER TABLE society ADD COLUMN IF NOT EXISTS active_complaints INT DEFAULT 2;');
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS redevelopment_stages (
@@ -236,7 +239,10 @@ async function initializeDatabase() {
         UPDATE society SET 
           registered_name = COALESCE(registered_name, 'Lotus Co-operative Housing Society Ltd.'),
           registration_no = COALESCE(registration_no, 'MUM/WP/HSG/TC/12345/2026'),
-          address = COALESCE(address, 'Plot 42, Sector 15, Vashi, Navi Mumbai, Maharashtra 400703')
+          address = COALESCE(address, 'Plot 42, Sector 15, Vashi, Navi Mumbai, Maharashtra 400703'),
+          mtd_collection = COALESCE(mtd_collection, 345000),
+          outstanding_dues = COALESCE(outstanding_dues, 42500),
+          active_complaints = COALESCE(active_complaints, 2)
       `);
     }
 
@@ -323,7 +329,7 @@ async function getFullStateFromDb() {
 
   if (!pool) return state;
 
-  const resSoc = await pool.query('SELECT wing, total_flats as "totalFlats", registered_name as "registeredName", registration_no as "registrationNo", address FROM society LIMIT 1');
+  const resSoc = await pool.query('SELECT wing, total_flats as "totalFlats", registered_name as "registeredName", registration_no as "registrationNo", address, mtd_collection as "mtdCollection", outstanding_dues as "outstandingDues", active_complaints as "activeComplaints" FROM society LIMIT 1');
   if (resSoc.rows[0]) state.society = resSoc.rows[0];
 
   const resBills = await pool.query('SELECT flat_no as "flatNo", member_name as "memberName", amount, status FROM maintenance_bills');
@@ -375,7 +381,8 @@ function sendJson(res, status, payload, extraHeaders = {}) {
     'x-content-type-options': 'nosniff',
     'x-frame-options': 'DENY',
     'x-xss-protection': '1; mode=block',
-    'referrer-policy': 'strict-origin-when-cross-origin'
+    'referrer-policy': 'strict-origin-when-cross-origin',
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0'
   };
   res.writeHead(status, Object.assign(securityHeaders, extraHeaders));
   res.end(JSON.stringify(payload));
@@ -396,12 +403,9 @@ async function readJsonBody(req) {
 }
 
 function deriveDashboard(data) {
-  const unpaid = data.maintenanceBills.filter(bill => bill.status.toLowerCase() !== 'paid');
-  const currentMonth = new Date().toLocaleString('en-US', { month: 'short' });
-  const mtdCollection = data.financialRecords
-    .filter(record => record.month === currentMonth && record.type === 'income')
-    .reduce((sum, record) => sum + Number(record.amount || 0), 0);
-  const outstandingDues = unpaid.reduce((sum, bill) => sum + Number(bill.amount || 0), 0);
+  const mtdCollection = data.society.mtdCollection !== undefined ? Number(data.society.mtdCollection) : 345000;
+  const outstandingDues = data.society.outstandingDues !== undefined ? Number(data.society.outstandingDues) : 42500;
+  const activeComplaints = data.society.activeComplaints !== undefined ? Number(data.society.activeComplaints) : 2;
   
   const months = ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'];
   const chart = months.map(month => {
@@ -421,7 +425,7 @@ function deriveDashboard(data) {
     totalFlats: data.society.totalFlats,
     mtdCollection,
     outstandingDues,
-    activeComplaints: data.complaints ? data.complaints.filter(c => c.status.toLowerCase() === 'open').length : 0,
+    activeComplaints,
     chart,
     upcomingAgm
   };
@@ -685,6 +689,81 @@ async function handleApi(req, res, url) {
       return sendJson(res, 201, { meeting: { id, ...payload }, dashboard: deriveDashboard(db) });
     }
 
+    if (req.method === 'POST' && url.pathname === '/api/mdc/society') {
+      const payload = await readJsonBody(req);
+      const { registeredName, registrationNo, address, wing, totalFlats, mtdCollection, outstandingDues, activeComplaints } = payload;
+      await pool.query(
+        `UPDATE society SET 
+          registered_name = $1,
+          registration_no = $2,
+          address = $3,
+          wing = $4,
+          total_flats = $5,
+          mtd_collection = $6,
+          outstanding_dues = $7,
+          active_complaints = $8`,
+        [registeredName, registrationNo, address, wing, Number(totalFlats || 0), Number(mtdCollection || 0), Number(outstandingDues || 0), Number(activeComplaints || 0)]
+      );
+      const db = await getFullStateFromDb();
+      return sendJson(res, 200, { success: true, society: db.society, dashboard: deriveDashboard(db) });
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/mdc/stages') {
+      const payload = await readJsonBody(req);
+      if (!Array.isArray(payload)) {
+        return sendJson(res, 400, { error: 'Payload must be an array of stages.' });
+      }
+      for (const stage of payload) {
+        const { id, name, subText, status } = stage;
+        await pool.query(
+          `UPDATE redevelopment_stages SET 
+            stage_name = $1,
+            sub_text = $2,
+            status = $3
+           WHERE stage_id = $4`,
+          [name, subText, status, Number(id)]
+        );
+      }
+      const db = await getFullStateFromDb();
+      return sendJson(res, 200, { success: true, redevelopmentStages: db.redevelopmentStages, dashboard: deriveDashboard(db) });
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/mdc/tenders') {
+      const payload = await readJsonBody(req);
+      if (!Array.isArray(payload)) {
+        return sendJson(res, 400, { error: 'Payload must be an array of tenders.' });
+      }
+      await pool.query('DELETE FROM redevelopment_tenders');
+      for (const tender of payload) {
+        const { builderName, extraAreaPct, corpusAmountLakhs, status } = tender;
+        await pool.query(
+          `INSERT INTO redevelopment_tenders (id, builder_name, extra_area_pct, corpus_amount_lakhs, status)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [crypto.randomUUID(), builderName, Number(extraAreaPct || 0), Number(corpusAmountLakhs || 0), status || 'Under Review']
+        );
+      }
+      const db = await getFullStateFromDb();
+      return sendJson(res, 200, { success: true, redevelopmentTenders: db.redevelopmentTenders, dashboard: deriveDashboard(db) });
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/mdc/import') {
+      const payload = await readJsonBody(req);
+      if (!Array.isArray(payload)) {
+        return sendJson(res, 400, { error: 'Payload must be an array of bills.' });
+      }
+      await pool.query('DELETE FROM maintenance_bills');
+      for (const bill of payload) {
+        const { flatNo, memberName, amount, status } = bill;
+        await pool.query(
+          `INSERT INTO maintenance_bills (flat_no, member_name, amount, status)
+           VALUES ($1, $2, $3, $4)`,
+          [flatNo, memberName, Number(amount || 0), status || 'Unpaid']
+        );
+      }
+      const db = await getFullStateFromDb();
+      return sendJson(res, 200, { success: true, maintenanceBills: db.maintenanceBills, dashboard: deriveDashboard(db) });
+    }
+
     if (req.method === 'POST' && url.pathname === '/api/documents') {
       return handleUpload(req, res);
     }
@@ -710,7 +789,10 @@ async function serveStatic(req, res, url) {
   try {
     const data = await fs.readFile(target);
     const type = MIME_TYPES[path.extname(target).toLowerCase()] || 'application/octet-stream';
-    res.writeHead(200, { 'content-type': type });
+    res.writeHead(200, { 
+      'content-type': type,
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0'
+    });
     res.end(data);
   } catch {
     res.writeHead(404);
@@ -719,6 +801,7 @@ async function serveStatic(req, res, url) {
 }
 
 const server = http.createServer(async (req, res) => {
+  console.log(`[HTTP REQUEST] ${req.method} ${req.url} - ${req.headers['user-agent'] || ''}`);
   const url = new URL(req.url, `http://${req.headers.host}`);
   if (url.pathname.startsWith('/api/')) return handleApi(req, res, url);
   

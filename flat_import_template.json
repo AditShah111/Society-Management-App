@@ -1,0 +1,26 @@
+[
+  {
+    "flatNo": "A-101",
+    "memberName": "Ramesh Kumar",
+    "amount": 3500,
+    "status": "Paid"
+  },
+  {
+    "flatNo": "A-102",
+    "memberName": "Suresh Patel",
+    "amount": 3500,
+    "status": "Unpaid"
+  },
+  {
+    "flatNo": "A-201",
+    "memberName": "Meera Shah",
+    "amount": 3500,
+    "status": "Paid"
+  },
+  {
+    "flatNo": "A-202",
+    "memberName": "Vijay Singh",
+    "amount": 3500,
+    "status": "Unpaid"
+  }
+]

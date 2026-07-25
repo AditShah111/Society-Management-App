@@ -1,0 +1,7 @@
+node_modules/
+.env
+*.pem
+*.zip
+setup_full.md
+check_html_syntax.js
+query_db.js
