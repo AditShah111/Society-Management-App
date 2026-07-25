@@ -1031,7 +1031,7 @@ function validateSocietyRegistrationNo(regNo) {
         return sendJson(res, 400, { error: 'Billing month is required.' });
       }
 
-      // Layman-friendly future month check
+      // Layman-friendly future month check (allows up to 7 days in advance)
       const parts = month.split(' ');
       const monthName = parts[0];
       const year = Number(parts[1]);
@@ -1042,10 +1042,14 @@ function validateSocietyRegistrationNo(regNo) {
       
       if (monthMap[monthName] !== undefined && year) {
         const activationDate = new Date(year, monthMap[monthName], 1);
+        const advanceLimit = new Date(activationDate);
+        advanceLimit.setDate(advanceLimit.getDate() - 7);
+        
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        if (today < activationDate) {
-          return sendJson(res, 400, { error: `Billing for ${month} can only be activated on 1st ${month}.` });
+        if (today < advanceLimit) {
+          const earliestDateStr = advanceLimit.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+          return sendJson(res, 400, { error: `Billing for ${month} can only be activated starting ${earliestDateStr} (up to 7 days in advance).` });
         }
       }
 
