@@ -661,6 +661,24 @@ async function handleApi(req, res, url) {
       return res.end(JSON.stringify({ success: true, user: { email, role: profile.role } }));
     }
 
+    if (req.method === 'POST' && url.pathname === '/api/logout') {
+      const cookies = req.headers.cookie || '';
+      const cookieMap = Object.fromEntries(cookies.split(';').map(c => {
+        const parts = c.trim().split('=');
+        return [parts[0], parts[1]];
+      }));
+      const token = cookieMap['session_token'];
+      if (token) {
+        SESSIONS.delete(token);
+      }
+      res.writeHead(200, {
+        'Set-Cookie': 'session_token=; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
+        'content-type': 'application/json; charset=utf-8'
+      });
+      return sendJson(res, 200, { success: true });
+    }
+
+
 function validateSocietyRegistrationNo(regNo) {
   if (!regNo) return { valid: false, error: 'Registration number is required.' };
   
