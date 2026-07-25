@@ -444,11 +444,10 @@ async function readJsonBody(req) {
   const body = await readBody(req);
   return body.length ? JSON.parse(body.toString('utf8')) : {};
 }
-
 function deriveDashboard(data) {
-  const mtdCollection = data.society.mtdCollection !== undefined ? Number(data.society.mtdCollection) : 345000;
-  const outstandingDues = data.society.outstandingDues !== undefined ? Number(data.society.outstandingDues) : 42500;
-  const activeComplaints = data.society.activeComplaints !== undefined ? Number(data.society.activeComplaints) : 2;
+  const mtdCollection = (data.society && data.society.mtdCollection !== undefined && data.society.mtdCollection !== null) ? Number(data.society.mtdCollection) : 0;
+  const outstandingDues = (data.society && data.society.outstandingDues !== undefined && data.society.outstandingDues !== null) ? Number(data.society.outstandingDues) : 0;
+  const activeComplaints = (data.society && data.society.activeComplaints !== undefined && data.society.activeComplaints !== null) ? Number(data.society.activeComplaints) : 0;
   
   const months = ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'];
   const chart = months.map(month => {
