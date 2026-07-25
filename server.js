@@ -339,60 +339,7 @@ async function initializeDatabase() {
       }
     }
 
-    // ── STEP 10: Seed maintenance bills with society_id
-    const billCount = await pool.query('SELECT count(*) FROM maintenance_bills WHERE society_id = $1', [defaultSocietyId]);
-    if (parseInt(billCount.rows[0].count) === 0) {
-      for (const b of seedData.maintenanceBills) {
-        await pool.query(
-          'INSERT INTO maintenance_bills (flat_no, member_name, amount, status, society_id) VALUES ($1,$2,$3,$4,$5)',
-          [b.flatNo, b.memberName, b.amount, b.status, defaultSocietyId]
-        );
-      }
-    }
-
-    // ── STEP 11: Seed financial records with society_id
-    const recCount = await pool.query('SELECT count(*) FROM financial_records WHERE society_id = $1', [defaultSocietyId]);
-    if (parseInt(recCount.rows[0].count) === 0) {
-      for (const r of seedData.financialRecords) {
-        await pool.query(
-          `INSERT INTO financial_records (id, date, month, account_head, description, voucher_no, type, amount, society_id)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-          [crypto.randomUUID(), r.date, r.month, r.accountHead, r.description, r.voucherNo, r.type, r.amount, defaultSocietyId]
-        );
-      }
-    }
-
-    // ── STEP 12: Seed AGM meetings with society_id
-    const agmCount = await pool.query('SELECT count(*) FROM agm_meetings WHERE society_id = $1', [defaultSocietyId]);
-    if (parseInt(agmCount.rows[0].count) === 0) {
-      for (const a of seedData.agmMeetings) {
-        await pool.query(
-          'INSERT INTO agm_meetings (id, title, date, status, agenda, society_id) VALUES ($1,$2,$3,$4,$5,$6)',
-          [a.id, a.title, a.date, a.status, a.agenda, defaultSocietyId]
-        );
-      }
-    }
-
-    // ── STEP 13: Seed complaints with society_id
-    const complaintCount = await pool.query('SELECT count(*) FROM complaints WHERE society_id = $1', [defaultSocietyId]);
-    if (parseInt(complaintCount.rows[0].count) === 0) {
-      await pool.query(
-        `INSERT INTO complaints (id, title, description, member_name, status, society_id) VALUES ($1,'Water leakage in Wing A elevator shaft','Water dripping from overhead tank','Ramesh Kumar','Open',$2)`,
-        [crypto.randomUUID(), defaultSocietyId]
-      );
-      await pool.query(
-        `INSERT INTO complaints (id, title, description, member_name, status, society_id) VALUES ($1,'Main gate intercom static noise','Intercom has crackling noise during calls','Suresh Patel','Open',$2)`,
-        [crypto.randomUUID(), defaultSocietyId]
-      );
-    }
-
-    // ── STEP 14: Backfill society_id on any legacy rows that predate multi-tenancy
-    await pool.query(`UPDATE maintenance_bills  SET society_id = $1 WHERE society_id IS NULL`, [defaultSocietyId]);
-    await pool.query(`UPDATE financial_records  SET society_id = $1 WHERE society_id IS NULL`, [defaultSocietyId]);
-    await pool.query(`UPDATE agm_meetings       SET society_id = $1 WHERE society_id IS NULL`, [defaultSocietyId]);
-    await pool.query(`UPDATE statutory_documents SET society_id = $1 WHERE society_id IS NULL`, [defaultSocietyId]);
-    await pool.query(`UPDATE complaints         SET society_id = $1 WHERE society_id IS NULL`, [defaultSocietyId]);
-
+    // ── STEP 10: Clear legacy rows backfill (removed mock seeds so workspace starts empty)
     console.log(`[DB] Schema ready. Default society: ${defaultSocietyId}`);
     console.log('[DB] Seed users: admin@society.com / committee@society.com / accountant@society.com / resident@society.com');
   } catch (error) {
@@ -675,6 +622,12 @@ async function handleApi(req, res, url) {
         return sendJson(res, 400, { error: 'All fields are required.' });
       }
 
+      // Validate Registration Number pattern
+      const regNoPattern = /^[A-Z0-9]{2,10}(\/[A-Z0-9]{2,10}){2,5}$/i;
+      if (!regNoPattern.test(registrationNo)) {
+        return sendJson(res, 400, { error: 'Invalid Registration Number format. Example: MUM/WP/HSG/TC/12345/2026' });
+      }
+
       if (!pool) return sendJson(res, 500, { error: 'Database connection not initialized.' });
 
       // Check if email already exists
@@ -696,12 +649,12 @@ async function handleApi(req, res, url) {
       );
       const societyId = socResult.rows[0].id;
 
-      // 2. Create user login credentials
+      // 2. Create user credentials (role is stored in user_profiles, not users)
       const salt = crypto.randomBytes(16).toString('hex');
       const hash = crypto.scryptSync(password, salt, 64).toString('hex');
       await pool.query(
-        'INSERT INTO users (email, salt, password_hash, role) VALUES ($1, $2, $3, $4)',
-        [email, salt, hash, 'super_admin']
+        'INSERT INTO users (email, salt, password_hash) VALUES ($1, $2, $3)',
+        [email, salt, hash]
       );
 
       // 3. Create profile as super_admin

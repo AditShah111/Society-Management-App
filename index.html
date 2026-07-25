@@ -48,63 +48,8 @@
     <!-- Toast Container for custom notifications -->
     <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
-    <!-- Login View (shown when unauthorized) -->
-    <div id="view-login" class="h-screen w-screen flex items-center justify-center bg-gradient-to-br from-corporate-900 via-corporate-800 to-brand-600 p-4">
-        <div class="w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-2xl shadow-2xl text-white">
-            <div class="text-center mb-8">
-                <div class="w-16 h-16 bg-brand-500 text-white rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg shadow-brand-500/50">
-                    <i class="fa-solid fa-building"></i>
-                </div>
-                <h2 class="text-2xl font-bold tracking-tight text-white">Society Manager</h2>
-                <p class="text-sm text-gray-300 mt-1">Please sign in to access the dashboard</p>
-            </div>
-            
-            <!-- Auth Mode Tabs -->
-            <div class="flex space-x-1 bg-white/5 p-1 rounded-xl mb-6">
-                <button type="button" onclick="setAuthMode('password')" id="tab-password" class="w-1/2 py-2 text-xs font-bold text-center rounded-lg bg-brand-500 text-white focus:outline-none transition-all">Password Login</button>
-                <button type="button" onclick="setAuthMode('otp')" id="tab-otp" class="w-1/2 py-2 text-xs font-bold text-center rounded-lg text-gray-400 hover:text-white focus:outline-none transition-all">Resident OTP</button>
-            </div>
-            
-            <form id="login-form" class="space-y-6">
-                <div>
-                    <label for="login-email" class="block text-xs font-bold uppercase tracking-wider text-gray-300 mb-2">Email Address</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                            <i class="fa-solid fa-envelope"></i>
-                        </span>
-                        <input id="login-email" type="email" required class="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-3 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all outline-none" placeholder="member@society.com">
-                    </div>
-                </div>
-                
-                <div id="login-password-group">
-                    <label for="login-password" class="block text-xs font-bold uppercase tracking-wider text-gray-300 mb-2">Password</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                            <i class="fa-solid fa-lock"></i>
-                        </span>
-                        <input id="login-password" type="password" class="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-3 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all outline-none" placeholder="••••••••">
-                    </div>
-                </div>
-
-                <div id="login-otp-group" class="hidden">
-                    <label for="login-otp-code" class="block text-xs font-bold uppercase tracking-wider text-gray-300 mb-2">6-Digit Verification PIN</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                            <i class="fa-solid fa-key"></i>
-                        </span>
-                        <input id="login-otp-code" type="text" maxlength="6" class="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-3 py-3 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all outline-none" placeholder="123456">
-                    </div>
-                </div>
-
-                <button type="submit" id="login-submit-btn" class="w-full bg-brand-500 text-white hover:bg-brand-600 font-bold py-3 px-4 rounded-xl shadow-lg shadow-brand-500/30 transition-all hover:scale-[1.02] focus:outline-none">
-                    Sign In
-                </button>
-            </form>
-        </div>
-    </div>
-
     <!-- App Container -->
-    <div id="app-container" class="h-screen w-screen flex overflow-hidden hidden">
+    <div id="app-container" class="h-screen w-screen flex overflow-hidden">
 
         <!-- Mobile Sidebar Backdrop -->
         <div id="mobile-sidebar-backdrop" onclick="toggleMobileMenu(false)" class="fixed inset-0 bg-black/50 z-30 hidden lg:hidden"></div>
@@ -306,25 +251,8 @@
                         <!-- Notices -->
                         <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                             <h2 class="text-lg font-bold text-gray-800 mb-4">Upcoming Events</h2>
-                            
-                            <div class="bg-blue-50 rounded-lg p-4 mb-4 border border-blue-100">
-                                <div class="flex items-center text-brand-600 font-bold mb-1 text-sm">
-                                    <i class="fa-solid fa-gavel mr-2"></i> Annual General Meeting
-                                </div>
-                                <p class="text-xs text-blue-800 mb-2">Scheduled: 30th September 2026</p>
-                                <button class="text-xs bg-brand-500 text-white px-3 py-1 rounded shadow hover:bg-brand-600">View Draft Agenda</button>
-                            </div>
-
-                            <div class="space-y-3 mt-4 border-t border-gray-100 pt-4">
-                                <div class="flex items-start">
-                                    <div class="bg-amber-100 text-amber-600 p-2 rounded-lg mt-1 mr-3 flex-shrink-0">
-                                        <i class="fa-solid fa-tools text-sm"></i>
-                                    </div>
-                                    <div>
-                                        <h4 class="text-sm font-bold text-gray-800">Elevator AMC Service</h4>
-                                        <p class="text-xs text-gray-500">Tomorrow, 10:00 AM</p>
-                                    </div>
-                                </div>
+                            <div id="upcoming-events-container" class="space-y-4">
+                                <div class="text-center py-6 text-gray-500 text-xs">No upcoming events scheduled.</div>
                             </div>
                         </div>
                     </div>
@@ -391,35 +319,8 @@
                                         </tr>
                                     </thead>
                                     <tbody class="text-sm divide-y divide-gray-100">
-                                        <tr class="hover:bg-gray-50 transition-colors">
-                                            <td class="px-6 py-4 text-gray-600">10 Jul 2026</td>
-                                            <td class="px-6 py-4">
-                                                <div class="font-bold text-gray-800">Maintenance Collection (Bank A/c)</div>
-                                                <div class="text-xs text-gray-500">Being maintenance received via NEFT from A-101</div>
-                                            </td>
-                                            <td class="px-6 py-4 text-gray-600 text-xs font-mono">RV-1024</td>
-                                            <td class="px-6 py-4 text-right font-bold text-green-600">4,500.00</td>
-                                            <td class="px-6 py-4 text-right text-gray-400">-</td>
-                                        </tr>
-                                        <tr class="hover:bg-gray-50 transition-colors">
-                                            <td class="px-6 py-4 text-gray-600">08 Jul 2026</td>
-                                            <td class="px-6 py-4">
-                                                <div class="font-bold text-gray-800">Repairs & Maintenance Fund</div>
-                                                <div class="text-xs text-gray-500">Being payment made to Apex Elevators for AMC</div>
-                                            </td>
-                                            <td class="px-6 py-4 text-gray-600 text-xs font-mono">PV-0842</td>
-                                            <td class="px-6 py-4 text-right text-gray-400">-</td>
-                                            <td class="px-6 py-4 text-right font-bold text-red-600">15,000.00</td>
-                                        </tr>
-                                        <tr class="hover:bg-gray-50 transition-colors">
-                                            <td class="px-6 py-4 text-gray-600">05 Jul 2026</td>
-                                            <td class="px-6 py-4">
-                                                <div class="font-bold text-gray-800">Sinking Fund</div>
-                                                <div class="text-xs text-gray-500">Mandatory statutory transfer for July</div>
-                                            </td>
-                                            <td class="px-6 py-4 text-gray-600 text-xs font-mono">JV-0112</td>
-                                            <td class="px-6 py-4 text-right font-bold text-green-600">12,500.00</td>
-                                            <td class="px-6 py-4 text-right text-gray-400">-</td>
+                                        <tr>
+                                            <td colspan="5" class="text-center py-8 text-gray-500 text-sm">No ledger entries found. Add entries using the config tools.</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -544,34 +445,8 @@
                         </div>
                         <div class="p-6">
                             <!-- Meeting List -->
-                            <div class="border border-gray-200 rounded-lg p-5 mb-4 hover:shadow-md transition-shadow bg-blue-50/30">
-                                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                    <div>
-                                        <div class="flex items-center space-x-3 mb-2">
-                                            <h3 class="text-lg font-bold text-brand-700">Annual General Meeting 2026</h3>
-                                            <span class="bg-amber-100 text-amber-700 text-[10px] uppercase font-bold px-2 py-1 rounded">Scheduled</span>
-                                        </div>
-                                        <p class="text-sm text-gray-600 mb-1"><i class="fa-regular fa-calendar mr-2"></i> Date: 30th September 2026</p>
-                                    </div>
-                                    <div class="flex-shrink-0">
-                                        <button class="border border-brand-500 text-brand-600 hover:bg-brand-50 px-3 py-1.5 rounded text-sm font-bold whitespace-nowrap">Edit Agenda</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow">
-                                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                    <div>
-                                        <div class="flex items-center space-x-3 mb-2">
-                                            <h3 class="text-lg font-bold text-gray-800">Special General Meeting</h3>
-                                            <span class="bg-emerald-100 text-emerald-700 text-[10px] uppercase font-bold px-2 py-1 rounded">Minutes Finalized</span>
-                                        </div>
-                                        <p class="text-sm text-gray-600 mb-1"><i class="fa-regular fa-calendar mr-2"></i> Date: 15th April 2026</p>
-                                    </div>
-                                    <div class="flex-shrink-0">
-                                        <button class="bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300 px-3 py-1.5 rounded text-sm font-bold whitespace-nowrap"><i class="fa-solid fa-file-pdf text-red-500 mr-1"></i> View Minutes</button>
-                                    </div>
-                                </div>
+                            <div class="text-center py-8 text-gray-500 text-sm">
+                                No general body meetings scheduled. Schedule one above.
                             </div>
                         </div>
                     </div>
@@ -1039,14 +914,14 @@
                     datasets: [
                         {
                             label: 'Income (Maintenance)',
-                            data: [320000, 310000, 345000, 315000, 0, 0],
+                            data: [0, 0, 0, 0, 0, 0],
                             backgroundColor: '#2563eb', // Brand Blue
                             borderRadius: 4,
                             barPercentage: 0.6
                         },
                         {
                             label: 'Expenditure',
-                            data: [180000, 210000, 195000, 160000, 0, 0],
+                            data: [0, 0, 0, 0, 0, 0],
                             backgroundColor: '#94a3b8', // Slate Gray
                             borderRadius: 4,
                             barPercentage: 0.6
@@ -1658,6 +1533,104 @@
             `;
         }
 
+        function renderFinancialStatements(records) {
+            let incomeTotal = 0;
+            let expenseTotal = 0;
+            const groups = {};
+
+            records.forEach(r => {
+                const amt = Number(r.amount || 0);
+                const head = r.accountHead;
+                const type = r.type;
+                if (!groups[head]) {
+                    groups[head] = { amount: 0, type };
+                }
+                groups[head].amount += amt;
+                if (type === 'income') {
+                    incomeTotal += amt;
+                } else {
+                    expenseTotal += amt;
+                }
+            });
+
+            // Expense Side Table
+            const expenseTbody = document.querySelector('#subview-income div.grid > div:nth-child(1) tbody');
+            if (expenseTbody) {
+                let expenseRows = Object.entries(groups)
+                    .filter(([_, d]) => d.type === 'expense')
+                    .map(([head, d]) => `<tr class="hover:bg-gray-50"><td class="p-3 text-gray-700">To ${head}</td><td class="p-3 text-right font-medium">₹${Number(d.amount).toLocaleString('en-IN')}</td></tr>`)
+                    .join('');
+
+                const surplus = incomeTotal - expenseTotal;
+                if (surplus > 0) {
+                    expenseRows += `<tr class="hover:bg-gray-50 bg-emerald-50"><td class="p-3 text-gray-800 font-bold">To Excess of Income over Exp.</td><td class="p-3 text-right font-bold text-emerald-600">₹${Number(surplus).toLocaleString('en-IN')}</td></tr>`;
+                }
+                expenseTbody.innerHTML = expenseRows || `<tr><td colspan="2" class="p-3 text-gray-500 text-center text-xs">No expense records found</td></tr>`;
+            }
+
+            // Income Side Table
+            const incomeTbody = document.querySelector('#subview-income div.grid > div:nth-child(2) tbody');
+            if (incomeTbody) {
+                let incomeRows = Object.entries(groups)
+                    .filter(([_, d]) => d.type === 'income')
+                    .map(([head, d]) => `<tr class="hover:bg-gray-50"><td class="p-3 text-gray-700">By ${head}</td><td class="p-3 text-right font-medium">₹${Number(d.amount).toLocaleString('en-IN')}</td></tr>`)
+                    .join('');
+
+                const surplus = incomeTotal - expenseTotal;
+                if (surplus < 0) {
+                    incomeRows += `<tr class="hover:bg-gray-50 bg-red-50"><td class="p-3 text-gray-800 font-bold">By Deficit of Income over Exp.</td><td class="p-3 text-right font-bold text-red-600">₹${Number(Math.abs(surplus)).toLocaleString('en-IN')}</td></tr>`;
+                }
+                incomeTbody.innerHTML = incomeRows || `<tr><td colspan="2" class="p-3 text-gray-500 text-center text-xs">No income records found</td></tr>`;
+            }
+
+            // Set Income & Exp totals
+            const statementTotalVal = Math.max(incomeTotal, expenseTotal);
+            const statementTotalEl = document.querySelector('#subview-income .bg-gray-800 span:nth-child(2)');
+            if (statementTotalEl) {
+                statementTotalEl.textContent = `₹${Number(statementTotalVal).toLocaleString('en-IN')}`;
+            }
+
+            // Balance Sheet Liabilities
+            const liabTbody = document.querySelector('#subview-balance div.grid > div:nth-child(1) tbody');
+            const surplus = incomeTotal - expenseTotal;
+            if (liabTbody) {
+                const sinking = groups['Sinking Fund']?.amount || 0;
+                const reserve = groups['Reserve Fund']?.amount || 0;
+                const repair = groups['Repairs & Maintenance Fund']?.amount || 0;
+                liabTbody.innerHTML = `
+                    <tr class="hover:bg-gray-50"><td class="p-3 font-bold text-gray-800">Share Capital</td><td class="p-3 text-right font-bold">₹0.00</td></tr>
+                    <tr class="hover:bg-gray-50"><td class="p-3 font-bold text-gray-800">Reserve & Surplus</td><td class="p-3 text-right font-bold"></td></tr>
+                    <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-gray-600">Reserve Fund</td><td class="p-3 text-right font-medium">₹${Number(reserve).toLocaleString('en-IN')}</td></tr>
+                    <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-gray-600">Sinking Fund</td><td class="p-3 text-right font-medium">₹${Number(sinking).toLocaleString('en-IN')}</td></tr>
+                    <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-gray-600">Building Repair Fund</td><td class="p-3 text-right font-medium">₹${Number(repair).toLocaleString('en-IN')}</td></tr>
+                    <tr class="hover:bg-gray-50"><td class="p-3 pl-6 ${surplus >= 0 ? 'text-emerald-600' : 'text-red-600'} font-semibold">+ Current Year Surplus</td><td class="p-3 text-right font-medium">₹${Number(surplus).toLocaleString('en-IN')}</td></tr>
+                `;
+            }
+
+            // Balance Sheet Assets
+            const assetTbody = document.querySelector('#subview-balance div.grid > div:nth-child(2) tbody');
+            if (assetTbody) {
+                const cash = Math.max(0, surplus);
+                assetTbody.innerHTML = `
+                    <tr class="hover:bg-gray-50"><td class="p-3 font-bold text-gray-800">Fixed Assets</td><td class="p-3 text-right font-bold"></td></tr>
+                    <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-gray-600">Land & Building (Nominal)</td><td class="p-3 text-right font-medium">₹0.00</td></tr>
+                    <tr class="hover:bg-gray-50"><td class="p-3 font-bold text-gray-800">Current Assets</td><td class="p-3 text-right font-bold"></td></tr>
+                    <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-gray-600">Cash at Bank</td><td class="p-3 text-right font-medium">₹${Number(cash).toLocaleString('en-IN')}</td></tr>
+                    <tr class="hover:bg-gray-50"><td class="p-3 pl-6 text-gray-600">Cash in Hand</td><td class="p-3 text-right font-medium">₹0.00</td></tr>
+                `;
+            }
+
+            // Set Balance Sheet totals
+            const balanceTotalEl = document.querySelector('#subview-balance .bg-gray-800 span:nth-child(2)');
+            if (balanceTotalEl) {
+                const sinking = groups['Sinking Fund']?.amount || 0;
+                const reserve = groups['Reserve Fund']?.amount || 0;
+                const repair = groups['Repairs & Maintenance Fund']?.amount || 0;
+                const totalBS = Math.max(0, sinking + reserve + repair + surplus);
+                balanceTotalEl.textContent = `₹${Number(totalBS).toLocaleString('en-IN')}`;
+            }
+        }
+
         function renderLedger(records) {
             const tbody = document.querySelector('#subview-ledger tbody');
             if (!tbody) return;
@@ -1745,8 +1718,7 @@
                 await api.logout();
                 showToast('Signed out successfully');
                 window.currentDocuments = [];
-                document.getElementById('view-login').classList.remove('hidden');
-                document.getElementById('app-container').classList.add('hidden');
+                window.location.href = '/login';
             } catch (error) {
                 showToast(error.message, 'error');
             }
@@ -1755,9 +1727,6 @@
         async function refreshLiveData() {
             try {
                 const state = await api.state();
-                // User is authenticated
-                document.getElementById('view-login').classList.add('hidden');
-                document.getElementById('app-container').classList.remove('hidden');
                 
                 // RBAC UI Control - Hide actions if not admin
                 window.currentUserRole = state.currentUser.role;
@@ -1790,6 +1759,7 @@
                 
                 renderDashboard(state);
                 renderLedger(state.financialRecords);
+                renderFinancialStatements(state.financialRecords);
                 renderMaintenance(state.maintenanceBills);
                 renderAgm(state.agmMeetings);
                 renderDocuments(state.documents);
@@ -1797,11 +1767,9 @@
                 bindBackendButtons();
             } catch (error) {
                 if (error.message === '401') {
-                    // Force display of login view
-                    document.getElementById('view-login').classList.remove('hidden');
-                    document.getElementById('app-container').classList.add('hidden');
+                    window.location.href = '/login';
                 } else {
-                    showToast(`${error.message}. Start the backend with npm start.`, 'info');
+                    console.error("Fetch failed:", error.message);
                 }
             }
         }

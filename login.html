@@ -144,6 +144,7 @@
                     </span>
                     <input id="reg-regno" type="text" class="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all outline-none" placeholder="MUM/WP/HSG/TC/12345/2026">
                 </div>
+                <p class="text-[9px] text-gray-400 mt-1">Required format: STATE/CITY/TYPE/SUBTYPE/NUMBER/YEAR (e.g. MUM/WP/HSG/TC/12345/2026)</p>
             </div>
 
             <button type="submit" class="w-full bg-brand-500 text-white hover:bg-brand-600 font-bold py-2.5 px-4 rounded-xl shadow-lg shadow-brand-500/30 transition-all hover:scale-[1.01] focus:outline-none text-sm mt-2">
@@ -324,6 +325,13 @@
             const societyName = document.getElementById('reg-society-name').value;
             const registrationNo = document.getElementById('reg-regno').value;
 
+            // Validate Registration Number format
+            const regNoPattern = /^[A-Z0-9]{2,10}(\/[A-Z0-9]{2,10}){2,5}$/i;
+            if (!regNoPattern.test(registrationNo)) {
+                showToast('Invalid Registration Number format. Example: MUM/WP/HSG/TC/12345/2026', 'error');
+                return;
+            }
+
             try {
                 const res = await fetch('/api/auth/register-society', {
                     method: 'POST',
@@ -340,6 +348,14 @@
                 setTimeout(() => window.location.href = '/app', 1000);
             } catch (err) {
                 showToast(err.message, 'error');
+            }
+        });
+
+        // Toggle mode based on URL query parameter
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('mode') === 'register') {
+                setMode('register');
             }
         });
     </script>
