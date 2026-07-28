@@ -244,29 +244,53 @@
             }
         });
 
-        // Initialize Google Sign-Up
-        window.onload = function () {
+        function initGoogleAuth() {
             const container = document.getElementById('google-btn-container');
             const fallbackElement = document.getElementById('google-auth-fallback');
 
-            if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
-                try {
-                    google.accounts.id.initialize({
-                        client_id: '1033704835291-2t1v5b1junmn6imkbssvn0ku51v4tpur.apps.googleusercontent.com',
-                        callback: handleGoogleSignUp,
-                    });
-                    
-                    if(fallbackElement) fallbackElement.remove();
-
-                    google.accounts.id.renderButton(
-                        container,
-                        { theme: 'outline', size: 'large', type: 'standard', shape: 'rectangular', text: 'signup_with', logo_alignment: 'left', width: 300 }
-                    );
-                } catch(err) {
-                    console.error("Google Auth Init Error:", err);
-                }
+            if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
+                // If Google script hasn't loaded yet, retry in 100ms
+                setTimeout(initGoogleAuth, 100);
+                return;
             }
-        };
+
+            try {
+                google.accounts.id.initialize({
+                    client_id: '1033704835291-2t1v5b1junmn6imkbssvn0ku51v4tpur.apps.googleusercontent.com',
+                    callback: handleGoogleSignUp,
+                });
+                
+                if(fallbackElement) fallbackElement.remove();
+
+                google.accounts.id.renderButton(
+                    container,
+                    { theme: 'outline', size: 'large', type: 'standard', shape: 'rectangular', text: 'signup_with', logo_alignment: 'left', width: 300 }
+                );
+
+                // Add diagnostic observer to detect if Google blocked the origin
+                setTimeout(() => {
+                    if (container.innerHTML.trim() === '') {
+                        container.innerHTML = `
+                            <div class="bg-red-500/10 border border-red-500/50 rounded-xl p-4 w-full text-center">
+                                <i class="fa-solid fa-triangle-exclamation text-red-500 text-2xl mb-2"></i>
+                                <h4 class="text-red-400 font-bold text-sm mb-1">Google Auth Blocked</h4>
+                                <p class="text-xs text-red-300">
+                                    Your Google Cloud Console is blocking this URL. <br/>
+                                    Add <code class="bg-black/50 px-1 py-0.5 rounded">${window.location.origin}</code> 
+                                    to Authorized JavaScript Origins in GCP.
+                                </p>
+                            </div>
+                        `;
+                    }
+                }, 3000);
+
+            } catch(err) {
+                console.error("Google Auth Init Error:", err);
+            }
+        }
+        
+        // Start the initialization loop
+        initGoogleAuth();
 
         function parseJwt (token) {
             var base64Url = token.split('.')[1];
