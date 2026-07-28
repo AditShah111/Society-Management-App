@@ -270,23 +270,43 @@
 
         // Initialize Google Sign-in via JS for better reliability
         window.onload = function () {
-            if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
-                google.accounts.id.initialize({
-                    client_id: '1033704835291-2t1v5b1junmn6imkbssvn0ku51v4tpur.apps.googleusercontent.com',
-                    callback: handleGoogleCredentialResponse,
-                    use_fedcm_for_prompt: true
-                });
-                
-                const fallbackElement = document.getElementById('google-auth-fallback');
-                if(fallbackElement) fallbackElement.remove();
+            const container = document.getElementById('google-btn-container');
+            const fallbackElement = document.getElementById('google-auth-fallback');
 
-                google.accounts.id.renderButton(
-                    document.getElementById('google-btn-container'),
-                    { theme: 'outline', size: 'large', type: 'standard', shape: 'rectangular', text: 'signin_with', logo_alignment: 'left' }
-                );
-            } else {
-                document.getElementById('google-auth-fallback').innerText = "Google Sign-in failed to load. Check adblockers or Authorized Origins.";
+            if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+                try {
+                    google.accounts.id.initialize({
+                        client_id: '1033704835291-2t1v5b1junmn6imkbssvn0ku51v4tpur.apps.googleusercontent.com',
+                        callback: handleGoogleCredentialResponse,
+                        use_fedcm_for_prompt: true
+                    });
+                    
+                    if(fallbackElement) fallbackElement.remove();
+
+                    google.accounts.id.renderButton(
+                        container,
+                        { theme: 'outline', size: 'large', type: 'standard', shape: 'rectangular', text: 'signin_with', logo_alignment: 'left' }
+                    );
+                } catch(err) {
+                    console.error("Google Auth Init Error:", err);
+                }
             }
+
+            // Diagnostic Check: If the button (iframe) doesn't appear after 2.5 seconds, Google blocked it.
+            setTimeout(() => {
+                if (!container.querySelector('iframe')) {
+                    container.innerHTML = `
+                        <div class="w-full bg-red-900/40 border border-red-500/50 text-red-200 p-4 rounded-xl text-xs text-center shadow-lg">
+                            <i class="fa-solid fa-triangle-exclamation text-red-400 text-lg mb-2"></i><br>
+                            <strong class="text-sm">Google Sign-in Blocked</strong><br><br>
+                            Google is hiding the button because this URL is unauthorized.<br><br>
+                            Go to <b>Google Cloud Console &rarr; Credentials &rarr; OAuth Client ID</b> and add:<br>
+                            <code class="block bg-black/50 p-2 mt-2 mb-2 rounded text-brand-300 font-mono text-[10px]">https://society-management-app-xh6q.onrender.com</code>
+                            to your <b>Authorized JavaScript origins</b>.
+                        </div>
+                    `;
+                }
+            }, 2500);
         };
 
         async function handleGoogleCredentialResponse(response) {
