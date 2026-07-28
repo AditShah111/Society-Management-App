@@ -1354,9 +1354,7 @@ function validateSocietyRegistrationNo(regNo) {
 
 async function serveStatic(req, res, url) {
   let requested = decodeURIComponent(url.pathname);
-  if (requested === '/') {
-    requested = '/landing.html';
-  } else if (requested === '/login' || requested === '/login.html') {
+  if (requested === '/' || requested === '/login' || requested === '/login.html') {
     // If the user already has a valid session, redirect to /app
     const session = getSession(req);
     if (session && session.expiresAt > Date.now()) {
