@@ -7,6 +7,10 @@ const fs = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
 const { Pool } = require('pg');
+const { OAuth2Client } = require('google-auth-library');
+
+const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '1033704835291-2t1v5b1junmn6imkbssvn0ku51v4tpur.apps.googleusercontent.com';
+const googleClient = new OAuth2Client(CLIENT_ID);
 
 const PORT = Number(process.env.PORT || 3000);
 const ROOT = __dirname;
@@ -38,6 +42,7 @@ const seedData = {
     registrationNo: 'MUM/WP/HSG/TC/12345/2026'
   },
   users: [
+    { email: 'ajay@gmail.com',          password: 'masterpassword', is_master_admin: true, name: 'Ajay (Master)', role: 'master_admin' },
     { email: 'admin@society.com',       password: 'admin123',       role: 'super_admin',   name: 'Society Admin' },
     { email: 'committee@society.com',   password: 'committee123',   role: 'society_admin', name: 'Committee Member' },
     { email: 'accountant@society.com',  password: 'accountant123',  role: 'accountant',    name: 'Society Accountant' },
@@ -113,9 +118,11 @@ async function initializeDatabase() {
         id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         name        VARCHAR(255) NOT NULL,
         registration_no VARCHAR(100) UNIQUE NOT NULL,
+        status      VARCHAR(50) DEFAULT 'PENDING',
         created_at  TIMESTAMPTZ DEFAULT NOW()
       );
     `);
+    await client.query('ALTER TABLE societies ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT \'PENDING\';');
 
     // ── STEP 2: Core users table (credentials only)
     await client.query(`
@@ -125,12 +132,14 @@ async function initializeDatabase() {
         password_hash VARCHAR(255) NOT NULL,
         auth_method   VARCHAR(50) DEFAULT 'password',
         otp_code      VARCHAR(10),
-        otp_expires_at TIMESTAMP WITH TIME ZONE
+        otp_expires_at TIMESTAMP WITH TIME ZONE,
+        is_master_admin BOOLEAN DEFAULT false
       );
     `);
     await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_method   VARCHAR(50) DEFAULT \'password\';');
     await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_code      VARCHAR(10);');
     await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_expires_at TIMESTAMP WITH TIME ZONE;');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_master_admin BOOLEAN DEFAULT false;');
 
     // ── STEP 3: user_profiles — maps each user to a society with a role
     await client.query(`
@@ -339,8 +348,8 @@ async function initializeDatabase() {
         const salt = crypto.randomBytes(16).toString('hex');
         const passwordHash = crypto.scryptSync(u.password, salt, 64).toString('hex');
         await pool.query(
-          'INSERT INTO users (email, salt, password_hash) VALUES ($1, $2, $3)',
-          [u.email, salt, passwordHash]
+          'INSERT INTO users (email, salt, password_hash, is_master_admin) VALUES ($1, $2, $3, $4)',
+          [u.email, salt, passwordHash, u.is_master_admin || false]
         );
       }
       // Ensure user_profile exists for this user in the default society
@@ -621,6 +630,59 @@ async function handleApi(req, res, url) {
     }
 
     // 1. Authentication Endpoints
+    if (req.method === 'POST' && url.pathname === '/api/login/google') {
+      const { token } = await readJsonBody(req);
+      if (!token) return sendJson(res, 400, { error: 'Google Token is required.' });
+      
+      let email;
+      try {
+        const ticket = await googleClient.verifyIdToken({
+            idToken: token,
+            audience: CLIENT_ID, 
+        });
+        const payload = ticket.getPayload();
+        email = payload.email;
+      } catch (e) {
+        return sendJson(res, 401, { error: 'Invalid Google token.' });
+      }
+
+      const result = await pool.query('SELECT is_master_admin FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+      let user = result.rows[0];
+      
+      // If user doesn't exist but is the master admin email, create them on the fly for ease of use
+      if (!user && email.toLowerCase() === 'ajay@gmail.com') {
+         await pool.query("INSERT INTO users (email, salt, password_hash, is_master_admin) VALUES ($1, $2, $3, true)", 
+         [email, crypto.randomBytes(16).toString('hex'), crypto.randomBytes(64).toString('hex')]);
+         user = { is_master_admin: true };
+      }
+
+      if (!user) {
+        return sendJson(res, 401, { error: 'User not registered. Please register your society first.' });
+      }
+
+      let role = 'resident';
+      let society_id = null;
+
+      if (user.is_master_admin) {
+        role = 'master_admin';
+      } else {
+        const profRes = await pool.query('SELECT role, society_id FROM user_profiles WHERE LOWER(email) = LOWER($1)', [email]);
+        const profile = profRes.rows[0];
+        if (!profile) return sendJson(res, 401, { error: 'User profile not found.' });
+        role = profile.role;
+        society_id = profile.society_id;
+      }
+
+      const token = crypto.randomUUID();
+      SESSIONS.set(token, { email, role, society_id, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
+
+      res.writeHead(200, {
+        'Set-Cookie': `session_token=${token}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=86400`,
+        'content-type': 'application/json; charset=utf-8'
+      });
+      return res.end(JSON.stringify({ success: true, user: { email, role } }));
+    }
+
     if (req.method === 'POST' && url.pathname === '/api/login') {
       const clientIp = req.socket.remoteAddress || '127.0.0.1';
       if (isLoginRateLimited(clientIp)) {
@@ -633,7 +695,7 @@ async function handleApi(req, res, url) {
 
       if (!pool) return sendJson(res, 500, { error: 'Database connection not initialized.' });
 
-      const result = await pool.query('SELECT salt, password_hash FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+      const result = await pool.query('SELECT salt, password_hash, is_master_admin FROM users WHERE LOWER(email) = LOWER($1)', [email]);
       const user = result.rows[0];
       if (!user) {
         return sendJson(res, 401, { error: 'Invalid email or password.' });
@@ -644,21 +706,30 @@ async function handleApi(req, res, url) {
         return sendJson(res, 401, { error: 'Invalid email or password.' });
       }
 
-      // Query user profile
-      const profRes = await pool.query('SELECT role, society_id FROM user_profiles WHERE LOWER(email) = LOWER($1)', [email]);
-      const profile = profRes.rows[0];
-      if (!profile) {
-        return sendJson(res, 401, { error: 'User profile not found. Please contact administration.' });
+      let role = 'resident';
+      let society_id = null;
+
+      if (user.is_master_admin) {
+        role = 'master_admin';
+      } else {
+        // Query user profile
+        const profRes = await pool.query('SELECT role, society_id FROM user_profiles WHERE LOWER(email) = LOWER($1)', [email]);
+        const profile = profRes.rows[0];
+        if (!profile) {
+          return sendJson(res, 401, { error: 'User profile not found. Please contact administration.' });
+        }
+        role = profile.role;
+        society_id = profile.society_id;
       }
 
       const token = crypto.randomUUID();
-      SESSIONS.set(token, { email, role: profile.role, society_id: profile.society_id, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
+      SESSIONS.set(token, { email, role, society_id, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
 
       res.writeHead(200, {
         'Set-Cookie': `session_token=${token}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=86400`,
         'content-type': 'application/json; charset=utf-8'
       });
-      return res.end(JSON.stringify({ success: true, user: { email, role: profile.role } }));
+      return res.end(JSON.stringify({ success: true, user: { email, role } }));
     }
 
     if (req.method === 'POST' && url.pathname === '/api/logout') {
@@ -905,10 +976,35 @@ function validateSocietyRegistrationNo(regNo) {
 
     // C. Non-authorized roles cannot perform mutations
     if (['POST', 'DELETE', 'PUT'].includes(method)) {
-      if (!['super_admin', 'accountant'].includes(session.role)) {
+      if (!['super_admin', 'accountant', 'master_admin'].includes(session.role)) {
         return sendJson(res, 403, { error: 'Access Denied: Unauthorized operation.' });
       }
     }
+
+    // --- MASTER ADMIN ENDPOINTS ---
+    if (pathname.startsWith('/api/master/')) {
+      if (session.role !== 'master_admin') {
+        return sendJson(res, 403, { error: 'Access Denied: Master Admin access required.' });
+      }
+
+      if (method === 'GET' && pathname === '/api/master/societies') {
+        const result = await pool.query(`
+          SELECT s.id, s.name, s.registration_no, s.status, s.created_at, 
+                 u.email as admin_email
+          FROM societies s
+          LEFT JOIN user_profiles u ON u.society_id = s.id AND u.role = 'super_admin'
+          ORDER BY s.created_at DESC
+        `);
+        return sendJson(res, 200, { societies: result.rows });
+      }
+
+      if (method === 'POST' && pathname.endsWith('/validate')) {
+        const societyId = pathname.split('/')[3]; // /api/master/societies/:id/validate
+        await pool.query('UPDATE societies SET status = $1 WHERE id = $2', ['VALIDATED', societyId]);
+        return sendJson(res, 200, { success: true, message: 'Society validated successfully.' });
+      }
+    }
+    // --- END MASTER ADMIN ENDPOINTS ---
 
     if (req.method === 'GET' && url.pathname === '/api/state') {
       const db = await getFullStateFromDb(session.society_id);
@@ -1252,7 +1348,7 @@ async function serveStatic(req, res, url) {
       res.writeHead(302, { 'Location': '/login' });
       return res.end();
     }
-    requested = '/index.html';
+    requested = session.role === 'master_admin' ? '/master.html' : '/index.html';
   }
   
   const target = path.normalize(path.join(ROOT, requested));
@@ -1263,7 +1359,7 @@ async function serveStatic(req, res, url) {
   try {
     const data = await fs.readFile(target);
     let ext = path.extname(target).toLowerCase();
-    if (requested === '/login' || requested === '/app') {
+    if (requested === '/login' || requested === '/master.html' || requested === '/index.html') {
       ext = '.html';
     }
     const type = MIME_TYPES[ext] || 'application/octet-stream';

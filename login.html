@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ResiEase - Sign In</title>
+    <title>ResiEase | Society Auth</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     
     <script>
         tailwind.config = {
@@ -92,6 +93,31 @@
             <button type="submit" id="login-submit-btn" class="w-full bg-brand-500 text-white hover:bg-brand-600 font-bold py-2.5 px-4 rounded-xl shadow-lg shadow-brand-500/30 transition-all hover:scale-[1.01] focus:outline-none text-sm mt-2">
                 Sign In
             </button>
+
+            <div class="relative flex items-center py-2">
+                <div class="flex-grow border-t border-white/10"></div>
+                <span class="flex-shrink-0 mx-4 text-gray-500 text-xs">OR</span>
+                <div class="flex-grow border-t border-white/10"></div>
+            </div>
+
+            <div id="g_id_onload"
+                 data-client_id="1033704835291-2t1v5b1junmn6imkbssvn0ku51v4tpur.apps.googleusercontent.com"
+                 data-context="signin"
+                 data-ux_mode="popup"
+                 data-callback="handleGoogleCredentialResponse"
+                 data-auto_prompt="false">
+            </div>
+
+            <div class="w-full flex justify-center">
+                <div class="g_id_signin"
+                     data-type="standard"
+                     data-shape="rectangular"
+                     data-theme="outline"
+                     data-text="signin_with"
+                     data-size="large"
+                     data-logo_alignment="left">
+                </div>
+            </div>
         </form>
 
         <!-- Register Form (Hidden by default) -->
@@ -249,6 +275,31 @@
                 submitBtn.innerText = 'Send OTP PIN';
             }
         }
+
+        async function handleGoogleCredentialResponse(response) {
+            try {
+                showToast('Verifying Google Login...', 'info');
+                
+                const res = await fetch('/api/login/google', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: response.credential })
+                });
+                
+                const data = await res.json();
+                if (res.ok) {
+                    showToast('Google Sign-In successful!', 'success');
+                    setTimeout(() => {
+                        window.location.href = data.user.role === 'master_admin' ? '/master.html' : '/app';
+                    }, 800);
+                } else {
+                    showToast(data.error || 'Authentication failed', 'error');
+                }
+            } catch (err) {
+                showToast('Network error during Google login', 'error');
+            }
+        }
+
 
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();

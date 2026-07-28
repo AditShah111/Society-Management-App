@@ -221,11 +221,11 @@
                             <p id="kpi-flats-title" class="text-sm font-medium text-gray-500 mb-1">Total Flats</p>
                             <h3 class="text-3xl font-bold text-gray-800">-</h3>
                         </div>
-                        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 border-l-4 border-l-emerald-500 hover:shadow-md transition-shadow">
+                        <div onclick="switchView('maintenance')" class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 border-l-4 border-l-emerald-500 hover:shadow-md transition-shadow cursor-pointer">
                             <p class="text-sm font-medium text-gray-500 mb-1">MTD Collection</p>
                             <h3 class="text-3xl font-bold text-gray-800">₹0</h3>
                         </div>
-                        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 border-l-4 border-l-red-500 hover:shadow-md transition-shadow">
+                        <div onclick="switchView('maintenance')" class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 border-l-4 border-l-red-500 hover:shadow-md transition-shadow cursor-pointer">
                             <p class="text-sm font-medium text-gray-500 mb-1">Outstanding Dues</p>
                             <h3 class="text-3xl font-bold text-gray-800">₹0</h3>
                         </div>
@@ -1547,7 +1547,6 @@
                 const dueDate = new Date(bill.dueDate);
                 const diffTime = today - dueDate;
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                const isPaid = bill.status === 'Paid';
                 const isDraft = bill.status === 'Draft';
                 const isOverdue = !isPaid && !isDraft && diffDays > 0;
 
@@ -1946,11 +1945,13 @@
                 const schedMeetBtn = document.getElementById('schedule-meeting-btn');
                 const uploadDocBtn = document.getElementById('upload-doc-btn');
                 const maintGenBtn = document.getElementById('maint-generate-btn');
+                const maintApproveBtn = document.getElementById('maint-approve-btn');
                 
                 if (addFinBtn) addFinBtn.style.display = isAdmin ? 'block' : 'none';
                 if (schedMeetBtn) schedMeetBtn.style.display = isAdmin ? 'block' : 'none';
                 if (uploadDocBtn) uploadDocBtn.style.display = isAdmin ? 'flex' : 'none';
                 if (maintGenBtn) maintGenBtn.style.display = isAdmin ? 'flex' : 'none';
+                if (maintApproveBtn) maintApproveBtn.style.display = isAdmin ? 'flex' : 'none';
                 
                 const navMdc = document.getElementById('nav-mdc-panel');
                 const mobMdc = document.getElementById('mobile-nav-mdc-panel');

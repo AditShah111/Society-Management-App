@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Admin Dashboard | ResiEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 font-sans antialiased text-gray-900">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm border-b px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-blue-600 flex items-center justify-center text-white font-bold">R</div>
+            <span class="text-xl font-semibold tracking-tight text-gray-800">ResiEase Master</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="text-sm text-gray-500 font-medium">Logged in as Platform Owner</span>
+            <button onclick="logout()" class="text-sm font-medium text-red-600 hover:text-red-700 transition-colors">
+                Sign Out
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-6 py-8">
+        <div class="mb-8">
+            <h1 class="text-2xl font-bold text-gray-800">Society Registrations</h1>
+            <p class="text-gray-500 text-sm mt-1">Review and validate incoming society registrations to grant access.</p>
+        </div>
+
+        <!-- Dashboard Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-xl p-6 border shadow-sm flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                    <i class="fa-solid fa-building text-xl"></i>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold text-gray-800" id="stat-total">-</div>
+                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Societies</div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border shadow-sm flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
+                    <i class="fa-solid fa-clock text-xl"></i>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold text-gray-800" id="stat-pending">-</div>
+                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Pending Approval</div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 border shadow-sm flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+                    <i class="fa-solid fa-circle-check text-xl"></i>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold text-gray-800" id="stat-active">-</div>
+                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Active & Validated</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-50 border-b text-xs uppercase tracking-wider text-gray-500 font-semibold">
+                        <th class="p-4 pl-6">Society Name</th>
+                        <th class="p-4">Reg Number</th>
+                        <th class="p-4">Admin Email</th>
+                        <th class="p-4">Registered On</th>
+                        <th class="p-4 text-center">Status</th>
+                        <th class="p-4 pr-6 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="society-table-body" class="text-sm divide-y">
+                    <!-- Rows populated via JS -->
+                    <tr>
+                        <td colspan="6" class="p-8 text-center text-gray-400">Loading societies...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        async function loadSocieties() {
+            try {
+                const res = await fetch('/api/master/societies');
+                if (!res.ok) {
+                    if (res.status === 401 || res.status === 403) {
+                        window.location.href = '/login';
+                        return;
+                    }
+                    throw new Error('Failed to fetch societies');
+                }
+                const data = await res.json();
+                renderTable(data.societies);
+            } catch (err) {
+                console.error(err);
+                showToast('Failed to load societies', 'error');
+            }
+        }
+
+        function renderTable(societies) {
+            const tbody = document.getElementById('society-table-body');
+            
+            let pendingCount = 0;
+            let activeCount = 0;
+
+            if (societies.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-400">No societies found.</td></tr>`;
+            } else {
+                tbody.innerHTML = societies.map(s => {
+                    const isPending = s.status === 'PENDING';
+                    if (isPending) pendingCount++; else activeCount++;
+
+                    const statusBadge = isPending 
+                        ? `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 tracking-wide">PENDING</span>`
+                        : `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 tracking-wide">VALIDATED</span>`;
+                    
+                    const actionBtn = isPending
+                        ? `<button onclick="validateSociety('${s.id}')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold shadow-sm transition-colors">Validate Access</button>`
+                        : `<span class="text-xs text-gray-400 italic">Approved</span>`;
+
+                    const date = new Date(s.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+                    return `
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="p-4 pl-6 font-medium text-gray-900">${s.name}</td>
+                        <td class="p-4 text-gray-600 font-mono text-xs">${s.registration_no}</td>
+                        <td class="p-4 text-gray-600">${s.admin_email || 'N/A'}</td>
+                        <td class="p-4 text-gray-500 text-xs">${date}</td>
+                        <td class="p-4 text-center">${statusBadge}</td>
+                        <td class="p-4 pr-6 text-right">${actionBtn}</td>
+                    </tr>
+                    `;
+                }).join('');
+            }
+
+            document.getElementById('stat-total').innerText = societies.length;
+            document.getElementById('stat-pending').innerText = pendingCount;
+            document.getElementById('stat-active').innerText = activeCount;
+        }
+
+        async function validateSociety(id) {
+            if (!confirm('Are you sure you want to validate this society? They will instantly gain access.')) return;
+            try {
+                const res = await fetch(`/api/master/societies/${id}/validate`, { method: 'POST' });
+                if (!res.ok) throw new Error('Validation failed');
+                showToast('Society validated successfully!', 'success');
+                loadSocieties();
+            } catch (err) {
+                console.error(err);
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function logout() {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+                window.location.href = '/login';
+            } catch (err) {
+                console.error('Logout failed', err);
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'flex items-center gap-3 p-4 rounded-lg shadow-lg text-white text-sm font-medium transition-all duration-300 translate-x-10 opacity-0 pointer-events-auto';
+            if (type === 'success') {
+                toast.classList.add('bg-gray-800');
+                toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> <span>${message}</span>`;
+            } else {
+                toast.classList.add('bg-red-600');
+                toast.innerHTML = `<i class="fa-solid fa-circle-exclamation text-white"></i> <span>${message}</span>`;
+            }
+            container.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => toast.classList.remove('translate-x-10', 'opacity-0'), 10);
+            
+            // Remove after delay
+            setTimeout(() => {
+                toast.classList.add('translate-x-10', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Init
+        loadSocieties();
+    </script>
+</body>
+</html>
