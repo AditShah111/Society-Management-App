@@ -1360,7 +1360,10 @@ async function serveStatic(req, res, url) {
     // If the user already has a valid session, redirect to /app
     const session = getSession(req);
     if (session && session.expiresAt > Date.now()) {
-      res.writeHead(302, { 'Location': '/app' });
+      res.writeHead(302, { 
+        'Location': '/app',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private'
+      });
       return res.end();
     }
     requested = '/login.html';
@@ -1368,7 +1371,10 @@ async function serveStatic(req, res, url) {
     // Verify session before serving dashboard pages
     const session = getSession(req);
     if (!session || session.expiresAt < Date.now()) {
-      res.writeHead(302, { 'Location': '/login' });
+      res.writeHead(302, { 
+        'Location': '/login',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private'
+      });
       return res.end();
     }
     
