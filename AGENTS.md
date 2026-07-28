@@ -12,3 +12,8 @@
 - When creating infrastructure, prefer infrastructure-as-code (AWS CDK or
   CloudFormation) over direct CLI commands.
 - When working with infrastructure, follow AWS Well-Architected Framework.
+
+# Testing and Verification
+- Every implementation plan must be strictly tested locally or thoroughly verified against the stated goals before marking a goal as complete.
+- Do not deploy or push changes blindly; verify the endpoints, UI states, and routing logic work as expected.
+- You must document the testing steps and results in the verification section of the plan and the walkthrough artifact.

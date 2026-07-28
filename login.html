@@ -46,11 +46,7 @@
             <p class="text-xs text-gray-300 mt-1" id="auth-subtitle">Please sign in to access your dashboard</p>
         </div>
         
-        <!-- Tab Navigation (Switch login vs register) -->
-        <div class="flex space-x-1 bg-white/5 p-1 rounded-xl mb-6" id="auth-tabs">
-            <button type="button" onclick="setMode('login')" id="tab-login" class="w-1/2 py-2 text-xs font-bold text-center rounded-lg bg-brand-500 text-white focus:outline-none transition-all">Sign In</button>
-            <button type="button" onclick="setMode('register')" id="tab-register" class="w-1/2 py-2 text-xs font-bold text-center rounded-lg text-gray-400 hover:text-white focus:outline-none transition-all">Register Society</button>
-        </div>
+
 
         <!-- Mode Toggle inside Sign In (Password vs OTP) -->
         <div class="flex space-x-1 bg-white/5 p-1 rounded-xl mb-6" id="login-tabs">
@@ -108,67 +104,10 @@
             </div>
         </div>
 
-        <!-- Register Form (Hidden by default) -->
-        <form id="register-form" class="space-y-4 hidden">
-            <div>
-                <label for="reg-name" class="block text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-1.5">Full Name (Super Admin)</label>
-                <div class="relative">
-                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                        <i class="fa-solid fa-user text-xs"></i>
-                    </span>
-                    <input id="reg-name" type="text" class="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all outline-none" placeholder="e.g. Secretary Shah">
-                </div>
-            </div>
 
-            <div>
-                <label for="reg-email" class="block text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-1.5">Admin Email</label>
-                <div class="relative">
-                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                        <i class="fa-solid fa-envelope text-xs"></i>
-                    </span>
-                    <input id="reg-email" type="email" class="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all outline-none" placeholder="admin@society.com">
-                </div>
-            </div>
-
-            <div>
-                <label for="reg-password" class="block text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-1.5">Password</label>
-                <div class="relative">
-                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                        <i class="fa-solid fa-lock text-xs"></i>
-                    </span>
-                    <input id="reg-password" type="password" class="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all outline-none" placeholder="Minimum 6 characters">
-                </div>
-            </div>
-
-            <div>
-                <label for="reg-society-name" class="block text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-1.5">Society Name</label>
-                <div class="relative">
-                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                        <i class="fa-solid fa-building text-xs"></i>
-                    </span>
-                    <input id="reg-society-name" type="text" class="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all outline-none" placeholder="e.g. Lotus CHS Ltd.">
-                </div>
-            </div>
-
-            <div>
-                <label for="reg-regno" class="block text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-1.5">Registration Number</label>
-                <div class="relative">
-                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                        <i class="fa-solid fa-file-signature text-xs"></i>
-                    </span>
-                    <input id="reg-regno" type="text" class="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all outline-none" placeholder="MUM/WP/HSG/TC/12345/2026">
-                </div>
-                <p class="text-[9px] text-gray-400 mt-1">Required format: STATE/CITY/TYPE/SUBTYPE/NUMBER/YEAR (e.g. MUM/WP/HSG/TC/12345/2026)</p>
-            </div>
-
-            <button type="submit" class="w-full bg-brand-500 text-white hover:bg-brand-600 font-bold py-2.5 px-4 rounded-xl shadow-lg shadow-brand-500/30 transition-all hover:scale-[1.01] focus:outline-none text-sm mt-2">
-                Register & Sign In
-            </button>
-        </form>
     </div>
 
     <script>
-        let currentMode = 'login';
         let authMethod = 'password';
         let otpSent = false;
 
@@ -196,47 +135,7 @@
             }, 4000);
         }
 
-        function setMode(mode) {
-            currentMode = mode;
-            const loginForm = document.getElementById('login-form');
-            const registerForm = document.getElementById('register-form');
-            const tabLogin = document.getElementById('tab-login');
-            const tabRegister = document.getElementById('tab-register');
-            const loginTabs = document.getElementById('login-tabs');
-            const googleSection = document.getElementById('google-auth-section');
 
-            if (mode === 'login') {
-                loginForm.classList.remove('hidden');
-                registerForm.classList.add('hidden');
-                loginTabs.classList.remove('hidden');
-                if (googleSection) googleSection.classList.remove('hidden');
-                
-                tabLogin.className = 'w-1/2 py-2 text-xs font-bold text-center rounded-lg bg-brand-500 text-white focus:outline-none transition-all';
-                tabRegister.className = 'w-1/2 py-2 text-xs font-bold text-center rounded-lg text-gray-400 hover:text-white focus:outline-none transition-all';
-                
-                document.getElementById('auth-title').innerText = 'ResiEase';
-                document.getElementById('auth-subtitle').innerText = 'Please sign in to access your dashboard';
-            } else {
-                loginForm.classList.add('hidden');
-                registerForm.classList.remove('hidden');
-                loginTabs.classList.add('hidden');
-                if (googleSection) googleSection.classList.add('hidden');
-
-
-                tabLogin.className = 'w-1/2 py-2 text-xs font-bold text-center rounded-lg text-gray-400 hover:text-white focus:outline-none transition-all';
-                tabRegister.className = 'w-1/2 py-2 text-xs font-bold text-center rounded-lg bg-brand-500 text-white focus:outline-none transition-all';
-                
-                document.getElementById('auth-title').innerText = 'Register Society';
-                document.getElementById('auth-subtitle').innerText = 'Deploy your dedicated housing compliance space';
-
-                // Set register inputs required
-                document.getElementById('reg-name').required = true;
-                document.getElementById('reg-email').required = true;
-                document.getElementById('reg-password').required = true;
-                document.getElementById('reg-society-name').required = true;
-                document.getElementById('reg-regno').required = true;
-            }
-        }
 
         function setAuthMethod(method) {
             authMethod = method;

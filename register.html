@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Society | ResiEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['DM Sans', 'sans-serif'] },
+                    colors: { brand: { 50: '#fefcf8', 100: '#fcf6e8', 500: '#A16207', 600: '#854d0e', 900: '#1C1917' } }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-panel {
+            background: rgba(28, 25, 23, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .step-transition { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .hidden-step { opacity: 0; transform: translateX(20px); pointer-events: none; position: absolute; visibility: hidden; }
+        .active-step { opacity: 1; transform: translateX(0); position: relative; visibility: visible; }
+    </style>
+</head>
+<body class="bg-[#0a0a0a] min-h-screen flex items-center justify-center p-4 bg-[url('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=2000&q=80')] bg-cover bg-center bg-no-repeat relative">
+    
+    <!-- Dark overlay -->
+    <div class="absolute inset-0 bg-black/70 z-0"></div>
+
+    <div class="w-full max-w-md z-10">
+        <!-- Logo -->
+        <div class="flex justify-center mb-8">
+            <a href="/" class="flex items-center gap-2 group cursor-pointer hover:scale-105 transition-transform">
+                <div class="w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
+                    <i class="fa-solid fa-building text-lg"></i>
+                </div>
+                <span class="text-2xl font-bold tracking-tight text-white">ResiEase</span>
+            </a>
+        </div>
+
+        <div class="glass-panel rounded-3xl p-8 relative overflow-hidden">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <h2 class="text-2xl font-bold text-white mb-2" id="step-title">Create Admin Account</h2>
+                <p class="text-gray-400 text-sm" id="step-desc">Step 1 of 2: Setup your administrator profile.</p>
+                
+                <!-- Progress Bar -->
+                <div class="w-full bg-white/10 h-1 mt-4 rounded-full overflow-hidden">
+                    <div id="progress-bar" class="bg-brand-500 h-full w-1/2 transition-all duration-500"></div>
+                </div>
+            </div>
+
+            <!-- STEP 1: Admin Identity -->
+            <div id="step-1" class="step-transition active-step w-full">
+                <!-- Google Sign Up -->
+                <div class="mb-6">
+                    <div id="google-btn-container" class="w-full flex justify-center min-h-[44px]">
+                        <div id="google-auth-fallback" class="text-xs text-gray-400">Loading Google Auth...</div>
+                    </div>
+                </div>
+
+                <div class="relative flex items-center py-2 mb-6">
+                    <div class="flex-grow border-t border-white/10"></div>
+                    <span class="flex-shrink-0 mx-4 text-gray-500 text-xs font-medium">OR SIGN UP WITH EMAIL</span>
+                    <div class="flex-grow border-t border-white/10"></div>
+                </div>
+
+                <form id="form-step-1" class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-1.5">Full Name</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400"><i class="fa-solid fa-user text-xs"></i></span>
+                            <input id="reg-name" type="text" required class="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all" placeholder="John Doe">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-1.5">Email Address</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400"><i class="fa-solid fa-envelope text-xs"></i></span>
+                            <input id="reg-email" type="email" required class="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all" placeholder="admin@society.com">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-brand-500 text-white hover:bg-brand-600 font-bold py-3 px-4 rounded-xl shadow-lg transition-all mt-4 text-sm flex justify-center items-center gap-2">
+                        Continue to Society Details <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </form>
+            </div>
+
+            <!-- STEP 2: Society Details -->
+            <div id="step-2" class="step-transition hidden-step w-full">
+                <form id="form-step-2" class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-1.5">Registered Society Name</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400"><i class="fa-solid fa-city text-xs"></i></span>
+                            <input id="reg-society-name" type="text" required class="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 transition-all" placeholder="e.g. Royal Palm CHS Ltd">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-gray-300 mb-1.5">Govt. Registration Number</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400"><i class="fa-solid fa-file-contract text-xs"></i></span>
+                            <input id="reg-no" type="text" required class="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 transition-all" placeholder="MUM/WP/HSG/TC/1234/2024">
+                        </div>
+                        <p class="text-[10px] text-gray-500 mt-1.5"><i class="fa-solid fa-circle-info mr-1"></i>Format: DISTRICT/WARD/HSG/[TC|TA|GN]/NUM/YEAR</p>
+                    </div>
+                    <div class="flex gap-3 pt-2">
+                        <button type="button" onclick="goToStep(1)" class="w-1/3 bg-white/5 text-white hover:bg-white/10 font-bold py-3 px-4 rounded-xl transition-all text-sm">
+                            Back
+                        </button>
+                        <button type="submit" id="btn-finish" class="w-2/3 bg-brand-500 text-white hover:bg-brand-600 font-bold py-3 px-4 rounded-xl shadow-lg transition-all text-sm flex justify-center items-center gap-2">
+                            Register & Get Password
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- STEP 3: Success -->
+            <div id="step-3" class="step-transition hidden-step w-full text-center py-6">
+                <div class="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-green-400 text-3xl">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Registration Complete!</h3>
+                <p class="text-gray-400 text-sm mb-6">Your society has been registered. We have emailed your secure login credentials to <strong id="success-email" class="text-white"></strong>.</p>
+                
+                <a href="/login" class="inline-block w-full bg-brand-500 text-white hover:bg-brand-600 font-bold py-3 px-4 rounded-xl shadow-lg transition-all text-sm">
+                    Go to Login Screen
+                </a>
+            </div>
+
+            <!-- Footer -->
+            <p class="text-center text-gray-500 text-xs mt-8">
+                Already registered? <a href="/login" class="text-brand-400 hover:text-brand-300 font-semibold transition-colors">Sign In</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        let userData = {
+            name: '',
+            email: '',
+            googleToken: null
+        };
+
+        function showToast(message, type = 'error') {
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-xl shadow-lg backdrop-blur-md border text-sm font-medium transform transition-all duration-300 translate-x-full ${
+                type === 'error' ? 'bg-red-900/80 border-red-500/50 text-red-100' : 'bg-green-900/80 border-green-500/50 text-green-100'
+            }`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check'} mr-2"></i>${message}`;
+            document.getElementById('toast-container').appendChild(toast);
+            
+            setTimeout(() => toast.classList.remove('translate-x-full'), 10);
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+
+        function goToStep(step) {
+            document.querySelectorAll('.step-transition').forEach(el => {
+                el.classList.remove('active-step');
+                el.classList.add('hidden-step');
+            });
+            document.getElementById(`step-${step}`).classList.remove('hidden-step');
+            document.getElementById(`step-${step}`).classList.add('active-step');
+            
+            const title = document.getElementById('step-title');
+            const desc = document.getElementById('step-desc');
+            const progress = document.getElementById('progress-bar');
+            
+            if (step === 1) {
+                title.innerText = 'Create Admin Account';
+                desc.innerText = 'Step 1 of 2: Setup your administrator profile.';
+                progress.style.width = '50%';
+            } else if (step === 2) {
+                title.innerText = 'Register Society';
+                desc.innerText = `Step 2 of 2: Details for ${userData.name}`;
+                progress.style.width = '100%';
+            } else if (step === 3) {
+                title.innerText = 'Success!';
+                desc.innerText = 'Registration finalized.';
+                progress.parentElement.style.display = 'none';
+                document.querySelector('.text-center.text-gray-500.text-xs.mt-8').style.display = 'none';
+            }
+        }
+
+        // Handle Step 1 Submit (Email flow)
+        document.getElementById('form-step-1').addEventListener('submit', (e) => {
+            e.preventDefault();
+            userData.name = document.getElementById('reg-name').value;
+            userData.email = document.getElementById('reg-email').value;
+            userData.googleToken = null;
+            goToStep(2);
+        });
+
+        // Handle Step 2 Submit (Finalize)
+        document.getElementById('form-step-2').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-finish');
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+            btn.disabled = true;
+
+            const payload = {
+                name: userData.name,
+                email: userData.email,
+                googleToken: userData.googleToken,
+                societyName: document.getElementById('reg-society-name').value,
+                registrationNo: document.getElementById('reg-no').value
+            };
+
+            try {
+                const res = await fetch('/api/auth/onboard', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    document.getElementById('success-email').innerText = userData.email;
+                    goToStep(3);
+                } else {
+                    showToast(data.error || 'Registration failed');
+                    btn.innerHTML = 'Register & Get Password';
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                showToast('Network error occurred.');
+                btn.innerHTML = 'Register & Get Password';
+                btn.disabled = false;
+            }
+        });
+
+        // Initialize Google Sign-Up
+        window.onload = function () {
+            const container = document.getElementById('google-btn-container');
+            const fallbackElement = document.getElementById('google-auth-fallback');
+
+            if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+                try {
+                    google.accounts.id.initialize({
+                        client_id: '1033704835291-2t1v5b1junmn6imkbssvn0ku51v4tpur.apps.googleusercontent.com',
+                        callback: handleGoogleSignUp,
+                    });
+                    
+                    if(fallbackElement) fallbackElement.remove();
+
+                    google.accounts.id.renderButton(
+                        container,
+                        { theme: 'outline', size: 'large', type: 'standard', shape: 'rectangular', text: 'signup_with', logo_alignment: 'left', width: 300 }
+                    );
+                } catch(err) {
+                    console.error("Google Auth Init Error:", err);
+                }
+            }
+        };
+
+        function parseJwt (token) {
+            var base64Url = token.split('.')[1];
+            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        }
+
+        async function handleGoogleSignUp(response) {
+            try {
+                // Decode token to get name and email for display
+                const payload = parseJwt(response.credential);
+                userData.name = payload.name || 'Google User';
+                userData.email = payload.email;
+                userData.googleToken = response.credential;
+                
+                // Immediately jump to step 2 since we have identity
+                goToStep(2);
+            } catch(e) {
+                showToast("Failed to process Google login.");
+            }
+        }
+    </script>
+</body>
+</html>

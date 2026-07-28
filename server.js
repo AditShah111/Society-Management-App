@@ -8,6 +8,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { Pool } = require('pg');
 const { OAuth2Client } = require('google-auth-library');
+const nodemailer = require('nodemailer');
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '1033704835291-2t1v5b1junmn6imkbssvn0ku51v4tpur.apps.googleusercontent.com';
 const googleClient = new OAuth2Client(CLIENT_ID);
@@ -820,13 +821,13 @@ function validateSocietyRegistrationNo(regNo) {
       return res.end(JSON.stringify({ success: true }));
     }
 
-    if (req.method === 'POST' && url.pathname === '/api/auth/register-society') {
-      const { email, password, name, societyName, registrationNo } = await readJsonBody(req);
-      if (!email || !password || !name || !societyName || !registrationNo) {
+    if (req.method === 'POST' && url.pathname === '/api/auth/onboard') {
+      const { email, name, societyName, registrationNo, googleToken } = await readJsonBody(req);
+      if (!email || !name || !societyName || !registrationNo) {
         return sendJson(res, 400, { error: 'All fields are required.' });
       }
 
-      // Validate Registration Number as per Indian Housing Society Laws
+      // Validate Registration Number
       const valResult = validateSocietyRegistrationNo(registrationNo);
       if (!valResult.valid) {
         return sendJson(res, 400, { error: valResult.error });
@@ -846,6 +847,9 @@ function validateSocietyRegistrationNo(regNo) {
         return sendJson(res, 400, { error: 'Society registration number already registered.' });
       }
 
+      // Generate a strong random password (8 chars)
+      const generatedPassword = crypto.randomBytes(4).toString('hex');
+      
       // 1. Create Society
       const socResult = await pool.query(
         'INSERT INTO societies (name, registration_no) VALUES ($1, $2) RETURNING id',
@@ -853,9 +857,9 @@ function validateSocietyRegistrationNo(regNo) {
       );
       const societyId = socResult.rows[0].id;
 
-      // 2. Create user credentials (role is stored in user_profiles, not users)
+      // 2. Create user credentials
       const salt = crypto.randomBytes(16).toString('hex');
-      const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+      const hash = crypto.scryptSync(generatedPassword, salt, 64).toString('hex');
       await pool.query(
         'INSERT INTO users (email, salt, password_hash) VALUES ($1, $2, $3)',
         [email, salt, hash]
@@ -867,20 +871,37 @@ function validateSocietyRegistrationNo(regNo) {
         [email, societyId, name, 'super_admin']
       );
 
-      // 4. Create default entries for the new society in metadata table
+      // 4. Create default entries
       await pool.query(
         "INSERT INTO society (wing, total_flats, registered_name, registration_no, address, society_id) VALUES ('A', 50, $1, $2, 'Update address in MDC.', $3)",
         [societyName, registrationNo, societyId]
       );
 
-      const token = crypto.randomUUID();
-      SESSIONS.set(token, { email, role: 'super_admin', society_id: societyId, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
+      // Send Email via Nodemailer (Gmail)
+      try {
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.GMAIL_USER,
+            pass: process.env.GMAIL_PASS
+          }
+        });
 
-      res.writeHead(200, {
-        'Set-Cookie': `session_token=${token}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=86400`,
-        'content-type': 'application/json; charset=utf-8'
-      });
-      return res.end(JSON.stringify({ success: true, user: { email, role: 'super_admin' } }));
+        const mailOptions = {
+          from: `"ResiEase Registration" <${process.env.GMAIL_USER}>`,
+          to: email,
+          subject: 'Welcome to ResiEase - Your Admin Credentials',
+          text: `Hello ${name},\n\nYour society "${societyName}" has been successfully registered on ResiEase.\n\nHere are your super admin login credentials:\nEmail: ${email}\nPassword: ${generatedPassword}\n\nPlease sign in at https://society-management-app-xh6q.onrender.com/login and change your password in the settings as soon as possible.\n\nRegards,\nThe ResiEase Team`
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log(`Email sent successfully to ${email}`);
+      } catch (err) {
+        console.error('Failed to send email:', err);
+        // Note: Even if email fails, account is created. In production, we'd queue this or handle better.
+      }
+
+      return sendJson(res, 200, { success: true });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/auth/send-otp') {
@@ -1354,7 +1375,11 @@ function validateSocietyRegistrationNo(regNo) {
 
 async function serveStatic(req, res, url) {
   let requested = decodeURIComponent(url.pathname);
-  if (requested === '/' || requested === '/login' || requested === '/login.html') {
+  if (requested === '/') {
+    requested = '/landing.html';
+  } else if (requested === '/register' || requested === '/register.html') {
+    requested = '/register.html';
+  } else if (requested === '/login' || requested === '/login.html') {
     // If the user already has a valid session, redirect to /app
     const session = getSession(req);
     if (session && session.expiresAt > Date.now()) {
