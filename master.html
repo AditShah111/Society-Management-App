@@ -87,7 +87,14 @@
     <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
     <script>
-        async function loadSocieties() {
+        async function logout() {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+            } catch(e) {}
+            window.location.href = '/login';
+        }
+
+        async function fetchApplications() {
             try {
                 const res = await fetch('/api/master/societies');
                 if (!res.ok) {

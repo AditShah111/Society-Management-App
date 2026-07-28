@@ -797,6 +797,19 @@ function validateSocietyRegistrationNo(regNo) {
   return { valid: true };
 }
 
+    // --- LOGOUT ENDPOINT ---
+    if (req.method === 'POST' && url.pathname === '/api/logout') {
+      const sessionToken = req.headers.cookie?.split(';').find(c => c.trim().startsWith('session_token='))?.split('=')[1];
+      if (sessionToken) {
+        SESSIONS.delete(sessionToken);
+      }
+      res.writeHead(200, {
+        'Set-Cookie': 'session_token=; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=0',
+        'content-type': 'application/json'
+      });
+      return res.end(JSON.stringify({ success: true }));
+    }
+
     if (req.method === 'POST' && url.pathname === '/api/auth/register-society') {
       const { email, password, name, societyName, registrationNo } = await readJsonBody(req);
       if (!email || !password || !name || !societyName || !registrationNo) {
