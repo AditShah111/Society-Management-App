@@ -1333,7 +1333,7 @@ async function serveStatic(req, res, url) {
   let requested = decodeURIComponent(url.pathname);
   if (requested === '/') {
     requested = '/landing.html';
-  } else if (requested === '/login') {
+  } else if (requested === '/login' || requested === '/login.html') {
     // If the user already has a valid session, redirect to /app
     const session = getSession(req);
     if (session && session.expiresAt > Date.now()) {
@@ -1341,13 +1341,15 @@ async function serveStatic(req, res, url) {
       return res.end();
     }
     requested = '/login.html';
-  } else if (requested === '/app') {
-    // Verify session before serving index.html
+  } else if (requested === '/app' || requested === '/index.html' || requested === '/master.html') {
+    // Verify session before serving dashboard pages
     const session = getSession(req);
     if (!session || session.expiresAt < Date.now()) {
       res.writeHead(302, { 'Location': '/login' });
       return res.end();
     }
+    
+    // Always enforce proper role mapping regardless of how they access it
     requested = session.role === 'master_admin' ? '/master.html' : '/index.html';
   }
   
