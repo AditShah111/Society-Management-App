@@ -86,6 +86,14 @@ if (process.env.DATABASE_URL) {
 // In-memory Session Store & Helpers
 const SESSIONS = new Map();
 
+function invalidateOldSessions(email) {
+  for (const [token, sessionData] of SESSIONS.entries()) {
+    if (sessionData.email.toLowerCase() === email.toLowerCase()) {
+      SESSIONS.delete(token);
+    }
+  }
+}
+
 function parseCookies(cookieHeader) {
   const list = {};
   if (!cookieHeader) return list;
@@ -674,6 +682,7 @@ async function handleApi(req, res, url) {
       }
 
       const token = crypto.randomUUID();
+      invalidateOldSessions(email); // Auto-kick old sessions (Option B)
       SESSIONS.set(token, { email, role, society_id, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
 
       res.writeHead(200, {
@@ -723,6 +732,7 @@ async function handleApi(req, res, url) {
       }
 
       const token = crypto.randomUUID();
+      invalidateOldSessions(email); // Auto-kick old sessions (Option B)
       SESSIONS.set(token, { email, role, society_id, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
 
       res.writeHead(200, {
