@@ -682,12 +682,12 @@ async function handleApi(req, res, url) {
         society_id = profile.society_id;
       }
 
-      const token = crypto.randomUUID();
+      const sessionToken = crypto.randomUUID();
       invalidateOldSessions(email); // Auto-kick old sessions (Option B)
-      SESSIONS.set(token, { email, role, society_id, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
+      SESSIONS.set(sessionToken, { email, role, society_id, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
 
       res.writeHead(200, {
-        'Set-Cookie': `session_token=${token}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=86400`,
+        'Set-Cookie': `session_token=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=86400`,
         'content-type': 'application/json; charset=utf-8'
       });
       return res.end(JSON.stringify({ success: true, user: { email, role } }));
