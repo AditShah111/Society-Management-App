@@ -32,7 +32,7 @@
         }
     </script>
 </head>
-<body class="bg-gradient-to-br from-corporate-900 via-corporate-800 to-brand-600 h-screen w-screen flex items-center justify-center p-4">
+<body class="bg-gradient-to-br from-corporate-900 via-corporate-800 to-brand-600 min-h-screen w-full flex items-center justify-center p-4 py-8 overflow-y-auto">
 
     <!-- Toast Notification Container -->
     <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
@@ -102,23 +102,9 @@
                 <div class="flex-grow border-t border-white/10"></div>
             </div>
 
-            <div id="g_id_onload"
-                 data-client_id="1033704835291-2t1v5b1junmn6imkbssvn0ku51v4tpur.apps.googleusercontent.com"
-                 data-context="signin"
-                 data-ux_mode="popup"
-                 data-callback="handleGoogleCredentialResponse"
-                 data-auto_prompt="false">
-            </div>
-
-            <div id="google-btn-container" class="w-full flex justify-center mt-4">
-                <div class="g_id_signin"
-                     data-type="standard"
-                     data-shape="rectangular"
-                     data-theme="outline"
-                     data-text="signin_with"
-                     data-size="large"
-                     data-logo_alignment="left">
-                </div>
+            <div id="google-btn-container" class="w-full flex justify-center mt-4 min-h-[44px]">
+                <!-- Button will be rendered here by JS -->
+                <div id="google-auth-fallback" class="text-xs text-gray-400 flex items-center justify-center">Loading Google Sign-in...</div>
             </div>
         </div>
 
@@ -281,6 +267,27 @@
                 submitBtn.innerText = 'Send OTP PIN';
             }
         }
+
+        // Initialize Google Sign-in via JS for better reliability
+        window.onload = function () {
+            if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+                google.accounts.id.initialize({
+                    client_id: '1033704835291-2t1v5b1junmn6imkbssvn0ku51v4tpur.apps.googleusercontent.com',
+                    callback: handleGoogleCredentialResponse,
+                    use_fedcm_for_prompt: true
+                });
+                
+                const fallbackElement = document.getElementById('google-auth-fallback');
+                if(fallbackElement) fallbackElement.remove();
+
+                google.accounts.id.renderButton(
+                    document.getElementById('google-btn-container'),
+                    { theme: 'outline', size: 'large', type: 'standard', shape: 'rectangular', text: 'signin_with', logo_alignment: 'left' }
+                );
+            } else {
+                document.getElementById('google-auth-fallback').innerText = "Google Sign-in failed to load. Check adblockers or Authorized Origins.";
+            }
+        };
 
         async function handleGoogleCredentialResponse(response) {
             try {
