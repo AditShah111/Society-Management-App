@@ -277,12 +277,16 @@
                                     </select>
                                     <select id="maint-status-filter" onchange="filterMaintenanceBills()" class="text-xs border border-gray-200 rounded-xl px-3.5 py-2.5 bg-white focus:border-brand-500 outline-none w-full sm:w-36">
                                         <option value="ALL">All Statuses</option>
+                                        <option value="Draft">Draft</option>
                                         <option value="Paid">Paid</option>
                                         <option value="Unpaid">Unpaid</option>
                                         <option value="Overdue">Overdue (>15 Days)</option>
                                     </select>
                                 </div>
-                                <button id="maint-generate-btn" onclick="openModal('generate-bills')" class="admin-only bg-brand-500 text-white px-4.5 py-2.5 rounded-xl text-xs font-bold hover:bg-brand-600 transition-all shadow-md shadow-brand-500/10 flex items-center gap-2 whitespace-nowrap ml-auto lg:ml-0">
+                                <button id="maint-approve-btn" onclick="openModal('approve-drafts')" class="admin-only bg-amber-500 text-white px-4.5 py-2.5 rounded-xl text-xs font-bold hover:bg-amber-600 transition-all shadow-md shadow-amber-500/10 flex items-center gap-2 whitespace-nowrap ml-auto lg:ml-0">
+                                    <i class="fa-solid fa-paper-plane"></i> Approve Drafts
+                                </button>
+                                <button id="maint-generate-btn" onclick="openModal('generate-bills')" class="admin-only bg-brand-500 text-white px-4.5 py-2.5 rounded-xl text-xs font-bold hover:bg-brand-600 transition-all shadow-md shadow-brand-500/10 flex items-center gap-2 whitespace-nowrap">
                                     <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Monthly Bills
                                 </button>
                             </div>
@@ -1543,11 +1547,16 @@
                 const dueDate = new Date(bill.dueDate);
                 const diffTime = today - dueDate;
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                const isOverdue = !isPaid && diffDays > 0;
+                const isPaid = bill.status === 'Paid';
+                const isDraft = bill.status === 'Draft';
+                const isOverdue = !isPaid && !isDraft && diffDays > 0;
 
                 let badgeClass = 'bg-amber-100 text-amber-700 border border-amber-200';
                 let statusText = 'Unpaid';
-                if (isPaid) {
+                if (isDraft) {
+                    badgeClass = 'bg-gray-100 text-gray-500 border border-gray-200';
+                    statusText = 'Draft';
+                } else if (isPaid) {
                     badgeClass = 'bg-emerald-100 text-emerald-700 border border-emerald-200';
                     statusText = 'Paid';
                 } else if (isOverdue) {
@@ -1570,10 +1579,10 @@
                         </td>
                         <td class="px-6 py-4 text-right space-x-2.5">
                             <button onclick="viewBillInvoice('${bill.id}')" class="text-brand-600 hover:text-brand-700 text-xs font-bold transition-colors"><i class="fa-solid fa-file-invoice"></i> Bill Details</button>
-                            ${!isPaid && isAdmin ? `
+                            ${!isPaid && !isDraft && isAdmin ? `
                                 <button onclick="payMaintenanceBill('${bill.id}')" class="text-emerald-600 hover:text-emerald-700 text-xs font-bold transition-colors"><i class="fa-solid fa-circle-check"></i> Collect</button>
                             ` : ''}
-                            ${!isPaid && isOverdue ? `
+                            ${!isPaid && !isDraft && isOverdue ? `
                                 <button onclick="sendWhatsAppReminder('${bill.id}')" class="text-green-500 hover:text-green-600 text-xs font-bold transition-colors" title="Send WhatsApp Reminder"><i class="fa-brands fa-whatsapp"></i> Remind</button>
                             ` : ''}
                         </td>
@@ -1603,9 +1612,11 @@
             if (statusVal !== 'ALL') {
                 filtered = filtered.filter(b => {
                     const isPaid = b.status.toLowerCase() === 'paid';
-                    const isOverdue = !isPaid && (new Date(b.dueDate) < new Date());
+                    const isDraft = b.status.toLowerCase() === 'draft';
+                    const isOverdue = !isPaid && !isDraft && (new Date(b.dueDate) < new Date());
+                    if (statusVal === 'Draft') return isDraft;
                     if (statusVal === 'Paid') return isPaid;
-                    if (statusVal === 'Unpaid') return !isPaid && !isOverdue;
+                    if (statusVal === 'Unpaid') return !isPaid && !isDraft && !isOverdue;
                     if (statusVal === 'Overdue') return isOverdue;
                     return true;
                 });
@@ -1683,6 +1694,9 @@
             } else if (isOverdue) {
                 stamp.innerText = 'Overdue';
                 stamp.classList.add('border-red-500', 'text-red-500');
+            } else if (bill.status === 'Draft') {
+                stamp.innerText = 'Draft';
+                stamp.classList.add('border-gray-500', 'text-gray-500');
             } else {
                 stamp.innerText = 'Unpaid';
                 stamp.classList.add('border-amber-500', 'text-amber-500');
@@ -1704,6 +1718,25 @@
                 if (!response.ok) throw new Error(data.error);
                 showToast(`Maintenance bills for ${month} generated successfully!`);
                 closeModal('generate-bills');
+                refreshLiveData();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function approveDraftsSubmit(event) {
+            event.preventDefault();
+            const month = document.getElementById('approve-bills-month').value;
+            try {
+                const response = await fetch('/api/maintenance/approve', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ month })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error);
+                showToast(data.message);
+                closeModal('approve-drafts');
                 refreshLiveData();
             } catch (err) {
                 showToast(err.message, 'error');
@@ -2188,6 +2221,12 @@
                 genBillsForm.addEventListener('submit', generateMonthlyBillsSubmit);
             }
 
+            // Bind Approve Drafts form submit
+            const approveDraftsForm = document.getElementById('form-approve-drafts');
+            if (approveDraftsForm) {
+                approveDraftsForm.addEventListener('submit', approveDraftsSubmit);
+            }
+
             setTimeout(refreshLiveData, 150);
             setInterval(refreshLiveData, 15000);
         });
@@ -2334,6 +2373,43 @@
         </div>
     </div>
 
+    <!-- Approve Drafts Modal -->
+    <div id="modal-approve-drafts" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('approve-drafts')"></div>
+        <div class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-md mx-4 z-10 overflow-hidden transform transition-all duration-300 scale-95 opacity-0" id="modal-approve-drafts-card">
+            <div class="p-6 border-b border-gray-100 bg-amber-50 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-amber-800 flex items-center gap-2">
+                    <i class="fa-solid fa-paper-plane text-amber-500"></i>
+                    <span>Approve Draft Bills</span>
+                </h3>
+                <button onclick="closeModal('approve-drafts')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form id="form-approve-drafts" class="p-6 space-y-4">
+                <div>
+                    <label for="approve-bills-month" class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Target Billing Month</label>
+                    <select id="approve-bills-month" required class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all">
+                        <option value="July 2026">July 2026</option>
+                        <option value="August 2026">August 2026</option>
+                        <option value="September 2026">September 2026</option>
+                        <option value="October 2026">October 2026</option>
+                    </select>
+                </div>
+                <div class="bg-amber-50 rounded-xl p-4 border border-amber-100 flex gap-3 text-xs text-amber-800">
+                    <i class="fa-solid fa-triangle-exclamation text-md mt-0.5"></i>
+                    <div>
+                        <p class="font-bold mb-1">Irreversible Action:</p>
+                        <p class="leading-relaxed">This will convert all 'Draft' bills for the selected month to 'Unpaid' status, effectively issuing them to residents and making them visible on their accounts.</p>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeModal('approve-drafts')" class="px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all">Cancel</button>
+                    <button type="submit" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-semibold transition-all shadow-md shadow-amber-500/10">Approve & Send</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <!-- View Invoice Modal -->
     <div id="modal-view-invoice" class="fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('view-invoice')"></div>

@@ -1112,7 +1112,7 @@ function validateSocietyRegistrationNo(regNo) {
           `INSERT INTO maintenance_bills (
             flat_no, member_name, amount, status, billing_month, bill_date, due_date,
             service_charges, sinking_fund, repair_fund, water_charges, parking_charges, society_id
-          ) VALUES ($1, $2, $3, 'Unpaid', $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+          ) VALUES ($1, $2, $3, 'Draft', $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
           [flatNo, memberName, amount, month, billDate, dueDate, service, sinking, repair, water, parking, session.society_id]
         );
       }
@@ -1128,6 +1128,37 @@ function validateSocietyRegistrationNo(regNo) {
 
       const db = await getFullStateFromDb(session.society_id);
       return sendJson(res, 201, { success: true, maintenanceBills: db.maintenanceBills, dashboard: deriveDashboard(db) });
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/maintenance/approve') {
+      const payload = await readJsonBody(req);
+      const { month } = payload;
+      if (!month) {
+        return sendJson(res, 400, { error: 'Billing month is required.' });
+      }
+      if (!pool) return sendJson(res, 500, { error: 'Database connection not initialized.' });
+
+      // Find drafts and update to Unpaid
+      const updateRes = await pool.query(
+        "UPDATE maintenance_bills SET status = 'Unpaid' WHERE society_id = $1 AND billing_month = $2 AND status = 'Draft'",
+        [session.society_id, month]
+      );
+
+      if (updateRes.rowCount === 0) {
+        return sendJson(res, 404, { error: `No draft bills found for ${month} to approve.` });
+      }
+
+      // Recalculate outstanding_dues
+      await pool.query(
+        `UPDATE society SET outstanding_dues = (
+          SELECT COALESCE(SUM(amount), 0) FROM maintenance_bills 
+          WHERE society_id = $1 AND status = 'Unpaid'
+        ) WHERE society_id = $1`,
+        [session.society_id]
+      );
+
+      const db = await getFullStateFromDb(session.society_id);
+      return sendJson(res, 200, { success: true, message: `Approved ${updateRes.rowCount} bills for ${month}.`, maintenanceBills: db.maintenanceBills, dashboard: deriveDashboard(db) });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/maintenance/pay') {
