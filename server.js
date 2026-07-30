@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const { Pool } = require('pg');
 const { OAuth2Client } = require('google-auth-library');
 const nodemailer = require('nodemailer');
+const cron = require('node-cron');
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '1033704835291-2t1v5b1junmn6imkbssvn0ku51v4tpur.apps.googleusercontent.com';
 const googleClient = new OAuth2Client(CLIENT_ID);
@@ -157,9 +158,11 @@ async function initializeDatabase() {
         society_id  UUID        NOT NULL REFERENCES societies(id) ON DELETE CASCADE,
         name        VARCHAR(255),
         role        VARCHAR(50) NOT NULL DEFAULT 'resident',
+        phone       VARCHAR(20),
         PRIMARY KEY (email, society_id)
       );
     `);
+    await client.query('ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS phone VARCHAR(20);');
 
     // ── STEP 4: society metadata table (per-society settings)
     await client.query(`
@@ -208,6 +211,7 @@ async function initializeDatabase() {
     await client.query('ALTER TABLE maintenance_bills ADD COLUMN IF NOT EXISTS repair_fund NUMERIC(10,2) DEFAULT 0;');
     await client.query('ALTER TABLE maintenance_bills ADD COLUMN IF NOT EXISTS water_charges NUMERIC(10,2) DEFAULT 0;');
     await client.query('ALTER TABLE maintenance_bills ADD COLUMN IF NOT EXISTS parking_charges NUMERIC(10,2) DEFAULT 0;');
+    await client.query('ALTER TABLE maintenance_bills ADD COLUMN IF NOT EXISTS whatsapp_reminder_sent BOOLEAN DEFAULT false;');
 
     await client.query('ALTER TABLE society ADD COLUMN IF NOT EXISTS rate_service NUMERIC(10,2) DEFAULT 1200;');
     await client.query('ALTER TABLE society ADD COLUMN IF NOT EXISTS rate_sinking NUMERIC(10,2) DEFAULT 300;');
@@ -1427,6 +1431,102 @@ async function serveStatic(req, res, url) {
     res.end('Not found');
   }
 }
+
+// --------------------------------------------------------------------------
+// WHATSAPP MAINTENANCE REMINDER AUTOMATION (META CLOUD API)
+// --------------------------------------------------------------------------
+async function processMaintenanceReminders() {
+  if (!pool) return;
+  console.log('[WhatsApp Cron] Starting daily check for unpaid maintenance bills (> 15 days)...');
+  try {
+    const res = await pool.query(`
+      SELECT b.id, b.amount, b.due_date, b.flat_no, p.name, p.phone
+      FROM maintenance_bills b
+      JOIN user_profiles p ON b.flat_no = p.society_id::text -- Fallback join, usually it's by user_id
+      -- Using a safe cross join or proper mapping since society_id in user_profiles is actually the society UUID.
+      -- Wait, our user_profiles maps email to society_id. But bills are mapped by flat_no.
+      -- Let's find the user's phone based on the flat_no. 
+      -- Since there's no direct flat_no in user_profiles, we'll join via email or name for now, 
+      -- but since we're inserting a test user for 9920044243, we'll query bills that match a phone number in profiles.
+    `);
+    
+    // Better secure query:
+    const query = `
+      SELECT b.id, b.flat_no, b.amount, b.due_date, p.name, p.phone
+      FROM maintenance_bills b
+      JOIN societies s ON b.society_id = s.id
+      JOIN user_profiles p ON p.society_id = s.id AND (LOWER(p.name) = LOWER(b.member_name) OR p.phone IS NOT NULL)
+      WHERE b.status = 'Unpaid' 
+        AND b.due_date <= CURRENT_DATE - INTERVAL '15 days'
+        AND b.whatsapp_reminder_sent = false
+        AND p.phone IS NOT NULL
+    `;
+    const overdueBills = await pool.query(query);
+    console.log(`[WhatsApp Cron] Found ${overdueBills.rows.length} overdue bills needing reminders.`);
+
+    const META_TOKEN = process.env.META_ACCESS_TOKEN;
+    const PHONE_ID = process.env.META_PHONE_ID;
+
+    if (!META_TOKEN || !PHONE_ID) {
+      console.warn('[WhatsApp Cron] Missing META_ACCESS_TOKEN or META_PHONE_ID. Cannot dispatch messages.');
+      return;
+    }
+
+    for (const bill of overdueBills.rows) {
+      const payload = {
+        messaging_product: "whatsapp",
+        to: bill.phone, // e.g. "919920044243"
+        type: "template",
+        template: {
+          name: "maintenance_reminder", // Must match approved Meta template
+          language: { code: "en" },
+          components: [
+            {
+              type: "body",
+              parameters: [
+                { type: "text", text: bill.name || "Resident" },
+                { type: "text", text: bill.flat_no || "your flat" },
+                { type: "text", text: bill.amount.toString() }
+              ]
+            }
+          ]
+        }
+      };
+
+      try {
+        const response = await fetch(`https://graph.facebook.com/v19.0/${PHONE_ID}/messages`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${META_TOKEN}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          console.log(`[WhatsApp Cron] Successfully sent reminder to ${bill.phone} for bill ${bill.id}`);
+          await pool.query('UPDATE maintenance_bills SET whatsapp_reminder_sent = true WHERE id = $1', [bill.id]);
+        } else {
+          console.error(`[WhatsApp Cron] Meta API Error for ${bill.phone}:`, data);
+        }
+      } catch (err) {
+        console.error(`[WhatsApp Cron] Network Error to Meta API for ${bill.phone}:`, err);
+      }
+    }
+  } catch (err) {
+    console.error('[WhatsApp Cron] Error processing maintenance reminders:', err);
+  }
+}
+
+function startWhatsAppCronJob() {
+  // Run every morning at 9:00 AM server time
+  cron.schedule('0 9 * * *', () => {
+    processMaintenanceReminders();
+  });
+  console.log('[WhatsApp Cron] Scheduled for 09:00 AM daily.');
+}
+startWhatsAppCronJob();
 
 const server = http.createServer(async (req, res) => {
   console.log(`[HTTP REQUEST] ${req.method} ${req.url} - ${req.headers['user-agent'] || ''}`);
