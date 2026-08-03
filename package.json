@@ -15,8 +15,7 @@
     "google-auth-library": "^10.9.1",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.14",
-    "pg": "^8.22.0",
-    "twilio": "^6.0.2"
+    "pg": "^8.22.0"
   },
   "devDependencies": {
     "@aws-sdk/client-ec2": "^3.1094.0",
