@@ -10,6 +10,7 @@ const { Pool } = require('pg');
 const { OAuth2Client } = require('google-auth-library');
 const nodemailer = require('nodemailer');
 const cron = require('node-cron');
+const twilio = require('twilio');
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '1033704835291-2t1v5b1junmn6imkbssvn0ku51v4tpur.apps.googleusercontent.com';
 const googleClient = new OAuth2Client(CLIENT_ID);
@@ -1464,54 +1465,29 @@ async function processMaintenanceReminders() {
     const overdueBills = await pool.query(query);
     console.log(`[WhatsApp Cron] Found ${overdueBills.rows.length} overdue bills needing reminders.`);
 
-    const META_TOKEN = process.env.META_ACCESS_TOKEN;
-    const PHONE_ID = process.env.META_PHONE_ID;
+    const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
+    const TWILIO_AUTH = process.env.TWILIO_AUTH_TOKEN;
+    const TWILIO_FROM = process.env.TWILIO_WHATSAPP_NUMBER || 'whatsapp:+14155238886'; // default sandbox number
 
-    if (!META_TOKEN || !PHONE_ID) {
-      console.warn('[WhatsApp Cron] Missing META_ACCESS_TOKEN or META_PHONE_ID. Cannot dispatch messages.');
+    if (!TWILIO_SID || !TWILIO_AUTH) {
+      console.warn('[WhatsApp Cron] Missing TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN. Cannot dispatch messages.');
       return;
     }
 
-    for (const bill of overdueBills.rows) {
-      const payload = {
-        messaging_product: "whatsapp",
-        to: bill.phone, // e.g. "919920044243"
-        type: "template",
-        template: {
-          name: "maintenance_reminder", // Must match approved Meta template
-          language: { code: "en" },
-          components: [
-            {
-              type: "body",
-              parameters: [
-                { type: "text", text: bill.name || "Resident" },
-                { type: "text", text: bill.flat_no || "your flat" },
-                { type: "text", text: bill.amount.toString() }
-              ]
-            }
-          ]
-        }
-      };
+    const twilioClient = twilio(TWILIO_SID, TWILIO_AUTH);
 
+    for (const bill of overdueBills.rows) {
       try {
-        const response = await fetch(`https://graph.facebook.com/v19.0/${PHONE_ID}/messages`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${META_TOKEN}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
+        const message = await twilioClient.messages.create({
+          from: TWILIO_FROM,
+          body: `Hello ${bill.name || 'Resident'}, this is a polite reminder from ResiEase. Your maintenance bill for flat ${bill.flat_no || 'N/A'} of amount ₹${bill.amount} is overdue by 15+ days. Please pay immediately to avoid late fees. Thank you.`,
+          to: `whatsapp:+${bill.phone}`
         });
 
-        const data = await response.json();
-        if (response.ok) {
-          console.log(`[WhatsApp Cron] Successfully sent reminder to ${bill.phone} for bill ${bill.id}`);
-          await pool.query('UPDATE maintenance_bills SET whatsapp_reminder_sent = true WHERE id = $1', [bill.id]);
-        } else {
-          console.error(`[WhatsApp Cron] Meta API Error for ${bill.phone}:`, data);
-        }
+        console.log(`[WhatsApp Cron] Successfully sent reminder to ${bill.phone} for bill ${bill.id}. SID: ${message.sid}`);
+        await pool.query('UPDATE maintenance_bills SET whatsapp_reminder_sent = true WHERE id = $1', [bill.id]);
       } catch (err) {
-        console.error(`[WhatsApp Cron] Network Error to Meta API for ${bill.phone}:`, err);
+        console.error(`[WhatsApp Cron] Twilio API Error for ${bill.phone}:`, err.message);
       }
     }
   } catch (err) {
