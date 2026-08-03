@@ -259,10 +259,14 @@ async function initializeDatabase() {
         file_size     INT NOT NULL,
         file_data     BYTEA NOT NULL,
         society_id    UUID REFERENCES societies(id) ON DELETE CASCADE,
+        financial_year VARCHAR(10),
+        period        VARCHAR(20),
         uploaded_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
     await client.query('ALTER TABLE statutory_documents ADD COLUMN IF NOT EXISTS society_id UUID;');
+    await client.query('ALTER TABLE statutory_documents ADD COLUMN IF NOT EXISTS financial_year VARCHAR(10);');
+    await client.query('ALTER TABLE statutory_documents ADD COLUMN IF NOT EXISTS period VARCHAR(20);');
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS redevelopment_stages (
@@ -451,7 +455,7 @@ async function getFullStateFromDb(societyId) {
   const resAgm = await pool.query('SELECT id, to_char(date, \'YYYY-MM-DD\') as date, title, status, agenda FROM agm_meetings WHERE society_id = $1 ORDER BY date ASC', [activeSocietyId]);
   state.agmMeetings = resAgm.rows;
 
-  const resDocs = await pool.query('SELECT id, title, category, form_id as "formId", form_name as "formName", original_name as "originalName", mime_type as "mimeType", file_size as "size", to_char(uploaded_at, \'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"\') as "uploadedAt" FROM statutory_documents WHERE society_id = $1 ORDER BY uploaded_at DESC', [activeSocietyId]);
+  const resDocs = await pool.query('SELECT id, title, category, form_id as "formId", form_name as "formName", original_name as "originalName", mime_type as "mimeType", file_size as "size", financial_year as "financialYear", period, to_char(uploaded_at, \'YYYY-MM-DD"T"HH24:MI:SS"Z"\') as "uploadedAt" FROM statutory_documents WHERE society_id = $1 ORDER BY uploaded_at DESC', [activeSocietyId]);
   state.documents = resDocs.rows.map(r => ({
     ...r,
     url: `/uploads/${r.id}`
@@ -592,8 +596,8 @@ async function handleUpload(req, res, societyId) {
 
     const id = crypto.randomUUID();
     await pool.query(
-      `INSERT INTO statutory_documents (id, title, category, form_id, form_name, original_name, mime_type, file_size, file_data, society_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      `INSERT INTO statutory_documents (id, title, category, form_id, form_name, original_name, mime_type, file_size, file_data, society_id, financial_year, period)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
       [
         id,
         parts.title || originalName,
@@ -604,7 +608,9 @@ async function handleUpload(req, res, societyId) {
         file.type,
         file.content.length,
         file.content,
-        societyId
+        societyId,
+        parts.financialYear || '',
+        parts.period || ''
       ]
     );
 
@@ -823,6 +829,121 @@ function validateSocietyRegistrationNo(regNo) {
         'content-type': 'application/json'
       });
       return res.end(JSON.stringify({ success: true }));
+    }
+
+    // --- WHATSAPP META WEBHOOK ---
+    if (url.pathname === '/api/webhooks/whatsapp') {
+      if (req.method === 'GET') {
+        const query = url.searchParams;
+        const mode = query.get('hub.mode');
+        const token = query.get('hub.verify_token');
+        const challenge = query.get('hub.challenge');
+
+        if (mode && token) {
+          if (mode === 'subscribe' && token === 'resiease_whatsapp_webhook') {
+            console.log('[WHATSAPP] Webhook verified.');
+            res.writeHead(200, { 'Content-Type': 'text/plain' });
+            return res.end(challenge);
+          } else {
+            res.writeHead(403);
+            return res.end();
+          }
+        }
+      }
+
+      if (req.method === 'POST') {
+        try {
+          const body = await readJsonBody(req);
+          
+          if (body.object) {
+            if (
+              body.entry &&
+              body.entry[0].changes &&
+              body.entry[0].changes[0] &&
+              body.entry[0].changes[0].value.messages &&
+              body.entry[0].changes[0].value.messages[0]
+            ) {
+              const msg = body.entry[0].changes[0].value.messages[0];
+              const phone_number_id = body.entry[0].changes[0].value.metadata.phone_number_id;
+              const from = msg.from; // Sender's WhatsApp number
+              const msg_body = msg.text ? msg.text.body.trim() : '';
+
+              console.log(`[WHATSAPP] Received message from ${from}: ${msg_body}`);
+
+              const userRes = await pool.query('SELECT * FROM user_profiles WHERE phone = $1', [from]);
+              const META_TOKEN = process.env.META_ACCESS_TOKEN;
+              
+              if (userRes.rows.length === 0) {
+                const flatMatch = msg_body.match(/^[A-Za-z0-9]+-[0-9]+$/);
+                if (flatMatch) {
+                  const flatNo = flatMatch[0].toUpperCase();
+                  await pool.query('UPDATE user_profiles SET phone = $1 WHERE flat_no = $2 OR name ILIKE $3', [from, flatNo, `%${flatNo}%`]);
+                  
+                  await fetch(`https://graph.facebook.com/v19.0/${phone_number_id}/messages`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${META_TOKEN}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      messaging_product: 'whatsapp',
+                      to: from,
+                      text: { body: `✅ Successfully linked your WhatsApp to Flat ${flatNo}. You will now receive automated maintenance reminders here.` }
+                    })
+                  });
+                } else {
+                  await fetch(`https://graph.facebook.com/v19.0/${phone_number_id}/messages`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${META_TOKEN}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      messaging_product: 'whatsapp',
+                      to: from,
+                      text: { body: 'Welcome to ResiEase! 🏢 Please reply with your Flat Number (e.g., A-101) to link your account and receive maintenance reminders.' }
+                    })
+                  });
+                }
+              }
+            }
+            res.writeHead(200);
+            return res.end('EVENT_RECEIVED');
+          } else {
+            res.writeHead(404);
+            return res.end();
+          }
+        } catch (e) {
+          console.error('[WHATSAPP] Webhook error:', e);
+          res.writeHead(500);
+          return res.end();
+        }
+      }
+    }
+
+    // --- BULK IMPORT RESIDENTS ---
+    if (req.method === 'POST' && url.pathname === '/api/societies/import-residents') {
+      const payload = await readJsonBody(req);
+      if (!Array.isArray(payload)) {
+        return sendJson(res, 400, { error: 'Payload must be an array of residents.' });
+      }
+      
+      const sessionToken = req.headers.cookie?.split(';').find(c => c.trim().startsWith('session_token='))?.split('=')[1];
+      const session = SESSIONS.get(sessionToken);
+      if (!session || session.role !== 'super_admin') {
+        return sendJson(res, 403, { error: 'Unauthorized.' });
+      }
+
+      let importedCount = 0;
+      for (const resData of payload) {
+        if (!resData.name || !resData.flat_no) continue;
+        
+        const exists = await pool.query('SELECT * FROM user_profiles WHERE society_id = $1 AND (email = $2 OR name = $3)', [session.society_id, resData.email, resData.name]);
+        
+        if (exists.rows.length === 0) {
+          await pool.query(
+            "INSERT INTO user_profiles (society_id, name, email, phone, role) VALUES ($1, $2, $3, $4, 'resident')",
+            [session.society_id, resData.name, resData.email || `${resData.flat_no.toLowerCase()}@resiease.local`, resData.phone || null]
+          );
+          // Optional: we can also create a dummy users table row if we want them to login later, but for now they just receive whatsapp bills.
+          importedCount++;
+        }
+      }
+      return sendJson(res, 200, { success: true, count: importedCount });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/auth/onboard') {
@@ -1531,6 +1652,29 @@ startWhatsAppCronJob();
 const server = http.createServer(async (req, res) => {
   console.log(`[HTTP REQUEST] ${req.method} ${req.url} - ${req.headers['user-agent'] || ''}`);
   const url = new URL(req.url, `http://${req.headers.host}`);
+  if (url.pathname === '/robots.txt') {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    return res.end("User-agent: *\nAllow: /\nDisallow: /api/\nSitemap: https://resiease-software.in/sitemap.xml");
+  }
+  
+  if (url.pathname === '/sitemap.xml') {
+    res.writeHead(200, { 'Content-Type': 'application/xml' });
+    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://resiease-software.in/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://resiease-software.in/login.html</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>`;
+    return res.end(sitemap);
+  }
+
   if (url.pathname.startsWith('/api/')) return handleApi(req, res, url);
   
   // Secure access to local static uploads directory
@@ -1596,3 +1740,22 @@ function gracefulShutdown(signal) {
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
+// ==========================================
+// RENDER FREE TIER KEEP-ALIVE
+// Prevents the "Service Waking Up" Cold Start Screen
+// ==========================================
+if (process.env.RENDER_EXTERNAL_URL) {
+  const pingUrl = process.env.RENDER_EXTERNAL_URL + '/robots.txt';
+  const https = require('https');
+  const http = require('http');
+  const reqModule = pingUrl.startsWith('https') ? https : http;
+  
+  setInterval(() => {
+    reqModule.get(pingUrl, (res) => {
+      console.log(`[Keep-Alive] Pinged ${pingUrl} - Status: ${res.statusCode}`);
+    }).on('error', (err) => {
+      console.error(`[Keep-Alive] Ping failed:`, err.message);
+    });
+  }, 10 * 60 * 1000); // Ping every 10 minutes (Render sleeps after 15m)
+  console.log(`[Keep-Alive] Initialized for ${pingUrl}`);
+}

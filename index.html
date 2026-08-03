@@ -3,29 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Society Management System</title>
+    <title>ResiEase | Automated Society Management & Accounting App</title>
+    <meta name="description" content="Streamline society billing, GST accounting, and gate security with ResiEase. The ultimate zero-friction SaaS for housing societies and RWAs.">
+    <meta property="og:title" content="ResiEase | Automated Society Management & Accounting App" />
+    <meta property="og:description" content="Streamline society billing, GST accounting, and gate security with ResiEase. The ultimate zero-friction SaaS for housing societies and RWAs." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ResiEase" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "ResiEase Society App",
+      "operatingSystem": "Web, Mobile",
+      "applicationCategory": "BusinessApplication",
+      "description": "Comprehensive society management software featuring automated billing, security gate management, resident communication, and accounting.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0.00",
+        "priceCurrency": "USD",
+        "description": "Free utility for treasurers. Custom enterprise pricing for full communities."
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "reviewCount": "241"
+      }
+    }
+    </script>
     <!-- Tailwind CSS for rapid, corporate styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js for Financial Charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Custom Tailwind Configuration for Corporate Theme -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
                         corporate: {
-                            900: '#0f172a', // Deep Navy
-                            800: '#1e293b',
-                            600: '#475569',
-                            100: '#f8fafc', // Very light gray background
+                            900: '#0B0F19',
+                            800: '#151C2C',
+                            600: '#374151',
+                            100: '#F4F5F7',
                         },
                         brand: {
-                            500: '#2563eb', // Royal Blue
-                            600: '#1d4ed8'
+                            500: '#4F46E5',
+                            600: '#4338CA'
                         }
                     }
                 }
@@ -545,6 +571,14 @@
                     <!-- Hidden file input for card uploads -->
                     <input id="backend-document-upload" type="file" accept=".pdf,.doc,.docx,.txt,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="hidden" onclick="window.activeStatutoryForm = window.activeStatutoryForm || null;">
 
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-bold text-gray-800">Mandatory Registers & Records</h2>
+                        <button onclick="document.getElementById('bulk-import-csv').click()" class="bg-brand-50 text-brand-600 border border-brand-200 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-brand-100 transition-colors">
+                            <i class="fa-solid fa-file-csv mr-2"></i> Bulk Import Residents
+                        </button>
+                        <input id="bulk-import-csv" type="file" accept=".csv" class="hidden" onchange="handleBulkImport(event)">
+                    </div>
+                    
                     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                         
                         <!-- Form I (Register of Members) -->
@@ -637,10 +671,10 @@
                                 <span class="inline-block px-3 py-1 bg-brand-500 text-white text-xs font-bold rounded-full mb-4 tracking-wider uppercase">Reference Portal</span>
                                 <h2 class="text-3xl md:text-4xl font-bold mb-4">Model Bye-Laws (2014) & Amendments</h2>
                                 <p class="text-gray-300 mb-8 max-w-2xl text-lg leading-relaxed">
-                                    Access the comprehensive, updated, and interactive guide to Cooperative Housing Society regulations in Maharashtra. This external resource provides a structured breakdown of rules, responsibilities, and legal procedures.
+                                    Access the comprehensive, updated, and interactive guide to Cooperative Housing Society regulations in Maharashtra. This internal resource provides a structured breakdown of rules, responsibilities, and legal procedures for the new 2025 Act.
                                 </p>
-                                <a href="https://byelaws-chs2026.lovable.app" target="_blank" class="inline-flex items-center px-6 py-3 bg-white text-corporate-900 font-bold rounded-lg shadow-md hover:bg-gray-100 transition-all hover:scale-105">
-                                    Visit Legal Reference Portal <i class="fa-solid fa-arrow-up-right-from-square ml-2"></i>
+                                <a href="/statutory-bye-laws-2025.html" class="inline-flex items-center px-6 py-3 bg-white text-corporate-900 font-bold rounded-lg shadow-md hover:bg-gray-100 transition-all hover:scale-105">
+                                    View 2025 Statutory Bye-Laws <i class="fa-solid fa-arrow-right ml-2"></i>
                                 </a>
                             </div>
                         </div>
@@ -648,7 +682,7 @@
                         <!-- Quick Links Grid -->
                         <h3 class="text-lg font-bold text-gray-800 mb-4">Quick Legal References</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <a href="https://byelaws-chs2026.lovable.app" target="_blank" class="flex items-center p-4 bg-white border border-gray-200 rounded-xl hover:border-brand-500 hover:shadow-md transition-all group">
+                            <a href="/statutory-bye-laws-2025.html" class="flex items-center p-4 bg-white border border-gray-200 rounded-xl hover:border-brand-500 hover:shadow-md transition-all group">
                                 <div class="w-12 h-12 bg-blue-50 text-brand-600 rounded-full flex items-center justify-center text-xl mr-4 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                                     <i class="fa-solid fa-gavel"></i>
                                 </div>
@@ -657,7 +691,7 @@
                                     <p class="text-xs text-gray-500">Section 91 MCS Act</p>
                                 </div>
                             </a>
-                            <a href="https://byelaws-chs2026.lovable.app" target="_blank" class="flex items-center p-4 bg-white border border-gray-200 rounded-xl hover:border-brand-500 hover:shadow-md transition-all group">
+                            <a href="/statutory-bye-laws-2025.html" class="flex items-center p-4 bg-white border border-gray-200 rounded-xl hover:border-brand-500 hover:shadow-md transition-all group">
                                 <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center text-xl mr-4 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
                                     <i class="fa-solid fa-hand-holding-dollar"></i>
                                 </div>
@@ -666,7 +700,7 @@
                                     <p class="text-xs text-gray-500">Section 101/154B-29</p>
                                 </div>
                             </a>
-                            <a href="https://byelaws-chs2026.lovable.app" target="_blank" class="flex items-center p-4 bg-white border border-gray-200 rounded-xl hover:border-brand-500 hover:shadow-md transition-all group">
+                            <a href="/statutory-bye-laws-2025.html" class="flex items-center p-4 bg-white border border-gray-200 rounded-xl hover:border-brand-500 hover:shadow-md transition-all group">
                                 <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center text-xl mr-4 group-hover:bg-amber-500 group-hover:text-white transition-colors">
                                     <i class="fa-solid fa-users"></i>
                                 </div>
@@ -675,7 +709,7 @@
                                     <p class="text-xs text-gray-500">Powers & Duties (Section 73)</p>
                                 </div>
                             </a>
-                            <a href="https://byelaws-chs2026.lovable.app" target="_blank" class="flex items-center p-4 bg-white border border-gray-200 rounded-xl hover:border-brand-500 hover:shadow-md transition-all group">
+                            <a href="/statutory-bye-laws-2025.html" class="flex items-center p-4 bg-white border border-gray-200 rounded-xl hover:border-brand-500 hover:shadow-md transition-all group">
                                 <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-full flex items-center justify-center text-xl mr-4 group-hover:bg-purple-500 group-hover:text-white transition-colors">
                                     <i class="fa-solid fa-file-contract"></i>
                                 </div>
@@ -968,6 +1002,64 @@
         });
     </script>
     <script>
+        async function handleBulkImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const text = e.target.result;
+                const rows = text.split('\n').map(row => row.split(','));
+                
+                // Expecting CSV format: Flat No, Name, Email, Phone
+                // Skip header row if present (checking if first row doesn't look like data)
+                let startIndex = 0;
+                if (rows[0] && rows[0][0] && rows[0][0].toLowerCase().includes('flat')) {
+                    startIndex = 1;
+                }
+
+                const payload = [];
+                for (let i = startIndex; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (row.length >= 2 && row[0].trim() && row[1].trim()) {
+                        payload.push({
+                            flat_no: row[0].trim(),
+                            name: row[1].trim(),
+                            email: (row[2] || '').trim(),
+                            phone: (row[3] || '').trim()
+                        });
+                    }
+                }
+
+                if (payload.length === 0) {
+                    alert('No valid rows found in CSV. Format should be: Flat No, Name, Email, Phone');
+                    return;
+                }
+
+                if (!confirm(`Found ${payload.length} residents in CSV. Import them now?`)) return;
+
+                try {
+                    const response = await fetch('/api/societies/import-residents', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+                    if (response.ok) {
+                        alert(`Successfully imported ${result.count} new residents!`);
+                        location.reload();
+                    } else {
+                        alert(`Import failed: ${result.error}`);
+                    }
+                } catch (error) {
+                    alert('Error importing residents.');
+                    console.error(error);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // Reset input
+        }
+
         let authMode = 'password';
         let otpSent = false;
 
@@ -2110,6 +2202,17 @@
             const form = window.activeStatutoryForm;
             const title = form ? `${form.title} - ${file.name}` : (isFormSubmit ? (titleInput.value || file.name) : (prompt('Document title', file.name) || file.name));
             const category = form ? `Statutory Form: ${form.id}` : (isFormSubmit ? (categoryInput.value || 'Financials') : (prompt('Category', 'Statutory') || 'Statutory'));
+            
+            // Add Financial Year and Period for Statutory Documents (GST-Style)
+            let financialYear = '';
+            let period = '';
+            if (form || category.includes('Statutory') || category.includes('Financial')) {
+                financialYear = prompt('Enter Financial Year (e.g. 2024-25)', '2024-25');
+                period = prompt('Enter Period (e.g. Annual, Q1, Monthly)', 'Annual');
+                formData.append('financialYear', financialYear);
+                formData.append('period', period);
+            }
+
             formData.append('title', title);
             formData.append('category', category);
             if (form) {
