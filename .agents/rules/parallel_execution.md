@@ -1,0 +1,1 @@
+Rule: Every subagent deployment must work in parallel. Do not block the user waiting for one task to finish. Everything needs to run in parallel using background tasks and concurrent agent orchestration.

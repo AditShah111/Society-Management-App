@@ -1854,11 +1854,13 @@
                 }
             }
 
+            const targetFlat = document.getElementById('gen-bills-target-flat').value;
+
             try {
                 const response = await fetch('/api/maintenance/generate', {
                     method: 'POST',
                     headers: { 'content-type': 'application/json' },
-                    body: JSON.stringify({ invoiceDate, dueDate, billingMonth, customCharges })
+                    body: JSON.stringify({ invoiceDate, dueDate, billingMonth, targetFlat, customCharges })
                 });
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.error);
@@ -2166,6 +2168,22 @@
 
         // Modal triggers
         function openModal(modalId) {
+            if (modalId === 'generate-bills') {
+                const select = document.getElementById('gen-bills-target-flat');
+                if (select && select.options.length <= 1 && window.stateData && window.stateData.society) {
+                    const totalFlats = window.stateData.society.totalFlats || 50;
+                    const wing = window.stateData.society.wing || 'A';
+                    for (let i = 1; i <= totalFlats; i++) {
+                        const floor = Math.floor((i - 1) / 10) + 1;
+                        const seq = ((i - 1) % 10) + 1;
+                        const flatNo = `${wing}-${floor}${seq < 10 ? '0' + seq : seq}`;
+                        const opt = document.createElement('option');
+                        opt.value = flatNo;
+                        opt.textContent = `Flat ${flatNo}`;
+                        select.appendChild(opt);
+                    }
+                }
+            }
             const modal = document.getElementById('modal-' + modalId);
             const card = document.getElementById('modal-' + modalId + '-card');
             if (modal && card) {
@@ -2530,7 +2548,7 @@
             <div class="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                 <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
                     <i class="fa-solid fa-wand-magic-sparkles text-brand-500"></i>
-                    <span>Create Invoice Batch</span>
+                    <span>Create Draft Bills</span>
                 </h3>
                 <button type="button" onclick="closeModal('generate-bills')" class="text-gray-400 hover:text-gray-600 transition-colors">
                     <i class="fa-solid fa-xmark text-lg"></i>
@@ -2547,14 +2565,23 @@
                         <input type="date" id="gen-bills-due" required class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-brand-500 outline-none">
                     </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Billing Label (e.g. Aug 2026)</label>
-                    <input type="text" id="gen-bills-month" required placeholder="e.g. August 2026" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-brand-500 outline-none">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Billing Label (e.g. Aug 2026)</label>
+                        <input type="text" id="gen-bills-month" required placeholder="e.g. August 2026" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-brand-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Target Flat</label>
+                        <select id="gen-bills-target-flat" required class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-brand-500 outline-none">
+                            <option value="ALL">All Flats in Society</option>
+                            <!-- Injected via JS -->
+                        </select>
+                    </div>
                 </div>
                 
                 <div class="pt-2 border-t border-gray-100">
                     <div class="flex justify-between items-center mb-2">
-                        <label class="block text-xs font-bold text-gray-500 uppercase">Additional Custom Charges</label>
+                        <label class="block text-xs font-bold text-gray-500 uppercase">Custom Charges</label>
                         <button type="button" onclick="addCustomChargeRow()" class="text-xs font-bold text-brand-600 hover:text-brand-700 bg-brand-50 px-2 py-1 rounded"><i class="fa-solid fa-plus mr-1"></i>Add Row</button>
                     </div>
                     <div id="custom-charges-container" class="space-y-2">
@@ -2565,13 +2592,13 @@
                 <div class="bg-brand-50 rounded-xl p-4 border border-brand-100 flex gap-3 text-xs text-brand-700">
                     <i class="fa-solid fa-info-circle text-md mt-0.5"></i>
                     <div>
-                        <p class="font-bold mb-1">Unrestricted Generation:</p>
-                        <p class="leading-relaxed">This generates invoices for the selected date without strict monthly limitations. Base charges will be pulled from the MDC Registry.</p>
+                        <p class="font-bold mb-1">Completely Custom Charges:</p>
+                        <p class="leading-relaxed">No CHS charges are hardcoded. You must define all line items yourself using the Add Row button above.</p>
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 pt-2">
                     <button type="button" onclick="closeModal('generate-bills')" class="px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all">Cancel</button>
-                    <button type="submit" class="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-sm font-semibold transition-all shadow-md shadow-brand-500/10">Create Batch</button>
+                    <button type="submit" class="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-sm font-semibold transition-all shadow-md shadow-brand-500/10">Create Draft(s)</button>
                 </div>
             </form>
         </div>
@@ -2664,37 +2691,10 @@
                         <thead>
                             <tr class="bg-gray-50 border-b border-gray-100 text-gray-500 font-bold uppercase tracking-wider text-[10px]">
                                 <th class="px-4 py-3">Sr. No.</th>
-                                <th class="px-4 py-3">Particulars of Charges (Indian CHS Bye-laws)</th>
+                                <th class="px-4 py-3">Particulars of Charges</th>
                                 <th class="px-4 py-3 text-right">Amount (₹)</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-50 text-gray-700">
-                            <tr>
-                                <td class="px-4 py-2.5">1</td>
-                                <td class="px-4 py-2.5">Service Charges (Shared equally among all members)</td>
-                                <td id="invoice-item-service" class="px-4 py-2.5 text-right font-bold">-</td>
-                            </tr>
-                            <tr>
-                                <td class="px-4 py-2.5">2</td>
-                                <td class="px-4 py-2.5">Sinking Fund (Bye-law 13a minimum reserve fund)</td>
-                                <td id="invoice-item-sinking" class="px-4 py-2.5 text-right font-bold">-</td>
-                            </tr>
-                            <tr>
-                                <td class="px-4 py-2.5">3</td>
-                                <td class="px-4 py-2.5">Building Repair Fund (Bye-law 13b capital improvements)</td>
-                                <td id="invoice-item-repair" class="px-4 py-2.5 text-right font-bold">-</td>
-                            </tr>
-                            <tr>
-                                <td class="px-4 py-2.5">4</td>
-                                <td class="px-4 py-2.5">Water Charges (Common pump, storage, & tank overheads)</td>
-                                <td id="invoice-item-water" class="px-4 py-2.5 text-right font-bold">-</td>
-                            </tr>
-                            <tr>
-                                <td class="px-4 py-2.5">5</td>
-                                <td class="px-4 py-2.5">Parking Charges (Authorized slot allocation license fee)</td>
-                                <td id="invoice-item-parking" class="px-4 py-2.5 text-right font-bold">-</td>
-                            </tr>
-                        </tbody>
                         <tbody id="invoice-custom-charges-body" class="divide-y divide-gray-50 text-gray-700">
                         </tbody>
                         <tbody class="divide-y divide-gray-50 text-gray-700">

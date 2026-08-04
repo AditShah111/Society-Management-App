@@ -1312,7 +1312,7 @@ function validateSocietyRegistrationNo(regNo) {
 
     if (req.method === 'POST' && url.pathname === '/api/maintenance/generate') {
       const payload = await readJsonBody(req);
-      const { invoiceDate, dueDate, billingMonth, customCharges } = payload;
+      const { invoiceDate, dueDate, billingMonth, targetFlat, customCharges } = payload;
       
       if (!invoiceDate || !dueDate || !billingMonth) {
         return sendJson(res, 400, { error: 'Invoice Date, Due Date, and Billing Month label are required.' });
@@ -1322,19 +1322,13 @@ function validateSocietyRegistrationNo(regNo) {
 
       // Fetch society defaults
       const socRes = await pool.query(
-        'SELECT wing, total_flats, rate_service, rate_sinking, rate_repair, rate_water, rate_parking FROM society WHERE society_id = $1 LIMIT 1',
+        'SELECT wing, total_flats FROM society WHERE society_id = $1 LIMIT 1',
         [session.society_id]
       );
       const soc = socRes.rows[0] || { wing: 'A', total_flats: 50 };
       const wing = soc.wing || 'A';
       const totalFlats = Number(soc.total_flats || 50);
-      const service = Number(soc.rate_service || 1200);
-      const sinking = Number(soc.rate_sinking || 300);
-      const repair = Number(soc.rate_repair || 500);
-      const water = Number(soc.rate_water || 250);
-      const parking = Number(soc.rate_parking || 150);
       
-      let baseAmount = service + sinking + repair + water + parking;
       let totalCustomAmount = 0;
       
       const parsedCustomCharges = Array.isArray(customCharges) ? customCharges : [];
@@ -1342,22 +1336,31 @@ function validateSocietyRegistrationNo(regNo) {
         totalCustomAmount += Number(charge.amount || 0);
       });
       
-      const finalAmount = baseAmount + totalCustomAmount;
+      const finalAmount = totalCustomAmount; // No hardcoded base charges
       const customChargesJson = JSON.stringify(parsedCustomCharges);
 
-      // Generate bills for each flat
-      for (let i = 1; i <= totalFlats; i++) {
-        const floor = Math.floor((i - 1) / 10) + 1;
-        const seq = ((i - 1) % 10) + 1;
-        const flatNo = `${wing}-${floor}${seq < 10 ? '0' + seq : seq}`;
-        const memberName = `Resident Flat ${flatNo}`;
+      // Determine which flats to generate bills for
+      const targetFlatsList = [];
+      if (targetFlat === 'ALL' || !targetFlat) {
+        for (let i = 1; i <= totalFlats; i++) {
+          const floor = Math.floor((i - 1) / 10) + 1;
+          const seq = ((i - 1) % 10) + 1;
+          const flatNo = `${wing}-${floor}${seq < 10 ? '0' + seq : seq}`;
+          targetFlatsList.push(flatNo);
+        }
+      } else {
+        targetFlatsList.push(targetFlat);
+      }
 
+      // Generate bills for the targeted flats
+      for (const flatNo of targetFlatsList) {
+        const memberName = `Resident Flat ${flatNo}`;
         await pool.query(
           `INSERT INTO maintenance_bills (
             flat_no, member_name, amount, status, billing_month, bill_date, due_date,
             service_charges, sinking_fund, repair_fund, water_charges, parking_charges, society_id, custom_charges
           ) VALUES ($1, $2, $3, 'Draft', $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-          [flatNo, memberName, finalAmount, billingMonth, invoiceDate, dueDate, service, sinking, repair, water, parking, session.society_id, customChargesJson]
+          [flatNo, memberName, finalAmount, billingMonth, invoiceDate, dueDate, 0, 0, 0, 0, 0, session.society_id, customChargesJson]
         );
       }
 
