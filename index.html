@@ -312,8 +312,11 @@
                                 <button id="maint-approve-btn" onclick="openModal('approve-drafts')" class="admin-only bg-amber-500 text-white px-4.5 py-2.5 rounded-xl text-xs font-bold hover:bg-amber-600 transition-all shadow-md shadow-amber-500/10 flex items-center gap-2 whitespace-nowrap ml-auto lg:ml-0">
                                     <i class="fa-solid fa-paper-plane"></i> Approve Drafts
                                 </button>
+                                <button id="maint-send-otp-btn" onclick="triggerSendOtpFlow()" class="admin-only bg-emerald-500 text-white px-4.5 py-2.5 rounded-xl text-xs font-bold hover:bg-emerald-600 transition-all shadow-md shadow-emerald-500/10 flex items-center gap-2 whitespace-nowrap">
+                                    <i class="fa-brands fa-whatsapp"></i> Send All via OTP
+                                </button>
                                 <button id="maint-generate-btn" onclick="openModal('generate-bills')" class="admin-only bg-brand-500 text-white px-4.5 py-2.5 rounded-xl text-xs font-bold hover:bg-brand-600 transition-all shadow-md shadow-brand-500/10 flex items-center gap-2 whitespace-nowrap">
-                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Monthly Bills
+                                    <i class="fa-solid fa-plus"></i> Create Invoice Batch
                                 </button>
                             </div>
                         </div>
@@ -327,6 +330,8 @@
                                         <th class="px-6 py-4">Due Date</th>
                                         <th class="px-6 py-4 text-right">Amount (₹)</th>
                                         <th class="px-6 py-4 text-center">Status</th>
+                                        <th class="px-6 py-4 text-center">Dispatch Status</th>
+                                        <th class="px-6 py-4 text-center">Overdue?</th>
                                         <th class="px-6 py-4 text-right">Actions</th>
                                     </tr>
                                 </thead>
@@ -1668,6 +1673,12 @@
                         <td class="px-6 py-4 text-center">
                             <span class="px-2.5 py-1 ${badgeClass} text-[10px] rounded-full font-bold uppercase tracking-wider">${statusText}</span>
                         </td>
+                        <td class="px-6 py-4 text-center">
+                            ${bill.whatsappReminderSent ? '<span class="text-emerald-500 font-bold text-xs"><i class="fa-solid fa-check-double"></i> Sent</span>' : '<span class="text-gray-400 text-xs">Pending</span>'}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            ${isOverdue ? `<span class="text-red-500 font-bold text-xs"><i class="fa-solid fa-triangle-exclamation"></i> ${diffDays} Days</span>` : '<span class="text-gray-300">-</span>'}
+                        </td>
                         <td class="px-6 py-4 text-right space-x-2.5">
                             <button onclick="viewBillInvoice('${bill.id}')" class="text-brand-600 hover:text-brand-700 text-xs font-bold transition-colors"><i class="fa-solid fa-file-invoice"></i> Bill Details</button>
                             ${!isPaid && !isDraft && isAdmin ? `
@@ -1766,6 +1777,22 @@
             // Total Net Payable
             document.getElementById('invoice-total').innerText = `₹${Number(bill.amount || 0).toLocaleString('en-IN')}`;
 
+            // Populate custom charges
+            const customTbody = document.getElementById('invoice-custom-charges-body');
+            customTbody.innerHTML = '';
+            if (bill.customCharges && bill.customCharges.length > 0) {
+                let startIndex = 6;
+                bill.customCharges.forEach(charge => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="px-4 py-2.5">${startIndex++}</td>
+                        <td class="px-4 py-2.5">${charge.name || 'Additional Charge'}</td>
+                        <td class="px-4 py-2.5 text-right font-bold">₹${Number(charge.amount || 0).toLocaleString('en-IN')}</td>
+                    `;
+                    customTbody.appendChild(tr);
+                });
+            }
+
             // Status stamp layout
             const stamp = document.getElementById('invoice-status-stamp');
             const isPaid = bill.status.toLowerCase() === 'paid';
@@ -1796,18 +1823,46 @@
             openModal('view-invoice');
         }
 
+        function addCustomChargeRow() {
+            const container = document.getElementById('custom-charges-container');
+            const row = document.createElement('div');
+            row.className = 'flex gap-2 items-center';
+            row.innerHTML = `
+                <input type="text" placeholder="Charge Name (e.g. Festival Fund)" class="w-2/3 border border-gray-300 rounded-xl px-3 py-1.5 text-xs bg-white focus:border-brand-500 outline-none charge-name" required>
+                <input type="number" placeholder="₹ Amount" class="w-1/3 border border-gray-300 rounded-xl px-3 py-1.5 text-xs bg-white focus:border-brand-500 outline-none charge-amount" required>
+                <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700 p-1"><i class="fa-solid fa-trash-can"></i></button>
+            `;
+            container.appendChild(row);
+        }
+
         async function generateMonthlyBillsSubmit(event) {
             event.preventDefault();
-            const month = document.getElementById('gen-bills-month').value;
+            const invoiceDate = document.getElementById('gen-bills-date').value;
+            const dueDate = document.getElementById('gen-bills-due').value;
+            const billingMonth = document.getElementById('gen-bills-month').value;
+            
+            const customCharges = [];
+            const container = document.getElementById('custom-charges-container');
+            if (container) {
+                const rows = container.children;
+                for (let i = 0; i < rows.length; i++) {
+                    const name = rows[i].querySelector('.charge-name').value;
+                    const amount = rows[i].querySelector('.charge-amount').value;
+                    if (name && amount) {
+                        customCharges.push({ name, amount: Number(amount) });
+                    }
+                }
+            }
+
             try {
                 const response = await fetch('/api/maintenance/generate', {
                     method: 'POST',
                     headers: { 'content-type': 'application/json' },
-                    body: JSON.stringify({ month })
+                    body: JSON.stringify({ invoiceDate, dueDate, billingMonth, customCharges })
                 });
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.error);
-                showToast(`Maintenance bills for ${month} generated successfully!`);
+                showToast(`Batch Generated Successfully!`);
                 closeModal('generate-bills');
                 refreshLiveData();
             } catch (err) {
@@ -1829,6 +1884,35 @@
                 showToast(data.message);
                 closeModal('approve-drafts');
                 refreshLiveData();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function triggerSendOtpFlow() {
+            try {
+                const response = await fetch('/api/maintenance/send-otp', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' }
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error);
+                
+                const otp = prompt('OTP has been sent to Treasurer\'s phone. Please enter 6-digit OTP to authorize sending all invoices:', '123456');
+                if (otp) {
+                    const month = prompt('Enter Billing Label to dispatch (e.g. August 2026):', 'August 2026');
+                    if (month) {
+                        const sendRes = await fetch('/api/maintenance/send-all', {
+                            method: 'POST',
+                            headers: { 'content-type': 'application/json' },
+                            body: JSON.stringify({ month, otp })
+                        });
+                        const sendData = await sendRes.json();
+                        if (!sendRes.ok) throw new Error(sendData.error);
+                        showToast(sendData.message);
+                        refreshLiveData();
+                    }
+                }
             } catch (err) {
                 showToast(err.message, 'error');
             }
@@ -2442,36 +2526,52 @@
     <!-- Generate Bills Modal -->
     <div id="modal-generate-bills" class="fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('generate-bills')"></div>
-        <div class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-md mx-4 z-10 overflow-hidden transform transition-all duration-300 scale-95 opacity-0" id="modal-generate-bills-card">
+        <div class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-lg mx-4 z-10 overflow-hidden transform transition-all duration-300 scale-95 opacity-0" id="modal-generate-bills-card">
             <div class="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                 <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
                     <i class="fa-solid fa-wand-magic-sparkles text-brand-500"></i>
-                    <span>Generate Monthly Bills</span>
+                    <span>Create Invoice Batch</span>
                 </h3>
-                <button onclick="closeModal('generate-bills')" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <button type="button" onclick="closeModal('generate-bills')" class="text-gray-400 hover:text-gray-600 transition-colors">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-            <form id="form-generate-bills" class="p-6 space-y-4">
-                <div>
-                    <label for="gen-bills-month" class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Target Billing Month</label>
-                    <select id="gen-bills-month" required class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all">
-                        <option value="July 2026">July 2026</option>
-                        <option value="August 2026">August 2026</option>
-                        <option value="September 2026">September 2026</option>
-                        <option value="October 2026">October 2026</option>
-                    </select>
+            <form id="form-generate-bills" class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Invoice Date</label>
+                        <input type="date" id="gen-bills-date" required class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-brand-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Due Date</label>
+                        <input type="date" id="gen-bills-due" required class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-brand-500 outline-none">
+                    </div>
                 </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Billing Label (e.g. Aug 2026)</label>
+                    <input type="text" id="gen-bills-month" required placeholder="e.g. August 2026" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:bg-white focus:border-brand-500 outline-none">
+                </div>
+                
+                <div class="pt-2 border-t border-gray-100">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-xs font-bold text-gray-500 uppercase">Additional Custom Charges</label>
+                        <button type="button" onclick="addCustomChargeRow()" class="text-xs font-bold text-brand-600 hover:text-brand-700 bg-brand-50 px-2 py-1 rounded"><i class="fa-solid fa-plus mr-1"></i>Add Row</button>
+                    </div>
+                    <div id="custom-charges-container" class="space-y-2">
+                        <!-- Custom charges rows injected here -->
+                    </div>
+                </div>
+
                 <div class="bg-brand-50 rounded-xl p-4 border border-brand-100 flex gap-3 text-xs text-brand-700">
                     <i class="fa-solid fa-info-circle text-md mt-0.5"></i>
                     <div>
-                        <p class="font-bold mb-1">Bye-law Billing Note:</p>
-                        <p class="leading-relaxed">This triggers a batch generation for all flats defined in the MDC registry using the custom default billing rates. Make sure the rates are correct in the profile section before executing.</p>
+                        <p class="font-bold mb-1">Unrestricted Generation:</p>
+                        <p class="leading-relaxed">This generates invoices for the selected date without strict monthly limitations. Base charges will be pulled from the MDC Registry.</p>
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 pt-2">
                     <button type="button" onclick="closeModal('generate-bills')" class="px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all">Cancel</button>
-                    <button type="submit" class="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-sm font-semibold transition-all shadow-md shadow-brand-500/10">Generate Bills</button>
+                    <button type="submit" class="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-sm font-semibold transition-all shadow-md shadow-brand-500/10">Create Batch</button>
                 </div>
             </form>
         </div>
@@ -2594,6 +2694,10 @@
                                 <td class="px-4 py-2.5">Parking Charges (Authorized slot allocation license fee)</td>
                                 <td id="invoice-item-parking" class="px-4 py-2.5 text-right font-bold">-</td>
                             </tr>
+                        </tbody>
+                        <tbody id="invoice-custom-charges-body" class="divide-y divide-gray-50 text-gray-700">
+                        </tbody>
+                        <tbody class="divide-y divide-gray-50 text-gray-700">
                             <tr class="bg-gray-50/50 font-bold border-t-2 border-gray-100 text-gray-800 text-sm">
                                 <td colspan="2" class="px-4 py-3 text-right">Net Payable Amount:</td>
                                 <td id="invoice-total" class="px-4 py-3 text-right text-brand-600">₹0</td>

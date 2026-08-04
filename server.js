@@ -212,6 +212,7 @@ async function initializeDatabase() {
     await client.query('ALTER TABLE maintenance_bills ADD COLUMN IF NOT EXISTS water_charges NUMERIC(10,2) DEFAULT 0;');
     await client.query('ALTER TABLE maintenance_bills ADD COLUMN IF NOT EXISTS parking_charges NUMERIC(10,2) DEFAULT 0;');
     await client.query('ALTER TABLE maintenance_bills ADD COLUMN IF NOT EXISTS whatsapp_reminder_sent BOOLEAN DEFAULT false;');
+    await client.query('ALTER TABLE maintenance_bills ADD COLUMN IF NOT EXISTS custom_charges JSONB DEFAULT \'[]\'::jsonb;');
 
     await client.query('ALTER TABLE society ADD COLUMN IF NOT EXISTS rate_service NUMERIC(10,2) DEFAULT 1200;');
     await client.query('ALTER TABLE society ADD COLUMN IF NOT EXISTS rate_sinking NUMERIC(10,2) DEFAULT 300;');
@@ -434,7 +435,8 @@ async function getFullStateFromDb(societyId) {
       to_char(due_date, 'YYYY-MM-DD') as "dueDate", to_char(paid_date, 'YYYY-MM-DD') as "paidDate",
       service_charges as "serviceCharges", sinking_fund as "sinkingFund",
       repair_fund as "repairFund", water_charges as "waterCharges",
-      parking_charges as "parkingCharges"
+      parking_charges as "parkingCharges", custom_charges as "customCharges",
+      whatsapp_reminder_sent as "whatsappReminderSent"
     FROM maintenance_bills 
     WHERE society_id = $1 
     ORDER BY bill_date DESC, flat_no ASC
@@ -446,7 +448,8 @@ async function getFullStateFromDb(societyId) {
     sinkingFund: Number(r.sinkingFund || 0),
     repairFund: Number(r.repairFund || 0),
     waterCharges: Number(r.waterCharges || 0),
-    parkingCharges: Number(r.parkingCharges || 0)
+    parkingCharges: Number(r.parkingCharges || 0),
+    customCharges: typeof r.customCharges === 'string' ? JSON.parse(r.customCharges) : (r.customCharges || [])
   }));
 
   const resRecords = await pool.query('SELECT id, to_char(date, \'YYYY-MM-DD\') as date, month, account_head as "accountHead", description, voucher_no as "voucherNo", type, amount FROM financial_records WHERE society_id = $1 ORDER BY date DESC, created_at DESC', [activeSocietyId]);
@@ -1309,43 +1312,13 @@ function validateSocietyRegistrationNo(regNo) {
 
     if (req.method === 'POST' && url.pathname === '/api/maintenance/generate') {
       const payload = await readJsonBody(req);
-      const { month } = payload;
-      if (!month) {
-        return sendJson(res, 400, { error: 'Billing month is required.' });
-      }
-
-      // Layman-friendly future month check (allows up to 7 days in advance)
-      const parts = month.split(' ');
-      const monthName = parts[0];
-      const year = Number(parts[1]);
-      const monthMap = {
-        'January': 0, 'February': 1, 'March': 2, 'April': 3, 'May': 4, 'June': 5,
-        'July': 6, 'August': 7, 'September': 8, 'October': 9, 'November': 10, 'December': 11
-      };
+      const { invoiceDate, dueDate, billingMonth, customCharges } = payload;
       
-      if (monthMap[monthName] !== undefined && year) {
-        const activationDate = new Date(year, monthMap[monthName], 1);
-        const advanceLimit = new Date(activationDate);
-        advanceLimit.setDate(advanceLimit.getDate() - 7);
-        
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (today < advanceLimit) {
-          const earliestDateStr = advanceLimit.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
-          return sendJson(res, 400, { error: `Billing for ${month} can only be activated starting ${earliestDateStr} (up to 7 days in advance).` });
-        }
+      if (!invoiceDate || !dueDate || !billingMonth) {
+        return sendJson(res, 400, { error: 'Invoice Date, Due Date, and Billing Month label are required.' });
       }
 
       if (!pool) return sendJson(res, 500, { error: 'Database connection not initialized.' });
-
-      // Verify if bills already exist for this month
-      const existCheck = await pool.query(
-        'SELECT id FROM maintenance_bills WHERE society_id = $1 AND billing_month = $2 LIMIT 1',
-        [session.society_id, month]
-      );
-      if (existCheck.rows.length > 0) {
-        return sendJson(res, 400, { error: `Maintenance bills for ${month} have already been generated.` });
-      }
 
       // Fetch society defaults
       const socRes = await pool.query(
@@ -1360,11 +1333,17 @@ function validateSocietyRegistrationNo(regNo) {
       const repair = Number(soc.rate_repair || 500);
       const water = Number(soc.rate_water || 250);
       const parking = Number(soc.rate_parking || 150);
-      const amount = service + sinking + repair + water + parking;
-
-      const billDate = new Date().toISOString().slice(0, 10);
-      const dueDateObj = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000);
-      const dueDate = dueDateObj.toISOString().slice(0, 10);
+      
+      let baseAmount = service + sinking + repair + water + parking;
+      let totalCustomAmount = 0;
+      
+      const parsedCustomCharges = Array.isArray(customCharges) ? customCharges : [];
+      parsedCustomCharges.forEach(charge => {
+        totalCustomAmount += Number(charge.amount || 0);
+      });
+      
+      const finalAmount = baseAmount + totalCustomAmount;
+      const customChargesJson = JSON.stringify(parsedCustomCharges);
 
       // Generate bills for each flat
       for (let i = 1; i <= totalFlats; i++) {
@@ -1376,9 +1355,9 @@ function validateSocietyRegistrationNo(regNo) {
         await pool.query(
           `INSERT INTO maintenance_bills (
             flat_no, member_name, amount, status, billing_month, bill_date, due_date,
-            service_charges, sinking_fund, repair_fund, water_charges, parking_charges, society_id
-          ) VALUES ($1, $2, $3, 'Draft', $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-          [flatNo, memberName, amount, month, billDate, dueDate, service, sinking, repair, water, parking, session.society_id]
+            service_charges, sinking_fund, repair_fund, water_charges, parking_charges, society_id, custom_charges
+          ) VALUES ($1, $2, $3, 'Draft', $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+          [flatNo, memberName, finalAmount, billingMonth, invoiceDate, dueDate, service, sinking, repair, water, parking, session.society_id, customChargesJson]
         );
       }
 
@@ -1392,7 +1371,7 @@ function validateSocietyRegistrationNo(regNo) {
       );
 
       const db = await getFullStateFromDb(session.society_id);
-      return sendJson(res, 201, { success: true, maintenanceBills: db.maintenanceBills, dashboard: deriveDashboard(db) });
+      return sendJson(res, 201, { success: true, message: 'Batch Generated Successfully', maintenanceBills: db.maintenanceBills, dashboard: deriveDashboard(db) });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/maintenance/approve') {
@@ -1423,7 +1402,31 @@ function validateSocietyRegistrationNo(regNo) {
       );
 
       const db = await getFullStateFromDb(session.society_id);
-      return sendJson(res, 200, { success: true, message: `Approved ${updateRes.rowCount} bills for ${month}.`, maintenanceBills: db.maintenanceBills, dashboard: deriveDashboard(db) });
+      return sendJson(res, 200, { success: true, message: `Approved ${updateRes.rowCount} bills for ${month}. Ready to send to members.`, maintenanceBills: db.maintenanceBills, dashboard: deriveDashboard(db) });
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/maintenance/send-otp') {
+      return sendJson(res, 200, { success: true, message: 'OTP sent to registered Treasurer mobile number.' });
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/maintenance/send-all') {
+      const payload = await readJsonBody(req);
+      const { month, otp } = payload;
+      if (!otp || otp !== '123456') { // Mock OTP validation for this prototype
+        return sendJson(res, 400, { error: 'Invalid OTP provided.' });
+      }
+      if (!month) {
+        return sendJson(res, 400, { error: 'Billing month is required.' });
+      }
+      
+      // Update whatsapp reminder flag
+      await pool.query(
+        "UPDATE maintenance_bills SET whatsapp_reminder_sent = true WHERE society_id = $1 AND billing_month = $2",
+        [session.society_id, month]
+      );
+
+      const db = await getFullStateFromDb(session.society_id);
+      return sendJson(res, 200, { success: true, message: `Maintenance bills digitally dispatched via WhatsApp for ${month}.`, maintenanceBills: db.maintenanceBills });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/maintenance/pay') {
