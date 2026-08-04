@@ -1858,16 +1858,18 @@
             const customTbody = document.getElementById('invoice-custom-charges-body');
             customTbody.innerHTML = '';
             if (bill.customCharges && bill.customCharges.length > 0) {
-                let startIndex = 6;
+                let rowIndex = 1;
                 bill.customCharges.forEach(charge => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td class="px-4 py-2.5">${startIndex++}</td>
-                        <td class="px-4 py-2.5">${charge.name || 'Additional Charge'}</td>
-                        <td class="px-4 py-2.5 text-right font-bold">₹${Number(charge.amount || 0).toLocaleString('en-IN')}</td>
+                        <td class="px-4 py-2.5 text-gray-400">${rowIndex++}</td>
+                        <td class="px-4 py-2.5 font-medium">${charge.name || 'Additional Charge'}</td>
+                        <td class="px-4 py-2.5 text-right font-bold">&#8377;${Number(charge.amount || 0).toLocaleString('en-IN')}</td>
                     `;
                     customTbody.appendChild(tr);
                 });
+            } else {
+                customTbody.innerHTML = `<tr><td colspan="3" class="px-4 py-3 text-center text-gray-400 text-xs">No charge breakdown available.</td></tr>`;
             }
 
             // Status stamp layout
@@ -2844,23 +2846,26 @@
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('view-invoice')"></div>
         <div class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-2xl mx-4 z-10 overflow-y-auto max-h-[90vh] overflow-x-hidden transform transition-all duration-300 scale-95 opacity-0" id="modal-view-invoice-card">
             <!-- Printable Invoice Area -->
-            <div class="p-8 space-y-6" id="invoice-print-area">
+            <div class="space-y-6" id="invoice-print-area">
+                <!-- Society Letterhead Stripe -->
+                <div style="background:linear-gradient(135deg,#4f46e5,#6366f1)" class="px-8 py-5 flex justify-between items-center">
+                    <div>
+                        <h2 id="invoice-soc-name" class="text-xl font-black text-white tracking-tight">Society Name</h2>
+                        <p id="invoice-soc-reg" class="text-indigo-200 text-xs font-semibold mt-0.5">REG NO: -</p>
+                        <p id="invoice-soc-addr" class="text-indigo-300 text-[11px] mt-0.5 max-w-xs">-</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-right">
+                            <p class="text-indigo-200 text-[10px] font-bold uppercase tracking-widest">Maintenance Bill</p>
+                            <p id="invoice-period" class="text-white text-base font-black mt-0.5">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-8 pb-6 space-y-6">
                 <!-- Watermark / Status Stamp -->
                 <div class="relative">
                     <div id="invoice-status-stamp" class="absolute right-0 top-0 border-4 uppercase font-black text-xl px-4 py-2 rotate-12 rounded opacity-80 select-none"></div>
-                </div>
-
-                <!-- Header -->
-                <div class="border-b border-gray-100 pb-4 flex justify-between items-start">
-                    <div>
-                        <h2 id="invoice-soc-name" class="text-xl font-black text-gray-800 tracking-tight">Society Name</h2>
-                        <p id="invoice-soc-reg" class="text-xs font-bold text-gray-500 mt-1">REG NO: -</p>
-                        <p id="invoice-soc-addr" class="text-[11px] text-gray-400 mt-0.5 max-w-xs whitespace-pre-line">-</p>
-                    </div>
-                    <div class="text-right">
-                        <h3 class="text-md font-bold text-gray-400 uppercase tracking-widest">Maintenance Bill</h3>
-                        <p id="invoice-period" class="text-sm font-bold text-brand-600 mt-1">-</p>
-                    </div>
                 </div>
 
                 <!-- Bill Details Grid -->
@@ -2915,7 +2920,8 @@
                         <p class="uppercase text-[9px] tracking-wider">Hon. Secretary / Treasurer</p>
                     </div>
                 </div>
-            </div>
+            </div> <!-- end px-8 pb-6 space-y-6 -->
+            </div> <!-- end invoice-print-area -->
 
             <!-- Modal Action Buttons (Non-printable) -->
             <div class="p-6 border-t border-gray-100 bg-gray-50 flex justify-between gap-3">
