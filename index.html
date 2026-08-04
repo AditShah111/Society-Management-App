@@ -287,52 +287,54 @@
                 <!-- ================= VIEW: MAINTENANCE COLLECTION ================= -->
                 <div id="view-maintenance" class="view-section">
                     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div class="p-6 border-b border-gray-100 flex flex-wrap gap-4 justify-between items-center bg-gray-50/50">
-                            <div>
-                                <h2 class="text-lg font-bold text-gray-800">Maintenance Registry & Tracker</h2>
-                                <p class="text-xs text-gray-500">Track monthly member bills, payments, and overdue compliance stats.</p>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-                                <div class="flex items-center gap-2">
-                                    <input type="text" id="maint-search-flat" oninput="filterMaintenanceBills()" placeholder="Search flat (e.g. A-101)..." class="text-xs border border-gray-200 rounded-xl px-3.5 py-2.5 outline-none focus:border-brand-500 w-full sm:w-44">
-                                    <select id="maint-month-filter" onchange="filterMaintenanceBills()" class="text-xs border border-gray-200 rounded-xl px-3.5 py-2.5 bg-white focus:border-brand-500 outline-none w-full sm:w-36">
+                        <!-- Toolbar -->
+                        <div class="px-5 py-4 border-b border-gray-100 bg-gray-50/50">
+                            <div class="flex flex-wrap gap-3 items-center justify-between">
+                                <div>
+                                    <h2 class="text-base font-bold text-gray-800">Maintenance Registry</h2>
+                                    <p class="text-[11px] text-gray-400 mt-0.5">Track monthly bills, payments &amp; overdue status.</p>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <input type="text" id="maint-search-flat" oninput="filterMaintenanceBills()" placeholder="Search flat..." class="text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-brand-500 w-32">
+                                    <select id="maint-month-filter" onchange="filterMaintenanceBills()" class="text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white focus:border-brand-500 outline-none">
                                         <option value="ALL">All Months</option>
-                                        <option value="July 2026">July 2026</option>
-                                        <option value="August 2026">August 2026</option>
-                                        <option value="September 2026">September 2026</option>
+                                        <option value="July 2026">Jul 2026</option>
+                                        <option value="August 2026">Aug 2026</option>
+                                        <option value="September 2026">Sep 2026</option>
                                     </select>
-                                    <select id="maint-status-filter" onchange="filterMaintenanceBills()" class="text-xs border border-gray-200 rounded-xl px-3.5 py-2.5 bg-white focus:border-brand-500 outline-none w-full sm:w-36">
-                                        <option value="ALL">All Statuses</option>
+                                    <select id="maint-status-filter" onchange="filterMaintenanceBills()" class="text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white focus:border-brand-500 outline-none">
+                                        <option value="ALL">All Status</option>
                                         <option value="Draft">Draft</option>
                                         <option value="Paid">Paid</option>
                                         <option value="Unpaid">Unpaid</option>
-                                        <option value="Overdue">Overdue (>15 Days)</option>
+                                        <option value="Overdue">Overdue</option>
                                     </select>
+                                    <button id="maint-approve-btn" onclick="openModal('approve-drafts')" class="admin-only bg-amber-500 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-amber-600 transition-all flex items-center gap-1.5 whitespace-nowrap">
+                                        <i class="fa-solid fa-paper-plane"></i> Approve
+                                    </button>
+                                    <button id="maint-send-otp-btn" onclick="triggerSendOtpFlow()" class="admin-only bg-emerald-500 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-emerald-600 transition-all flex items-center gap-1.5 whitespace-nowrap">
+                                        <i class="fa-brands fa-whatsapp"></i> Send OTP
+                                    </button>
+                                    <button id="maint-generate-btn" onclick="openInvoiceBuilder()" class="admin-only bg-brand-500 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-brand-600 transition-all flex items-center gap-1.5 whitespace-nowrap">
+                                        <i class="fa-solid fa-plus"></i> New Invoice
+                                    </button>
                                 </div>
-                                <button id="maint-approve-btn" onclick="openModal('approve-drafts')" class="admin-only bg-amber-500 text-white px-4.5 py-2.5 rounded-xl text-xs font-bold hover:bg-amber-600 transition-all shadow-md shadow-amber-500/10 flex items-center gap-2 whitespace-nowrap ml-auto lg:ml-0">
-                                    <i class="fa-solid fa-paper-plane"></i> Approve Drafts
-                                </button>
-                                <button id="maint-send-otp-btn" onclick="triggerSendOtpFlow()" class="admin-only bg-emerald-500 text-white px-4.5 py-2.5 rounded-xl text-xs font-bold hover:bg-emerald-600 transition-all shadow-md shadow-emerald-500/10 flex items-center gap-2 whitespace-nowrap">
-                                    <i class="fa-brands fa-whatsapp"></i> Send All via OTP
-                                </button>
-                                <button id="maint-generate-btn" onclick="openInvoiceBuilder()" class="admin-only bg-brand-500 text-white px-4.5 py-2.5 rounded-xl text-xs font-bold hover:bg-brand-600 transition-all shadow-md shadow-brand-500/10 flex items-center gap-2 whitespace-nowrap">
-                                    <i class="fa-solid fa-file-invoice"></i> Create New Invoice
-                                </button>
                             </div>
                         </div>
+                        <!-- Table -->
                         <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse whitespace-nowrap">
+                            <table class="w-full text-left border-collapse" style="min-width:700px">
                                 <thead>
-                                    <tr class="bg-gray-50/30 text-gray-500 text-[10px] font-bold uppercase tracking-wider border-b border-gray-100">
-                                        <th class="px-6 py-4">Flat & Resident</th>
-                                        <th class="px-6 py-4">Billing Period</th>
-                                        <th class="px-6 py-4">Bill Date</th>
-                                        <th class="px-6 py-4">Due Date</th>
-                                        <th class="px-6 py-4 text-right">Amount (₹)</th>
-                                        <th class="px-6 py-4 text-center">Status</th>
-                                        <th class="px-6 py-4 text-center">Dispatch Status</th>
-                                        <th class="px-6 py-4 text-center">Overdue?</th>
-                                        <th class="px-6 py-4 text-right">Actions</th>
+                                    <tr class="bg-gray-50 text-gray-400 text-[10px] font-bold uppercase tracking-wider border-b border-gray-100">
+                                        <th class="px-4 py-3">Flat &amp; Resident</th>
+                                        <th class="px-4 py-3">Period</th>
+                                        <th class="px-4 py-3">Bill Date</th>
+                                        <th class="px-4 py-3">Due Date</th>
+                                        <th class="px-4 py-3 text-right">Amount</th>
+                                        <th class="px-4 py-3 text-center">Status</th>
+                                        <th class="px-4 py-3 text-center">Sent?</th>
+                                        <th class="px-4 py-3 text-center">Overdue</th>
+                                        <th class="px-4 py-3 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="maintenance-bills-tbody" class="text-sm divide-y divide-gray-100">
@@ -1746,37 +1748,35 @@
 
                 return `
                     <tr class="hover:bg-gray-50/50 transition-colors">
-                        <td class="px-6 py-4">
-                            <p class="font-bold text-gray-800">${bill.flatNo}</p>
-                            <p class="text-[11px] text-gray-400 font-medium">${bill.memberName}</p>
+                        <td class="px-4 py-3">
+                            <p class="font-bold text-gray-800 text-sm">${bill.flatNo}</p>
+                            <p class="text-[11px] text-gray-400">${bill.memberName}</p>
                         </td>
-                        <td class="px-6 py-4 text-gray-600 font-medium text-xs">${bill.billingMonth}</td>
-                        <td class="px-6 py-4 text-gray-500 text-xs">${shortDate(bill.billDate)}</td>
-                        <td class="px-6 py-4 text-gray-500 text-xs">${shortDate(bill.dueDate)}</td>
-                        <td class="px-6 py-4 font-bold text-gray-800 text-right text-xs">₹${Number(bill.amount).toLocaleString('en-IN')}</td>
-                        <td class="px-6 py-4 text-center">
-                            <span class="px-2.5 py-1 ${badgeClass} text-[10px] rounded-full font-bold uppercase tracking-wider">${statusText}</span>
+                        <td class="px-4 py-3 text-gray-600 text-xs">${bill.billingMonth || '—'}</td>
+                        <td class="px-4 py-3 text-gray-500 text-xs">${shortDate(bill.billDate)}</td>
+                        <td class="px-4 py-3 text-gray-500 text-xs">${shortDate(bill.dueDate)}</td>
+                        <td class="px-4 py-3 font-bold text-gray-800 text-right text-sm">₹${Number(bill.amount).toLocaleString('en-IN')}</td>
+                        <td class="px-4 py-3 text-center">
+                            <span class="px-2 py-1 ${badgeClass} text-[10px] rounded-full font-bold uppercase tracking-wide">${statusText}</span>
                         </td>
-                        <td class="px-6 py-4 text-center">
-                            ${bill.whatsappReminderSent ? '<span class="text-emerald-500 font-bold text-xs"><i class="fa-solid fa-check-double"></i> Sent</span>' : '<span class="text-gray-400 text-xs">Pending</span>'}
+                        <td class="px-4 py-3 text-center">
+                            ${bill.whatsappReminderSent ? '<span class="text-emerald-500 font-bold text-xs"><i class="fa-solid fa-check-double"></i></span>' : '<span class="text-gray-300 text-xs">—</span>'}
                         </td>
-                        <td class="px-6 py-4 text-center">
-                            ${isOverdue ? `<span class="text-red-500 font-bold text-xs"><i class="fa-solid fa-triangle-exclamation"></i> ${diffDays} Days</span>` : '<span class="text-gray-300">-</span>'}
+                        <td class="px-4 py-3 text-center">
+                            ${isOverdue ? `<span class="text-red-500 font-bold text-xs">${diffDays}d</span>` : '<span class="text-gray-300">—</span>'}
                         </td>
-                        <td class="px-6 py-4 text-right space-x-2.5">
-                            <button onclick="viewBillInvoice('${bill.id}')" class="text-brand-600 hover:text-brand-700 text-xs font-bold transition-colors"><i class="fa-solid fa-file-invoice"></i> Bill Details</button>
-                            ${!isPaid && !isDraft && isAdmin ? `
-                                <button onclick="payMaintenanceBill('${bill.id}')" class="text-emerald-600 hover:text-emerald-700 text-xs font-bold transition-colors"><i class="fa-solid fa-circle-check"></i> Collect</button>
-                            ` : ''}
-                            ${!isPaid && !isDraft && isOverdue ? `
-                                <button onclick="sendWhatsAppReminder('${bill.id}')" class="text-green-500 hover:text-green-600 text-xs font-bold transition-colors" title="Send WhatsApp Reminder"><i class="fa-brands fa-whatsapp"></i> Remind</button>
-                            ` : ''}
+                        <td class="px-4 py-3 text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <button onclick="viewBillInvoice('${bill.id}')" class="text-brand-600 hover:text-brand-700 text-xs font-bold transition-colors" title="View Invoice"><i class="fa-solid fa-eye"></i></button>
+                                ${!isPaid && !isDraft && isAdmin ? `<button onclick="payMaintenanceBill('${bill.id}')" class="text-emerald-600 hover:text-emerald-700 text-xs font-bold transition-colors" title="Mark Collected"><i class="fa-solid fa-circle-check"></i></button>` : ''}
+                                ${!isPaid && !isDraft && isOverdue ? `<button onclick="sendWhatsAppReminder('${bill.id}')" class="text-green-500 hover:text-green-600 text-xs font-bold transition-colors" title="WhatsApp Reminder"><i class="fa-brands fa-whatsapp"></i></button>` : ''}
+                            </div>
                         </td>
                     </tr>
                 `;
             }).join('') : `
                 <tr>
-                    <td colspan="7" class="text-center py-10 text-gray-500 text-sm font-medium">No maintenance billing records found. Select different filters or generate bills.</td>
+                    <td colspan="9" class="text-center py-10 text-gray-400 text-sm">No billing records found. Use <strong>New Invoice</strong> to create one.</td>
                 </tr>
             `;
         }
