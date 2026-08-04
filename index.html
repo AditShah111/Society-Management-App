@@ -1767,13 +1767,6 @@
             document.getElementById('invoice-bill-date').innerText = shortDate(bill.billDate);
             document.getElementById('invoice-due-date').innerText = shortDate(bill.dueDate);
 
-            // Particulars breakdown
-            document.getElementById('invoice-item-service').innerText = `₹${Number(bill.serviceCharges || 0).toLocaleString('en-IN')}`;
-            document.getElementById('invoice-item-sinking').innerText = `₹${Number(bill.sinkingFund || 0).toLocaleString('en-IN')}`;
-            document.getElementById('invoice-item-repair').innerText = `₹${Number(bill.repairFund || 0).toLocaleString('en-IN')}`;
-            document.getElementById('invoice-item-water').innerText = `₹${Number(bill.waterCharges || 0).toLocaleString('en-IN')}`;
-            document.getElementById('invoice-item-parking').innerText = `₹${Number(bill.parkingCharges || 0).toLocaleString('en-IN')}`;
-            
             // Total Net Payable
             document.getElementById('invoice-total').innerText = `₹${Number(bill.amount || 0).toLocaleString('en-IN')}`;
 
