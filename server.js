@@ -1188,6 +1188,11 @@ function validateSocietyRegistrationNo(regNo) {
     }
 
     // --- MASTER ADMIN ENDPOINTS ---
+    if (pathname === '/api/debug/agm') {
+      const allMeetings = await pool.query('SELECT id, society_id, title FROM agm_meetings');
+      return sendJson(res, 200, { data: allMeetings.rows, sessionSocietyId: session ? session.society_id : null });
+    }
+
     if (pathname.startsWith('/api/master/')) {
       if (session.role !== 'master_admin') {
         return sendJson(res, 403, { error: 'Access Denied: Master Admin access required.' });
