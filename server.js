@@ -1084,13 +1084,10 @@ function validateSocietyRegistrationNo(regNo) {
       
       const exists = await pool.query('SELECT email FROM users WHERE LOWER(email) = LOWER($1)', [email]);
       if (exists.rows.length === 0) {
-        // Auto-register new resident/user for dynamic access
-        const dummySalt = crypto.randomBytes(16).toString('hex');
-        const dummyHash = crypto.scryptSync(crypto.randomUUID(), dummySalt, 64).toString('hex');
-        await pool.query(
-          'INSERT INTO users (email, salt, password_hash, auth_method, otp_code, otp_expires_at) VALUES ($1, $2, $3, $4, $5, $6)',
-          [email, dummySalt, dummyHash, 'otp', otp, expiresAt]
-        );
+        // SECURITY FIX: Do NOT auto-register unknown emails.
+        // Only pre-registered users (added by a super_admin) can use OTP login.
+        // Return a generic 404 — do not confirm whether the email exists or not.
+        return sendJson(res, 404, { error: 'This email is not registered with any society. Please contact your society admin.' });
       } else {
         await pool.query(
           'UPDATE users SET otp_code = $1, otp_expires_at = $2, auth_method = \'otp\' WHERE LOWER(email) = LOWER($3)',
@@ -1148,17 +1145,10 @@ function validateSocietyRegistrationNo(regNo) {
       const profRes = await pool.query('SELECT role, society_id FROM user_profiles WHERE LOWER(email) = LOWER($1)', [email]);
       let profile = profRes.rows[0];
       if (!profile) {
-        // Fallback: associate them with the first society and set role to resident
-        const socRes = await pool.query('SELECT id FROM societies LIMIT 1');
-        const defaultSocietyId = socRes.rows[0]?.id;
-        if (!defaultSocietyId) {
-          return sendJson(res, 500, { error: 'No society exists to assign user to.' });
-        }
-        await pool.query(
-          "INSERT INTO user_profiles (email, society_id, name, role) VALUES ($1, $2, $3, 'resident')",
-          [email, defaultSocietyId, email.split('@')[0]]
-        );
-        profile = { role: 'resident', society_id: defaultSocietyId };
+        // SECURITY FIX: Do NOT auto-assign unknown users to a society.
+        // If no profile exists, the user was not registered by an admin.
+        await pool.query('UPDATE users SET otp_code = NULL, otp_expires_at = NULL WHERE LOWER(email) = LOWER($1)', [email]);
+        return sendJson(res, 403, { error: 'Your email is not associated with any society. Please contact your society admin.' });
       }
 
       const token = crypto.randomUUID();
