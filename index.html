@@ -2633,9 +2633,8 @@
                 const res = await fetch(`/api/agm-meetings/${id}`, { method: 'DELETE' });
                 const data = await res.json();
                 if (res.ok) {
-                    window.stateData = data.dashboard;
                     showToast('Meeting deleted successfully');
-                    filterAgmMeetings();
+                    refreshLiveData();
                 } else {
                     showToast(data.error || 'Failed to delete meeting', 'error');
                 }
