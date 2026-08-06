@@ -3124,7 +3124,7 @@
                     });
                     const data = await res.json();
                     if (res.ok) {
-                        state = data.dashboard;
+                        window.stateData = data.dashboard;
                         filterAgmMeetings();
                         closeAgmUploadModal();
                     } else {
@@ -3160,7 +3160,7 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    state = data.dashboard;
+                    window.stateData = data.dashboard;
                     filterAgmMeetings();
                     closeResolutionModal();
                 } else {
