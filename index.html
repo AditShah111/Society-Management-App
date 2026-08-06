@@ -2320,8 +2320,8 @@
             }
             
             // Bring in any years from database that might be out of range
-            if (state.agmMeetings && Array.isArray(state.agmMeetings)) {
-                state.agmMeetings.forEach(m => {
+            if (window.stateData && window.stateData.agmMeetings && Array.isArray(window.stateData.agmMeetings)) {
+                window.stateData.agmMeetings.forEach(m => {
                     if (m.financialYear && !years.includes(m.financialYear)) {
                         years.push(m.financialYear);
                     }
@@ -2374,7 +2374,9 @@
         }
 
         function filterAgmMeetings() {
-            renderAgm(state.agmMeetings);
+            if (window.stateData && window.stateData.agmMeetings) {
+                renderAgm(window.stateData.agmMeetings);
+            }
         }
 
         function renderDocumentSlot(meeting, type, doc) {
