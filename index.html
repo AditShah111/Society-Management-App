@@ -2304,6 +2304,54 @@
             }).join('');
         }
 
+        function populateAgmYearDropdowns() {
+            const currentYear = new Date().getFullYear();
+            const currentMonth = new Date().getMonth() + 1; // 1-12
+            const currentFinYearStart = currentMonth >= 4 ? currentYear : currentYear - 1;
+            
+            // Calculate a robust list of years (-5 to +1 relative to current financial year)
+            let years = [];
+            for (let i = -5; i <= 1; i++) {
+                const start = currentFinYearStart + i;
+                years.push(`${start}-${start + 1}`);
+            }
+            
+            // Bring in any years from database that might be out of range
+            if (state.agmMeetings && Array.isArray(state.agmMeetings)) {
+                state.agmMeetings.forEach(m => {
+                    if (m.financialYear && !years.includes(m.financialYear)) {
+                        years.push(m.financialYear);
+                    }
+                });
+            }
+            
+            // Sort descending to show latest first
+            years.sort((a, b) => b.localeCompare(a));
+            
+            const filterSelect = document.getElementById('agm-year-filter');
+            const modalSelect = document.getElementById('meet-financial-year');
+            
+            // Retain currently selected value if valid, else fallback to current FinYear
+            const currentFilterVal = filterSelect ? filterSelect.value : `${currentFinYearStart}-${currentFinYearStart + 1}`;
+            const currentModalVal = modalSelect ? modalSelect.value : `${currentFinYearStart}-${currentFinYearStart + 1}`;
+            
+            const generateOptions = (selectedValue) => {
+                let optionsHtml = '';
+                // Ensure the selected value exists in the list just in case
+                if (selectedValue && !years.includes(selectedValue)) {
+                    years.push(selectedValue);
+                    years.sort((a, b) => b.localeCompare(a));
+                }
+                years.forEach(y => {
+                    optionsHtml += `<option value="${y}" ${y === selectedValue ? 'selected' : ''}>${y.replace('-', ' - ')}</option>`;
+                });
+                return optionsHtml;
+            };
+            
+            if (filterSelect) filterSelect.innerHTML = generateOptions(currentFilterVal);
+            if (modalSelect) modalSelect.innerHTML = generateOptions(currentModalVal);
+        }
+
         function filterAgmMeetings() {
             renderAgm(state.agmMeetings);
         }
@@ -2418,6 +2466,7 @@
                 renderLedger(state.financialRecords);
                 renderFinancialStatements(state.financialRecords);
                 renderMaintenance(state.maintenanceBills);
+                populateAgmYearDropdowns();
                 renderAgm(state.agmMeetings);
                 renderDocuments(state.documents);
                 populateMdcFormInputs(state);
