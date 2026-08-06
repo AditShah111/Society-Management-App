@@ -1251,12 +1251,21 @@ function validateSocietyRegistrationNo(regNo) {
 
     if (req.method === 'DELETE' && url.pathname.startsWith('/api/agm-meetings/')) {
       const parts = url.pathname.split('/');
-      const meetingId = parts[parts.length - 1];
+      const meetingId = decodeURIComponent(parts[parts.length - 1].trim());
       
-      await pool.query(
+      const delRes = await pool.query(
         `DELETE FROM agm_meetings WHERE id = $1 AND society_id = $2`,
         [meetingId, session.society_id]
       );
+      
+      if (delRes.rowCount === 0) {
+        const existCheck = await pool.query(`SELECT society_id FROM agm_meetings WHERE id = $1`, [meetingId]);
+        if (existCheck.rows.length === 0) {
+           return sendJson(res, 404, { error: `Meeting ID '${meetingId}' not found in database.` });
+        } else {
+           return sendJson(res, 403, { error: `Permission denied. Meeting belongs to society ${existCheck.rows[0].society_id}, you are ${session.society_id}` });
+        }
+      }
       
       const db = await getFullStateFromDb(session.society_id);
       return sendJson(res, 200, { success: true, dashboard: deriveDashboard(db) });
