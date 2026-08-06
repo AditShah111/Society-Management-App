@@ -1288,6 +1288,16 @@
             }
         };
 
+        function escapeHtml(str) {
+          if (str === null || str === undefined) return '';
+          return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#x27;');
+        }
+
         const money = value => `INR ${Number(value || 0).toLocaleString('en-IN')}`;
         const shortDate = value => new Date(value).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
@@ -1404,7 +1414,7 @@
             const agm = state.dashboard.upcomingAgm;
             const eventCard = document.querySelector('#view-dashboard .bg-blue-50');
             if (eventCard && agm) {
-                eventCard.querySelector('.font-bold').innerHTML = `<i class="fa-solid fa-gavel mr-2"></i> ${agm.title}`;
+                eventCard.querySelector('.font-bold').innerHTML = `<i class="fa-solid fa-gavel mr-2"></i> ${escapeHtml(agm.title)}`;
                 eventCard.querySelector('p').textContent = `Scheduled: ${shortDate(agm.date)}`;
             }
 
@@ -1423,7 +1433,7 @@
         function renderRedevelopment(state) {
             const addressSpan = document.getElementById('society-address');
             if (addressSpan && state.society.address) {
-                addressSpan.innerHTML = `<i class="fa-solid fa-location-dot text-brand-400"></i> ${state.society.address}`;
+                addressSpan.innerHTML = `<i class="fa-solid fa-location-dot text-brand-400"></i> ${escapeHtml(state.society.address)}`;
             }
             const regNoSpan = document.getElementById('society-registration-no');
             if (regNoSpan && state.society.registrationNo) {
@@ -1491,8 +1501,8 @@
                             <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold ${circleClass}">
                                 ${iconHtml}
                             </div>
-                            <p class="text-xs mt-3 text-center ${textClass}">${stage.name}</p>
-                            <p class="text-[10px] text-gray-500 text-center">${stage.subText}</p>
+                            <p class="text-xs mt-3 text-center ${textClass}">${escapeHtml(stage.name)}</p>
+                            <p class="text-[10px] text-gray-500 text-center">${escapeHtml(stage.subText)}</p>
                         </div>
                     `;
                 });
@@ -1506,11 +1516,11 @@
                 tendersContainer.innerHTML = state.redevelopmentTenders.length ? state.redevelopmentTenders.map(t => `
                     <tr class="hover:bg-gray-50 transition-colors">
                         <td class="p-4">
-                            <p class="font-bold text-gray-800">${t.builderName}</p>
+                            <p class="font-bold text-gray-800">${escapeHtml(t.builderName)}</p>
                             <p class="text-xs text-gray-500">Extra Area: ${t.extraAreaPct}% | Corpus: ₹${t.corpusAmountLakhs}L</p>
                         </td>
                         <td class="p-4 text-right">
-                            <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded">${t.status}</span>
+                            <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded">${escapeHtml(t.status)}</span>
                         </td>
                     </tr>
                 `).join('') : `
@@ -1529,11 +1539,11 @@
                         <div class="flex items-center overflow-hidden mr-4">
                             <i class="fa-solid fa-file-pdf text-red-500 text-2xl mr-3 flex-shrink-0"></i>
                             <div class="truncate">
-                                <p class="text-sm font-bold text-gray-800 truncate">${d.title}</p>
+                                <p class="text-sm font-bold text-gray-800 truncate">${escapeHtml(d.title)}</p>
                                 <p class="text-xs text-gray-500 truncate">Uploaded on ${shortDate(d.uploadedAt)}</p>
                             </div>
                         </div>
-                        <a href="${d.url}" target="_blank" class="text-gray-400 hover:text-brand-500 flex-shrink-0"><i class="fa-solid fa-download"></i></a>
+                        <a href="${escapeHtml(d.url)}" target="_blank" class="text-gray-400 hover:text-brand-500 flex-shrink-0"><i class="fa-solid fa-download"></i></a>
                     </div>
                 `).join('') : `
                     <p class="text-xs text-gray-500 text-center py-4">No redevelopment documents uploaded yet.</p>
@@ -1585,11 +1595,11 @@
                             </div>
                             <div>
                                 <label class="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Stage Name</label>
-                                <input type="text" class="stage-name-input w-full bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 focus:outline-none focus:border-brand-500" value="${stage.name}" required>
+                                <input type="text" class="stage-name-input w-full bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 focus:outline-none focus:border-brand-500" value="${escapeHtml(stage.name)}" required>
                             </div>
                             <div>
                                 <label class="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Sub Text / PMC</label>
-                                <input type="text" class="stage-sub-input w-full bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 focus:outline-none focus:border-brand-500" value="${stage.subText}" required>
+                                <input type="text" class="stage-sub-input w-full bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 focus:outline-none focus:border-brand-500" value="${escapeHtml(stage.subText)}" required>
                             </div>
                             <div>
                                 <label class="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Status</label>
@@ -1622,7 +1632,7 @@
 
             tr.innerHTML = `
                 <td class="py-2.5 pr-2">
-                    <input type="text" class="tender-builder w-full bg-gray-50/50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-800 focus:outline-none focus:border-brand-500" value="${builderName}" placeholder="e.g. L&T Realty" required>
+                    <input type="text" class="tender-builder w-full bg-gray-50/50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-800 focus:outline-none focus:border-brand-500" value="${escapeHtml(builderName)}" placeholder="e.g. L&T Realty" required>
                 </td>
                 <td class="py-2.5 pr-2 w-28">
                     <input type="number" step="0.01" class="tender-area w-full bg-gray-50/50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-800 focus:outline-none focus:border-brand-500" value="${extraAreaPct}" placeholder="%" required>
@@ -1759,10 +1769,10 @@
                 return `
                     <tr class="hover:bg-gray-50/50 transition-colors">
                         <td class="px-4 py-3">
-                            <p class="font-bold text-gray-800 text-sm">${bill.flatNo}</p>
-                            <p class="text-[11px] text-gray-400">${bill.memberName}</p>
+                            <p class="font-bold text-gray-800 text-sm">${escapeHtml(bill.flatNo)}</p>
+                            <p class="text-[11px] text-gray-400">${escapeHtml(bill.memberName)}</p>
                         </td>
-                        <td class="px-4 py-3 text-gray-600 text-xs">${bill.billingMonth || '—'}</td>
+                        <td class="px-4 py-3 text-gray-600 text-xs">${escapeHtml(bill.billingMonth || '—')}</td>
                         <td class="px-4 py-3 text-gray-500 text-xs">${shortDate(bill.billDate)}</td>
                         <td class="px-4 py-3 text-gray-500 text-xs">${shortDate(bill.dueDate)}</td>
                         <td class="px-4 py-3 font-bold text-gray-800 text-right text-sm">₹${Number(bill.amount).toLocaleString('en-IN')}</td>
@@ -1873,7 +1883,7 @@
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td class="px-4 py-2.5 text-gray-400">${rowIndex++}</td>
-                        <td class="px-4 py-2.5 font-medium">${charge.name || 'Additional Charge'}</td>
+                        <td class="px-4 py-2.5 font-medium">${escapeHtml(charge.name || 'Additional Charge')}</td>
                         <td class="px-4 py-2.5 text-right font-bold">&#8377;${Number(charge.amount || 0).toLocaleString('en-IN')}</td>
                     `;
                     customTbody.appendChild(tr);
@@ -1976,7 +1986,7 @@
                 ? `<button type="button" onclick="this.closest('.ib-charge-row').remove(); calcInvoiceBuilderTotal()" class="text-red-400 hover:text-red-600 p-1 transition-colors flex-shrink-0"><i class="fa-solid fa-trash-can text-xs"></i></button>`
                 : `<span class="w-6 flex-shrink-0"></span>`;
             row.innerHTML = `
-                <input type="text" value="${name}" placeholder="Charge Name" class="ib-name flex-1 text-sm font-medium text-gray-700 bg-transparent border-b border-transparent focus:border-indigo-300 outline-none py-0.5 transition-colors">
+                <input type="text" value="${escapeHtml(name)}" placeholder="Charge Name" class="ib-name flex-1 text-sm font-medium text-gray-700 bg-transparent border-b border-transparent focus:border-indigo-300 outline-none py-0.5 transition-colors">
                 <span class="text-gray-400 font-bold text-sm flex-shrink-0">&#8377;</span>
                 <input type="number" min="0" step="1" placeholder="${hint || '0'}" oninput="calcInvoiceBuilderTotal()" class="ib-amount w-32 text-sm font-bold text-indigo-700 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:border-indigo-400 text-right flex-shrink-0 transition-colors">
                 ${delBtn}
@@ -2155,7 +2165,7 @@
             if (expenseTbody) {
                 let expenseRows = Object.entries(groups)
                     .filter(([_, d]) => d.type === 'expense')
-                    .map(([head, d]) => `<tr class="hover:bg-gray-50"><td class="p-3 text-gray-700">To ${head}</td><td class="p-3 text-right font-medium">₹${Number(d.amount).toLocaleString('en-IN')}</td></tr>`)
+                    .map(([head, d]) => `<tr class="hover:bg-gray-50"><td class="p-3 text-gray-700">To ${escapeHtml(head)}</td><td class="p-3 text-right font-medium">₹${Number(d.amount).toLocaleString('en-IN')}</td></tr>`)
                     .join('');
 
                 const surplus = incomeTotal - expenseTotal;
@@ -2170,7 +2180,7 @@
             if (incomeTbody) {
                 let incomeRows = Object.entries(groups)
                     .filter(([_, d]) => d.type === 'income')
-                    .map(([head, d]) => `<tr class="hover:bg-gray-50"><td class="p-3 text-gray-700">By ${head}</td><td class="p-3 text-right font-medium">₹${Number(d.amount).toLocaleString('en-IN')}</td></tr>`)
+                    .map(([head, d]) => `<tr class="hover:bg-gray-50"><td class="p-3 text-gray-700">By ${escapeHtml(head)}</td><td class="p-3 text-right font-medium">₹${Number(d.amount).toLocaleString('en-IN')}</td></tr>`)
                     .join('');
 
                 const surplus = incomeTotal - expenseTotal;
@@ -2235,10 +2245,10 @@
                 <tr class="hover:bg-gray-50 transition-colors">
                     <td class="px-6 py-4 text-gray-600">${shortDate(record.date)}</td>
                     <td class="px-6 py-4">
-                        <div class="font-bold text-gray-800">${record.accountHead}</div>
-                        <div class="text-xs text-gray-500">${record.description || ''}</div>
+                        <div class="font-bold text-gray-800">${escapeHtml(record.accountHead)}</div>
+                        <div class="text-xs text-gray-500">${escapeHtml(record.description || '')}</div>
                     </td>
-                    <td class="px-6 py-4 text-gray-600 text-xs font-mono">${record.voucherNo || '-'}</td>
+                    <td class="px-6 py-4 text-gray-600 text-xs font-mono">${escapeHtml(record.voucherNo || '-')}</td>
                     <td class="px-6 py-4 text-right font-bold ${record.type === 'income' ? 'text-green-600' : 'text-gray-400'}">${record.type === 'income' ? Number(record.amount).toLocaleString('en-IN') : '-'}</td>
                     <td class="px-6 py-4 text-right font-bold ${record.type === 'expense' ? 'text-red-600' : 'text-gray-400'}">${record.type === 'expense' ? Number(record.amount).toLocaleString('en-IN') : '-'}</td>
                 </tr>
@@ -2253,7 +2263,7 @@
             const filteredMeetings = meetings.filter(m => (m.financialYear === selectedYear) || (!m.financialYear && selectedYear === '2024-2025')); // Default old records
 
             if (filteredMeetings.length === 0) {
-                container.innerHTML = `<div class="text-center py-8 text-gray-500 text-sm">No general body meetings scheduled for ${selectedYear}.</div>`;
+                container.innerHTML = `<div class="text-center py-8 text-gray-500 text-sm">No general body meetings scheduled for ${escapeHtml(selectedYear)}.</div>`;
                 return;
             }
 
@@ -2270,13 +2280,13 @@
                         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4 mb-4">
                             <div>
                                 <div class="flex items-center space-x-3 mb-2">
-                                    <h3 class="text-lg font-bold ${finalized ? 'text-gray-800' : 'text-brand-700'}">${meeting.title}</h3>
-                                    <span class="${badge} text-[10px] uppercase font-bold px-2 py-1 rounded">${meeting.status}</span>
+                                    <h3 class="text-lg font-bold ${finalized ? 'text-gray-800' : 'text-brand-700'}">${escapeHtml(meeting.title)}</h3>
+                                    <span class="${badge} text-[10px] uppercase font-bold px-2 py-1 rounded">${escapeHtml(meeting.status)}</span>
                                 </div>
                                 <p class="text-sm text-gray-600 mb-1"><i class="fa-regular fa-calendar mr-2"></i> Date: ${shortDate(meeting.date)}</p>
-                                <p class="text-xs text-gray-500">${meeting.agenda || 'No agenda provided'}</p>
+                                <p class="text-xs text-gray-500">${escapeHtml(meeting.agenda || 'No agenda provided')}</p>
                             </div>
-                            <button onclick="deleteAgmMeeting('${meeting.id}')" class="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors" title="Delete Meeting">
+                            <button onclick="deleteAgmMeeting('${escapeHtml(meeting.id)}')" class="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors" title="Delete Meeting">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
                         </div>
@@ -2292,14 +2302,14 @@
                         <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
                             <div class="flex justify-between items-center mb-3">
                                 <h4 class="text-sm font-bold text-gray-700"><i class="fa-solid fa-list-check mr-2"></i>Resolutions Tracker</h4>
-                                <button onclick="openResolutionModal('${meeting.id}')" class="text-xs text-brand-600 font-bold hover:text-brand-700"><i class="fa-solid fa-plus mr-1"></i>Add Resolution</button>
+                                <button onclick="openResolutionModal('${escapeHtml(meeting.id)}')" class="text-xs text-brand-600 font-bold hover:text-brand-700"><i class="fa-solid fa-plus mr-1"></i>Add Resolution</button>
                             </div>
                             ${meeting.resolutions?.length ? `
                                 <ul class="space-y-2">
                                     ${meeting.resolutions.map(r => `
                                         <li class="flex justify-between items-center bg-white p-2.5 rounded border border-gray-200 text-xs shadow-sm">
-                                            <span class="text-gray-700 font-medium">${r.resolutionText}</span>
-                                            <span class="font-bold px-2 py-1 rounded-sm bg-blue-50 text-blue-700 border border-blue-100">${r.status}</span>
+                                            <span class="text-gray-700 font-medium">${escapeHtml(r.resolutionText)}</span>
+                                            <span class="font-bold px-2 py-1 rounded-sm bg-blue-50 text-blue-700 border border-blue-100">${escapeHtml(r.status)}</span>
                                         </li>
                                     `).join('')}
                                 </ul>
@@ -2413,12 +2423,12 @@
                             <i class="fa-solid ${document.mimeType.includes('pdf') ? 'fa-file-pdf text-red-500' : document.mimeType.includes('word') ? 'fa-file-word text-blue-500' : 'fa-file-lines text-gray-500'} text-xl"></i>
                         </div>
                         <div class="truncate ml-3">
-                            <p class="text-sm font-bold text-gray-800 truncate">${document.title}</p>
-                            <p class="text-xs text-gray-500 truncate">${document.category} | Uploaded ${shortDate(document.uploadedAt)}</p>
+                            <p class="text-sm font-bold text-gray-800 truncate">${escapeHtml(document.title)}</p>
+                            <p class="text-xs text-gray-500 truncate">${escapeHtml(document.category)} | Uploaded ${shortDate(document.uploadedAt)}</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 flex-shrink-0">
-                        <a href="${document.url}" target="_blank" class="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-brand-500 flex items-center justify-center transition-all" title="View or download"><i class="fa-solid fa-download"></i></a>
+                        <a href="${escapeHtml(document.url)}" target="_blank" class="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-brand-500 flex items-center justify-center transition-all" title="View or download"><i class="fa-solid fa-download"></i></a>
                         ${isAdmin ? `<button class="w-8 h-8 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 flex items-center justify-center transition-all" title="Delete document" onclick="deleteUploadedDocument('${document.id}')"><i class="fa-solid fa-trash"></i></button>` : ''}
                     </div>
                 </div>

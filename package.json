@@ -16,11 +16,5 @@
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.14",
     "pg": "^8.22.0"
-  },
-  "devDependencies": {
-    "@aws-sdk/client-ec2": "^3.1094.0",
-    "archiver": "^8.0.0",
-    "cloudflared": "^0.7.1",
-    "ssh2": "^1.17.0"
   }
 }

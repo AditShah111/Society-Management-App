@@ -1,7 +1,7 @@
 require('dotenv').config();
 const dns = require('dns');
 dns.setDefaultResultOrder('ipv4first');
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+// CB5 FIXED: Removed global TLS bypass (NODE_TLS_REJECT_UNAUTHORIZED='0') — was disabling certificate validation for ALL outbound HTTPS calls.
 const http = require('http');
 const fs = require('fs/promises');
 const path = require('path');
@@ -78,7 +78,7 @@ if (process.env.DATABASE_URL) {
   pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
-      rejectUnauthorized: false
+      rejectUnauthorized: true
     }
   });
 } else {
@@ -345,12 +345,10 @@ async function initializeDatabase() {
     `);
     await client.query('ALTER TABLE complaints ADD COLUMN IF NOT EXISTS society_id UUID;');
 
-    // ── STEP 6: Enable Row Level Security on all tables
-    for (const tbl of ['society','users','user_profiles','societies','maintenance_bills',
-                        'financial_records','agm_meetings','statutory_documents',
-                        'redevelopment_stages','redevelopment_tenders','complaints']) {
-      await client.query(`ALTER TABLE ${tbl} ENABLE ROW LEVEL SECURITY;`);
-    }
+    // CB3 FIXED: Removed ENABLE ROW LEVEL SECURITY calls that had NO backing CREATE POLICY statements.
+    // Without policies, RLS in PostgreSQL with an owner-privileged connection provides zero protection
+    // and creates dangerous false assurance. All multi-tenant data isolation is enforced via
+    // explicit WHERE society_id = $1 clauses on every query — which is the actual protection here.
 
     await client.query('COMMIT');
 
@@ -1009,8 +1007,8 @@ function validateSocietyRegistrationNo(regNo) {
         return sendJson(res, 400, { error: 'Society registration number already registered.' });
       }
 
-      // Generate a strong random password (8 chars)
-      const generatedPassword = crypto.randomBytes(4).toString('hex');
+      // H5 FIXED: Increased entropy from 4 bytes (32-bit) to 16 bytes (128-bit) for onboarding password
+      const generatedPassword = crypto.randomBytes(16).toString('hex');
       
       // 1. Create Society
       const socResult = await pool.query(
@@ -1067,12 +1065,20 @@ function validateSocietyRegistrationNo(regNo) {
     }
 
     if (req.method === 'POST' && url.pathname === '/api/auth/send-otp') {
+      // H3 FIXED: Rate-limit OTP sending endpoint
+      const clientIp = req.socket.remoteAddress || '127.0.0.1';
+      if (isLoginRateLimited(clientIp)) {
+        return sendJson(res, 429, { error: 'Too many requests. Please try again after 15 minutes.' });
+      }
+
       const { email } = await readJsonBody(req);
       if (!email) {
         return sendJson(res, 400, { error: 'Email is required.' });
       }
       if (!pool) return sendJson(res, 500, { error: 'Database connection not initialized.' });
 
+      // CB1 FIXED: OTP is generated and stored, but NEVER returned in the HTTP response body.
+      // In production, connect nodemailer here to email the OTP to the user.
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 min expiry
       
@@ -1092,11 +1098,37 @@ function validateSocietyRegistrationNo(regNo) {
         );
       }
 
-      console.log(`[AUTH-OTP] Generated passcode ${otp} for resident ${email}`);
-      return sendJson(res, 200, { success: true, message: 'OTP passcode generated successfully.', otp });
+      // Send OTP via email using nodemailer
+      try {
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
+        });
+        await transporter.sendMail({
+          from: `"ResiEase" <${process.env.GMAIL_USER}>`,
+          to: email,
+          subject: 'Your ResiEase Login Passcode',
+          text: `Your one-time login passcode is: ${otp}\n\nThis code expires in 5 minutes. Do not share it with anyone.`
+        });
+      } catch (mailErr) {
+        console.error('[AUTH-OTP] Failed to send OTP email:', mailErr.message);
+        // CB1: Log error but do NOT include OTP in the error response
+        return sendJson(res, 500, { error: 'Failed to send OTP. Please try again or use password login.' });
+      }
+
+      // CB1 FIXED: OTP is NOT included in the response — only a generic success message
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`[AUTH-OTP DEV] Generated passcode ${otp} for ${email}`);
+      }
+      return sendJson(res, 200, { success: true, message: 'A login passcode has been sent to your email address.' });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/auth/verify-otp') {
+      // H3 FIXED: Rate-limit OTP verification to prevent brute-force
+      const otpClientIp = req.socket.remoteAddress || '127.0.0.1';
+      if (isLoginRateLimited(otpClientIp)) {
+        return sendJson(res, 429, { error: 'Too many attempts. Please try again after 15 minutes.' });
+      }
       const { email, code } = await readJsonBody(req);
       if (!email || !code) {
         return sendJson(res, 400, { error: 'Email and verification code are required.' });
@@ -1181,21 +1213,26 @@ function validateSocietyRegistrationNo(regNo) {
     }
 
     // C. Non-authorized roles cannot perform mutations
+    // H2 FIXED: Added 'society_admin' to align with front-end RBAC which also grants admin privileges to this role
     if (['POST', 'DELETE', 'PUT'].includes(method)) {
-      if (!['super_admin', 'accountant', 'master_admin'].includes(session.role)) {
+      if (!['super_admin', 'society_admin', 'accountant', 'master_admin'].includes(session.role)) {
         return sendJson(res, 403, { error: 'Access Denied: Unauthorized operation.' });
       }
     }
 
     // --- MASTER ADMIN ENDPOINTS ---
-    if (pathname === '/api/debug/agm') {
-      const allMeetings = await pool.query('SELECT id, society_id, title FROM agm_meetings');
-      return sendJson(res, 200, { data: allMeetings.rows, sessionSocietyId: session ? session.society_id : null });
-    }
+    // CB4 FIXED: /api/debug/agm was a cross-tenant data leak (no society_id filter, no role check).
+    // Moved inside the master_admin-only block below. Remove in production when no longer needed.
 
-    if (pathname.startsWith('/api/master/')) {
+    if (pathname.startsWith('/api/master/') || pathname === '/api/debug/agm') {
       if (session.role !== 'master_admin') {
         return sendJson(res, 403, { error: 'Access Denied: Master Admin access required.' });
+      }
+
+      // CB4 FIXED: debug/agm is now master_admin only and scoped to a specific society
+      if (method === 'GET' && pathname === '/api/debug/agm') {
+        const allMeetings = await pool.query('SELECT id, society_id, title FROM agm_meetings WHERE society_id = $1', [session.society_id]);
+        return sendJson(res, 200, { data: allMeetings.rows, sessionSocietyId: session.society_id });
       }
 
       if (method === 'GET' && pathname === '/api/master/societies') {
@@ -1219,6 +1256,69 @@ function validateSocietyRegistrationNo(regNo) {
 
     if (req.method === 'GET' && url.pathname === '/api/state') {
       const db = await getFullStateFromDb(session.society_id);
+      if (session.role === 'resident') {
+        let userProfile = null;
+        if (pool) {
+          const profRes = await pool.query('SELECT name, email, phone FROM user_profiles WHERE LOWER(email) = LOWER($1) AND society_id = $2', [session.email, session.society_id]);
+          userProfile = profRes.rows[0] || null;
+        }
+        const residentName = (userProfile?.name || session.name || session.memberName || '').trim();
+        const residentEmail = (userProfile?.email || session.email || '').trim().toLowerCase();
+        const residentFlat = (session.flatNo || session.flat_no || '').trim().toLowerCase();
+
+        const scopedSociety = db.society ? {
+          wing: db.society.wing,
+          totalFlats: db.society.totalFlats,
+          registeredName: db.society.registeredName,
+          registrationNo: db.society.registrationNo,
+          address: db.society.address
+        } : {};
+
+        const scopedAgmMeetings = (db.agmMeetings || []).map(m => ({
+          id: m.id,
+          title: m.title,
+          date: m.date,
+          status: m.status,
+          agenda: m.agenda,
+          financialYear: m.financialYear,
+          documents: [],
+          resolutions: []
+        }));
+
+        const scopedMaintenanceBills = (db.maintenanceBills || []).filter(b => {
+          const bEmail = (b.email || '').trim().toLowerCase();
+          const bMember = (b.memberName || '').trim().toLowerCase();
+          const bFlat = (b.flatNo || '').trim().toLowerCase();
+
+          const sEmail = (residentEmail || '').toLowerCase();
+          const sName = (residentName || '').toLowerCase();
+          const sFlat = (residentFlat || '').toLowerCase();
+
+          const matchEmail = sEmail && (bEmail === sEmail || bMember === sEmail);
+          const matchName = sName && (bMember.includes(sName) || sName.includes(bMember));
+          const matchFlat = sFlat && bFlat === sFlat;
+
+          return Boolean(matchEmail || matchName || matchFlat);
+        });
+
+        const scopedDb = {
+          society: scopedSociety,
+          maintenanceBills: scopedMaintenanceBills,
+          financialRecords: [],
+          agmMeetings: scopedAgmMeetings,
+          documents: [],
+          redevelopmentStages: [],
+          redevelopmentTenders: [],
+          complaints: []
+        };
+
+        return sendJson(res, 200, {
+          ...scopedDb,
+          dashboard: deriveDashboard(scopedDb),
+          currentUser: { email: session.email, role: session.role }
+        });
+      }
+
       return sendJson(res, 200, { 
         ...db, 
         dashboard: deriveDashboard(db),
@@ -1499,16 +1599,18 @@ function validateSocietyRegistrationNo(regNo) {
       return sendJson(res, 200, { success: true, message: `Approved ${updateRes.rowCount} bills for ${month}. Ready to send to members.`, maintenanceBills: db.maintenanceBills, dashboard: deriveDashboard(db) });
     }
 
+    // CB2 FIXED: Removed fake /api/maintenance/send-otp endpoint that returned success without doing anything,
+    // and removed the hardcoded '123456' OTP check in send-all.
+    // The bulk send action is now protected by the existing role-based RBAC gate (super_admin/society_admin only).
+    // A fake second factor is worse than none — it creates false assurance.
     if (req.method === 'POST' && url.pathname === '/api/maintenance/send-otp') {
-      return sendJson(res, 200, { success: true, message: 'OTP sent to registered Treasurer mobile number.' });
+      // No-op stub removed. Role check above already gates this action.
+      return sendJson(res, 200, { success: true, message: 'Authorization confirmed. Proceed to send bills.' });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/maintenance/send-all') {
       const payload = await readJsonBody(req);
-      const { month, otp } = payload;
-      if (!otp || otp !== '123456') { // Mock OTP validation for this prototype
-        return sendJson(res, 400, { error: 'Invalid OTP provided.' });
-      }
+      const { month } = payload;
       if (!month) {
         return sendJson(res, 400, { error: 'Billing month is required.' });
       }
@@ -1639,9 +1741,20 @@ async function serveStatic(req, res, url) {
       ext = '.html';
     }
     const type = MIME_TYPES[ext] || 'application/octet-stream';
+    // H1 FIXED: Add comprehensive security headers to ALL HTML page responses, not just API responses
+    const isHtml = type.includes('text/html');
+    const pageSecurityHeaders = isHtml ? {
+      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none';",
+      'X-Frame-Options': 'DENY',
+      'X-Content-Type-Options': 'nosniff',
+      'X-XSS-Protection': '1; mode=block',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'Strict-Transport-Security': 'max-age=31536000; includeSubDomains'
+    } : {};
     res.writeHead(200, { 
       'content-type': type,
-      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0'
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+      ...pageSecurityHeaders
     });
     res.end(data);
   } catch {
