@@ -1246,7 +1246,20 @@ function validateSocietyRegistrationNo(regNo) {
       );
 
       const db = await getFullStateFromDb(session.society_id);
-      return sendJson(res, 201, { meeting: { id, ...payload }, dashboard: deriveDashboard(db) });
+      return sendJson(res, 201, { success: true, dashboard: deriveDashboard(db) });
+    }
+
+    if (req.method === 'DELETE' && url.pathname.startsWith('/api/agm-meetings/')) {
+      const parts = url.pathname.split('/');
+      const meetingId = parts[parts.length - 1];
+      
+      await pool.query(
+        `DELETE FROM agm_meetings WHERE id = $1 AND society_id = $2`,
+        [meetingId, session.society_id]
+      );
+      
+      const db = await getFullStateFromDb(session.society_id);
+      return sendJson(res, 200, { success: true, dashboard: deriveDashboard(db) });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/agm-resolutions') {

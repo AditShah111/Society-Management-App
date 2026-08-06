@@ -2276,6 +2276,9 @@
                                 <p class="text-sm text-gray-600 mb-1"><i class="fa-regular fa-calendar mr-2"></i> Date: ${shortDate(meeting.date)}</p>
                                 <p class="text-xs text-gray-500">${meeting.agenda || 'No agenda provided'}</p>
                             </div>
+                            <button onclick="deleteAgmMeeting('${meeting.id}')" class="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors" title="Delete Meeting">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
                         </div>
                         
                         <!-- Documents Upload Section -->
@@ -2312,9 +2315,9 @@
             const currentMonth = new Date().getMonth() + 1; // 1-12
             const currentFinYearStart = currentMonth >= 4 ? currentYear : currentYear - 1;
             
-            // Calculate a robust list of years (-5 to +1 relative to current financial year)
+            // Calculate a robust list of years (-10 to +10 relative to current financial year)
             let years = [];
-            for (let i = -5; i <= 1; i++) {
+            for (let i = -10; i <= 10; i++) {
                 const start = currentFinYearStart + i;
                 years.push(`${start}-${start + 1}`);
             }
@@ -2621,6 +2624,23 @@
                 refreshLiveData();
             } catch (error) {
                 showToast(error.message, 'error');
+            }
+        }
+
+        async function deleteAgmMeeting(id) {
+            if (!confirm('Are you sure you want to delete this meeting? This will also permanently delete all associated documents and resolutions.')) return;
+            try {
+                const res = await fetch(`/api/agm-meetings/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (res.ok) {
+                    window.stateData = data.dashboard;
+                    showToast('Meeting deleted successfully');
+                    filterAgmMeetings();
+                } else {
+                    showToast(data.error || 'Failed to delete meeting', 'error');
+                }
+            } catch (err) {
+                showToast(err.message, 'error');
             }
         }
 
