@@ -549,14 +549,21 @@
 
                 <!-- ================= VIEW: AGM & MINUTES ================= -->
                 <div id="view-agm" class="view-section">
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
                         <div class="p-6 border-b border-gray-100 flex flex-wrap gap-4 justify-between items-center bg-gray-50">
                             <h2 class="text-lg font-bold text-gray-800">General Body Meetings & Resolutions</h2>
-                            <button id="schedule-meeting-btn" class="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-md shadow-brand-500/10 whitespace-nowrap">
-                                <i class="fa-solid fa-calendar-plus mr-2"></i>Schedule Meeting
-                            </button>
+                            <div class="flex items-center gap-3">
+                                <select id="agm-year-filter" class="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white font-medium text-gray-700 outline-none focus:border-brand-500 transition-all" onchange="filterAgmMeetings()">
+                                    <option value="2025-2026">2025 - 2026</option>
+                                    <option value="2024-2025" selected>2024 - 2025</option>
+                                    <option value="2023-2024">2023 - 2024</option>
+                                </select>
+                                <button id="schedule-meeting-btn" class="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-md shadow-brand-500/10 whitespace-nowrap">
+                                    <i class="fa-solid fa-calendar-plus mr-2"></i>Schedule Meeting
+                                </button>
+                            </div>
                         </div>
-                        <div class="p-6">
+                        <div class="p-6" id="agm-meetings-container">
                             <!-- Meeting List -->
                             <div class="text-center py-8 text-gray-500 text-sm">
                                 No general body meetings scheduled. Schedule one above.
@@ -2236,29 +2243,87 @@
         }
 
         function renderAgm(meetings) {
-            const container = document.querySelector('#view-agm .p-6:not(.border-b)');
+            const container = document.getElementById('agm-meetings-container');
             if (!container) return;
-            container.innerHTML = meetings.map(meeting => {
+            
+            const selectedYear = document.getElementById('agm-year-filter').value;
+            const filteredMeetings = meetings.filter(m => (m.financialYear === selectedYear) || (!m.financialYear && selectedYear === '2024-2025')); // Default old records
+
+            if (filteredMeetings.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-gray-500 text-sm">No general body meetings scheduled for ${selectedYear}.</div>`;
+                return;
+            }
+
+            container.innerHTML = filteredMeetings.map(meeting => {
                 const finalized = meeting.status.toLowerCase().includes('final');
                 const badge = finalized ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700';
+                
+                const agendaDoc = meeting.documents?.find(d => d.documentType === 'Agenda');
+                const noticeDoc = meeting.documents?.find(d => d.documentType === 'Notice');
+                const minutesDoc = meeting.documents?.find(d => d.documentType === 'Minutes');
+                
                 return `
-                    <div class="border border-gray-200 rounded-lg p-5 mb-4 hover:shadow-md transition-shadow ${finalized ? '' : 'bg-blue-50/30'}">
-                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div class="border border-gray-200 rounded-lg p-5 mb-6 hover:shadow-md transition-shadow bg-white">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4 mb-4">
                             <div>
                                 <div class="flex items-center space-x-3 mb-2">
                                     <h3 class="text-lg font-bold ${finalized ? 'text-gray-800' : 'text-brand-700'}">${meeting.title}</h3>
                                     <span class="${badge} text-[10px] uppercase font-bold px-2 py-1 rounded">${meeting.status}</span>
                                 </div>
                                 <p class="text-sm text-gray-600 mb-1"><i class="fa-regular fa-calendar mr-2"></i> Date: ${shortDate(meeting.date)}</p>
-                                <p class="text-xs text-gray-500">${meeting.agenda || ''}</p>
+                                <p class="text-xs text-gray-500">${meeting.agenda || 'No agenda provided'}</p>
                             </div>
-                            <button class="bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300 px-3 py-1.5 rounded text-sm font-bold whitespace-nowrap">
-                                <i class="fa-solid ${finalized ? 'fa-file-pdf text-red-500' : 'fa-pen-to-square text-brand-500'} mr-1"></i>${finalized ? 'View Minutes' : 'Edit Agenda'}
-                            </button>
+                        </div>
+                        
+                        <!-- Documents Upload Section -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            ${renderDocumentSlot(meeting, 'Notice', noticeDoc)}
+                            ${renderDocumentSlot(meeting, 'Agenda', agendaDoc)}
+                            ${renderDocumentSlot(meeting, 'Minutes', minutesDoc)}
+                        </div>
+
+                        <!-- Resolutions Section -->
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="text-sm font-bold text-gray-700"><i class="fa-solid fa-list-check mr-2"></i>Resolutions Tracker</h4>
+                                <button onclick="openResolutionModal('${meeting.id}')" class="text-xs text-brand-600 font-bold hover:text-brand-700"><i class="fa-solid fa-plus mr-1"></i>Add Resolution</button>
+                            </div>
+                            ${meeting.resolutions?.length ? `
+                                <ul class="space-y-2">
+                                    ${meeting.resolutions.map(r => `
+                                        <li class="flex justify-between items-center bg-white p-2.5 rounded border border-gray-200 text-xs shadow-sm">
+                                            <span class="text-gray-700 font-medium">${r.resolutionText}</span>
+                                            <span class="font-bold px-2 py-1 rounded-sm bg-blue-50 text-blue-700 border border-blue-100">${r.status}</span>
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            ` : `<p class="text-xs text-gray-400 italic">No resolutions recorded yet.</p>`}
                         </div>
                     </div>
                 `;
             }).join('');
+        }
+
+        function filterAgmMeetings() {
+            renderAgm(state.agmMeetings);
+        }
+
+        function renderDocumentSlot(meeting, type, doc) {
+            if (doc) {
+                return `
+                    <div class="flex flex-col bg-green-50/50 p-3 rounded-lg border border-green-100 items-center justify-center text-center h-24 relative group">
+                        <i class="fa-solid fa-file-pdf text-red-500 text-2xl mb-1"></i>
+                        <span class="text-[11px] font-bold text-gray-700 mb-1">${type}</span>
+                        <a href="${doc.url}" target="_blank" class="text-[10px] text-brand-600 font-bold hover:underline">View Document</a>
+                    </div>
+                `;
+            }
+            return `
+                <div class="flex flex-col bg-gray-50 border border-dashed border-gray-300 p-3 rounded-lg items-center justify-center text-center cursor-pointer hover:bg-brand-50 hover:border-brand-300 transition-colors h-24" onclick="openAgmUploadModal('${meeting.id}', '${type}')">
+                    <i class="fa-solid fa-cloud-arrow-up text-gray-400 text-xl mb-1"></i>
+                    <span class="text-xs font-bold text-gray-600">Upload ${type}</span>
+                </div>
+            `;
         }
 
         function renderDocuments(documents) {
@@ -2934,6 +2999,90 @@
     </div>
 
     <script>
+        // --- AGM Custom Functions ---
+        let currentAgmUploadMeetingId = null;
+        let currentAgmUploadType = null;
+        function openAgmUploadModal(meetingId, type) {
+            currentAgmUploadMeetingId = meetingId;
+            currentAgmUploadType = type;
+            document.getElementById('agm-upload-type-label').innerText = type;
+            document.getElementById('agm-upload-modal').classList.remove('hidden');
+        }
+        function closeAgmUploadModal() {
+            document.getElementById('agm-upload-modal').classList.add('hidden');
+            document.getElementById('agm-upload-form').reset();
+        }
+        document.getElementById('agm-upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('agm-file-input');
+            if (!fileInput.files.length) return alert('Please select a file');
+            const file = fileInput.files[0];
+            const financialYear = document.getElementById('agm-year-filter').value;
+            
+            const reader = new FileReader();
+            reader.onload = async function() {
+                const base64 = reader.result.split(',')[1];
+                try {
+                    const res = await fetch('/api/agm-documents/upload', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            meetingId: currentAgmUploadMeetingId,
+                            financialYear,
+                            documentType: currentAgmUploadType,
+                            fileName: file.name,
+                            mimeType: file.type,
+                            size: file.size,
+                            base64
+                        })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        state = data.dashboard;
+                        filterAgmMeetings();
+                        closeAgmUploadModal();
+                    } else {
+                        alert('Upload failed');
+                    }
+                } catch(err) { alert('Error uploading document'); }
+            };
+            reader.readAsDataURL(file);
+        });
+
+        let currentResolutionMeetingId = null;
+        function openResolutionModal(meetingId) {
+            currentResolutionMeetingId = meetingId;
+            document.getElementById('resolution-modal').classList.remove('hidden');
+        }
+        function closeResolutionModal() {
+            document.getElementById('resolution-modal').classList.add('hidden');
+            document.getElementById('resolution-form').reset();
+        }
+        document.getElementById('resolution-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = document.getElementById('resolution-text').value;
+            const status = document.getElementById('resolution-status').value;
+            try {
+                const res = await fetch('/api/agm-resolutions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        meetingId: currentResolutionMeetingId,
+                        resolutionText: text,
+                        status
+                    })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    state = data.dashboard;
+                    filterAgmMeetings();
+                    closeResolutionModal();
+                } else {
+                    alert('Save failed');
+                }
+            } catch(err) { alert('Error saving resolution'); }
+        });
+
         async function logout() {
             try {
                 await fetch('/api/logout', { method: 'POST' });
@@ -2941,5 +3090,57 @@
             window.location.href = '/login';
         }
     </script>
+
+    <!-- AGM Upload Modal -->
+    <div id="agm-upload-modal" class="fixed inset-0 bg-gray-900/50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-gray-800">Upload <span id="agm-upload-type-label"></span></h3>
+                <button onclick="closeAgmUploadModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6">
+                <form id="agm-upload-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Select File (PDF/Word)</label>
+                        <input type="file" id="agm-file-input" accept=".pdf,.doc,.docx" required
+                            class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 border border-gray-300 rounded-lg p-2" />
+                    </div>
+                    <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 rounded-lg transition-colors">
+                        Upload Document
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Resolution Modal -->
+    <div id="resolution-modal" class="fixed inset-0 bg-gray-900/50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-gray-800">Add New Resolution</h3>
+                <button onclick="closeResolutionModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6">
+                <form id="resolution-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Resolution Text</label>
+                        <textarea id="resolution-text" rows="3" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none" placeholder="Enter resolution details..."></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Status</label>
+                        <select id="resolution-status" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none">
+                            <option value="Proposed">Proposed</option>
+                            <option value="Passed">Passed</option>
+                            <option value="Rejected">Rejected</option>
+                            <option value="Deferred">Deferred</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 rounded-lg transition-colors">
+                        Save Resolution
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

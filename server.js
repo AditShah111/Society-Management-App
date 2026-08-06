@@ -247,6 +247,33 @@ async function initializeDatabase() {
       );
     `);
     await client.query('ALTER TABLE agm_meetings ADD COLUMN IF NOT EXISTS society_id UUID;');
+    await client.query('ALTER TABLE agm_meetings ADD COLUMN IF NOT EXISTS financial_year VARCHAR(20);');
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS agm_documents (
+        id            UUID PRIMARY KEY,
+        meeting_id    VARCHAR(100) REFERENCES agm_meetings(id) ON DELETE CASCADE,
+        society_id    UUID REFERENCES societies(id) ON DELETE CASCADE,
+        financial_year VARCHAR(20),
+        document_type VARCHAR(100) NOT NULL,
+        original_name VARCHAR(255) NOT NULL,
+        mime_type     VARCHAR(100) NOT NULL,
+        file_size     INT NOT NULL,
+        file_data     BYTEA NOT NULL,
+        uploaded_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS agm_resolutions (
+        id            UUID PRIMARY KEY,
+        meeting_id    VARCHAR(100) REFERENCES agm_meetings(id) ON DELETE CASCADE,
+        society_id    UUID REFERENCES societies(id) ON DELETE CASCADE,
+        resolution_text TEXT NOT NULL,
+        status        VARCHAR(50) DEFAULT 'Proposed',
+        created_at    TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS statutory_documents (
@@ -455,8 +482,15 @@ async function getFullStateFromDb(societyId) {
   const resRecords = await pool.query('SELECT id, to_char(date, \'YYYY-MM-DD\') as date, month, account_head as "accountHead", description, voucher_no as "voucherNo", type, amount FROM financial_records WHERE society_id = $1 ORDER BY date DESC, created_at DESC', [activeSocietyId]);
   state.financialRecords = resRecords.rows.map(r => ({ ...r, amount: Number(r.amount) }));
 
-  const resAgm = await pool.query('SELECT id, to_char(date, \'YYYY-MM-DD\') as date, title, status, agenda FROM agm_meetings WHERE society_id = $1 ORDER BY date ASC', [activeSocietyId]);
-  state.agmMeetings = resAgm.rows;
+  const resAgm = await pool.query('SELECT id, to_char(date, \'YYYY-MM-DD\') as date, title, status, agenda, financial_year as "financialYear" FROM agm_meetings WHERE society_id = $1 ORDER BY date ASC', [activeSocietyId]);
+  const resAgmDocs = await pool.query('SELECT id, meeting_id as "meetingId", financial_year as "financialYear", document_type as "documentType", original_name as "originalName", mime_type as "mimeType", file_size as "size", to_char(uploaded_at, \'YYYY-MM-DD"T"HH24:MI:SS"Z"\') as "uploadedAt" FROM agm_documents WHERE society_id = $1 ORDER BY uploaded_at DESC', [activeSocietyId]);
+  const resAgmRes = await pool.query('SELECT id, meeting_id as "meetingId", resolution_text as "resolutionText", status, to_char(created_at, \'YYYY-MM-DD"T"HH24:MI:SS"Z"\') as "createdAt" FROM agm_resolutions WHERE society_id = $1 ORDER BY created_at ASC', [activeSocietyId]);
+  
+  state.agmMeetings = resAgm.rows.map(m => ({
+    ...m,
+    documents: resAgmDocs.rows.filter(d => d.meetingId === m.id).map(d => ({...d, url: `/uploads/agm/${d.id}`})),
+    resolutions: resAgmRes.rows.filter(r => r.meetingId === m.id)
+  }));
 
   const resDocs = await pool.query('SELECT id, title, category, form_id as "formId", form_name as "formName", original_name as "originalName", mime_type as "mimeType", file_size as "size", financial_year as "financialYear", period, to_char(uploaded_at, \'YYYY-MM-DD"T"HH24:MI:SS"Z"\') as "uploadedAt" FROM statutory_documents WHERE society_id = $1 ORDER BY uploaded_at DESC', [activeSocietyId]);
   state.documents = resDocs.rows.map(r => ({
@@ -1203,16 +1237,46 @@ function validateSocietyRegistrationNo(regNo) {
 
     if (req.method === 'POST' && url.pathname === '/api/agm-meetings') {
       const payload = await readJsonBody(req);
-      const { title, date, status, agenda } = payload;
+      const { title, date, status, agenda, financialYear } = payload;
       const id = `meet-${Date.now()}`;
       await pool.query(
-        `INSERT INTO agm_meetings (id, title, date, status, agenda, society_id)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [id, title, date, status, agenda || '', session.society_id]
+        `INSERT INTO agm_meetings (id, title, date, status, agenda, society_id, financial_year)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [id, title, date, status, agenda || '', session.society_id, financialYear || '']
       );
 
       const db = await getFullStateFromDb(session.society_id);
       return sendJson(res, 201, { meeting: { id, ...payload }, dashboard: deriveDashboard(db) });
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/agm-resolutions') {
+      const payload = await readJsonBody(req);
+      const { meetingId, resolutionText, status } = payload;
+      const id = crypto.randomUUID();
+      await pool.query(
+        `INSERT INTO agm_resolutions (id, meeting_id, society_id, resolution_text, status)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [id, meetingId, session.society_id, resolutionText, status || 'Proposed']
+      );
+
+      const db = await getFullStateFromDb(session.society_id);
+      return sendJson(res, 201, { resolution: { id, ...payload }, dashboard: deriveDashboard(db) });
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/agm-documents/upload') {
+      const payload = await readJsonBody(req);
+      const { meetingId, financialYear, documentType, fileName, mimeType, size, base64 } = payload;
+      const id = crypto.randomUUID();
+      const fileData = Buffer.from(base64, 'base64');
+      
+      await pool.query(
+        `INSERT INTO agm_documents (id, meeting_id, society_id, financial_year, document_type, original_name, mime_type, file_size, file_data)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [id, meetingId, session.society_id, financialYear, documentType, fileName, mimeType, size, fileData]
+      );
+
+      const db = await getFullStateFromDb(session.society_id);
+      return sendJson(res, 201, { success: true, dashboard: deriveDashboard(db) });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/mdc/society') {
@@ -1691,24 +1755,45 @@ const server = http.createServer(async (req, res) => {
       return res.end(JSON.stringify({ error: 'Unauthorized' }));
     }
 
-    // Serve binary file from statutory_documents table in Supabase
-    const docId = url.pathname.slice('/uploads/'.length);
-    try {
-      const result = await pool.query('SELECT mime_type, file_data FROM statutory_documents WHERE id::text = $1 AND society_id = $2', [docId, session.society_id]);
-      if (result.rows.length === 0) {
-        res.writeHead(404);
-        return res.end('Document not found');
+    if (url.pathname.startsWith('/uploads/agm/')) {
+      const docId = url.pathname.slice('/uploads/agm/'.length);
+      try {
+        const result = await pool.query('SELECT mime_type, file_data FROM agm_documents WHERE id::text = $1 AND society_id = $2', [docId, session.society_id]);
+        if (result.rows.length === 0) {
+          res.writeHead(404);
+          return res.end('Document not found');
+        }
+        const { mime_type, file_data } = result.rows[0];
+        res.writeHead(200, {
+          'content-type': mime_type,
+          'content-length': file_data.length,
+          'cache-control': 'private, max-age=86400'
+        });
+        return res.end(file_data);
+      } catch (err) {
+        res.writeHead(500);
+        return res.end(`Database error: ${err.message}`);
       }
-      const { mime_type, file_data } = result.rows[0];
-      res.writeHead(200, {
-        'content-type': mime_type,
-        'content-length': file_data.length,
-        'cache-control': 'private, max-age=86400'
-      });
-      return res.end(file_data);
-    } catch (err) {
-      res.writeHead(500);
-      return res.end(`Database error: ${err.message}`);
+    } else if (url.pathname.startsWith('/uploads/')) {
+      // Serve binary file from statutory_documents table in Supabase
+      const docId = url.pathname.slice('/uploads/'.length);
+      try {
+        const result = await pool.query('SELECT mime_type, file_data FROM statutory_documents WHERE id::text = $1 AND society_id = $2', [docId, session.society_id]);
+        if (result.rows.length === 0) {
+          res.writeHead(404);
+          return res.end('Document not found');
+        }
+        const { mime_type, file_data } = result.rows[0];
+        res.writeHead(200, {
+          'content-type': mime_type,
+          'content-length': file_data.length,
+          'cache-control': 'private, max-age=86400'
+        });
+        return res.end(file_data);
+      } catch (err) {
+        res.writeHead(500);
+        return res.end(`Database error: ${err.message}`);
+      }
     }
   }
   
