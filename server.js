@@ -83,8 +83,16 @@ const seedData = {
 // Database pool setup
 let pool;
 if (process.env.DATABASE_URL) {
+  // node-postgres re-parses `sslmode` out of the connection string and merges it
+  // OVER the explicit `ssl` option below (see ConnectionParameters in pg/lib/
+  // connection-parameters.js), so a `sslmode=require` in DATABASE_URL silently
+  // replaced rejectUnauthorized:false with ssl:true, causing every connection to
+  // fail with "self-signed certificate in certificate chain". Stripping sslmode
+  // here lets our explicit ssl object take effect.
+  const dbUrl = new URL(process.env.DATABASE_URL);
+  dbUrl.searchParams.delete('sslmode');
   pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: dbUrl.toString(),
     ssl: {
       rejectUnauthorized: false
     }
@@ -2034,7 +2042,13 @@ if (pool) {
       console.log(`Society Management System running at http://localhost:${PORT}`);
     });
   }).catch(err => {
+    // Still bind the port even if DB init fails — otherwise the platform's health
+    // check times out waiting for an open port, and the ENTIRE app (including
+    // pages that don't need the DB) becomes unreachable instead of just DB-backed routes.
     console.error("Critical database startup error:", err);
+    server.listen(PORT, () => {
+      console.log(`Society Management System running (DB init failed — see error above) at http://localhost:${PORT}`);
+    });
   });
 } else {
   server.listen(PORT, () => {
