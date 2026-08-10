@@ -49,6 +49,7 @@
                         brand: {
                             50: '#eef2ff',
                             100: '#e0e7ff',
+                            200: '#c7d2fe',
                             400: '#818cf8',
                             500: '#4f46e5', /* Indigo CTA Accent */
                             600: '#4338ca',
@@ -59,15 +60,6 @@
                 }
             }
         }
-    </script>
-
-    <!-- Runs before paint: enables the CSS-driven reveal system only when JS is active,
-         so content stays fully visible for no-JS clients, crawlers, and reduced-motion users. -->
-    <script>
-        (function () {
-            var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            if (!reduceMotion) document.documentElement.classList.add('js-anim');
-        })();
     </script>
 
     <style>
@@ -115,34 +107,21 @@
         }
         .nav-link:hover::after { transform: scaleX(1); }
 
-        /* Scroll-reveal system (progressive enhancement — see head script above) */
-        .js-anim .reveal {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-            transition-delay: var(--reveal-delay, 0ms);
-        }
-        .js-anim .reveal.is-visible {
-            opacity: 1;
-            transform: translateY(0);
+        /* Idle float for the floating hero chip (independent of scroll/GSAP-driven transforms) */
+        .float-idle { animation: floatIdle 6s ease-in-out infinite; }
+        @keyframes floatIdle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
 
-        /* Slow ambient float for hero background blobs / mockup */
-        .float-slow { animation: floatSlow 9s ease-in-out infinite; }
-        .float-slow-delay { animation: floatSlow 11s ease-in-out infinite; animation-delay: -3s; }
-        @keyframes floatSlow {
-            0%, 100% { transform: translate(0, 0); }
-            50% { transform: translate(0, -14px); }
-        }
-
-        /* Hero mockup bar chart */
-        .bar-track { align-items: flex-end; }
-        .bar { transform-origin: bottom; transition: transform 0.4s ease; }
-        .bar-track:hover .bar { transform: scaleY(1.06); }
+        /* Hero visual: perspective wrapper for the mouse-tilt effect */
+        .hero-visual-wrap { perspective: 1400px; }
+        .hero-visual-card { transform-style: preserve-3d; will-change: transform; }
+        .hero-visual-card img { will-change: transform; }
 
         @media (prefers-reduced-motion: reduce) {
             html { scroll-behavior: auto; }
-            .float-slow, .float-slow-delay { animation: none; }
+            .float-idle { animation: none; }
             .glass-card:hover { transform: none; }
         }
 
@@ -257,26 +236,26 @@
     <!-- Hero Section -->
     <section class="relative pt-36 pb-24 md:pt-48 md:pb-36 bg-gradient-to-b from-[#f5f3ef] via-[#FAFAF9] to-[#FAFAF9] overflow-hidden">
         <div class="absolute inset-0 opacity-40 pointer-events-none" aria-hidden="true">
-            <div class="absolute -top-40 -left-40 w-96 h-96 bg-brand-100 rounded-full blur-3xl float-slow"></div>
-            <div class="absolute top-96 right-0 w-80 h-80 bg-brand-100 rounded-full blur-3xl float-slow-delay"></div>
+            <div class="parallax-orb absolute -top-40 -left-40 w-96 h-96 bg-brand-100 rounded-full blur-3xl"></div>
+            <div class="parallax-orb absolute top-96 right-0 w-80 h-80 bg-brand-100 rounded-full blur-3xl"></div>
         </div>
 
         <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
             <div class="lg:col-span-7 space-y-8">
-                <div class="reveal inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-100/70 border border-brand-500/10 text-xs font-bold uppercase tracking-wider text-brand-600" style="--reveal-delay:0ms">
+                <div class="hero-item inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-100/70 border border-brand-500/10 text-xs font-bold uppercase tracking-wider text-brand-600">
                     <i class="fa-solid fa-shield-halved text-[11px]" aria-hidden="true"></i>
                     Purpose-built for RWAs &amp; Cooperative Societies
                 </div>
 
-                <h1 class="reveal text-4xl md:text-6xl font-extrabold tracking-tight text-brand-900 leading-[1.1]" style="--reveal-delay:80ms">
+                <h1 class="hero-item text-4xl md:text-6xl font-extrabold tracking-tight text-brand-900 leading-[1.1]">
                     Run Your Housing Society on <span class="bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text text-transparent">Autopilot</span>
                 </h1>
 
-                <p class="reveal text-lg text-[#57534e] max-w-xl leading-relaxed" style="--reveal-delay:160ms">
+                <p class="hero-item text-lg text-[#57534e] max-w-xl leading-relaxed">
                     Automate billing, streamline audit accounts, and coordinate AGM resolutions. An all-in-one digital portal built for modern apartments and RWAs.
                 </p>
 
-                <div class="reveal flex flex-col sm:flex-row gap-4 pt-2" style="--reveal-delay:240ms">
+                <div class="hero-item flex flex-col sm:flex-row gap-4 pt-2">
                     <a href="/register" class="group px-8 py-4 rounded-xl text-base font-bold bg-brand-900 text-white hover:bg-brand-500 transition-all text-center shadow-lg shadow-brand-900/10 cursor-pointer">
                         Register Society
                         <i class="fa-solid fa-arrow-right ml-2 text-sm transition-transform group-hover:translate-x-1" aria-hidden="true"></i>
@@ -287,49 +266,26 @@
                 </div>
             </div>
 
-            <div class="lg:col-span-5 relative reveal" style="--reveal-delay:200ms">
-                <!-- Custom product visual (no external image — faster load, zero layout shift) -->
-                <div class="relative w-full rounded-3xl overflow-hidden shadow-2xl border-4 border-white glass-card p-6 sm:p-7 space-y-6">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2.5">
-                            <div class="w-9 h-9 rounded-lg bg-brand-900 flex items-center justify-center text-white text-sm">
-                                <i class="fa-solid fa-book-open" aria-hidden="true"></i>
-                            </div>
-                            <span class="text-sm font-bold text-brand-900">Society Ledger</span>
-                        </div>
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[11px] font-bold">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>
-                            Auto-reconciled
-                        </span>
-                    </div>
-
-                    <div class="bar-track flex items-end gap-2.5 h-24" role="img" aria-label="Illustration of a rising monthly collections trend">
-                        <div class="bar flex-1 rounded-t-md bg-brand-100" style="height:38%"></div>
-                        <div class="bar flex-1 rounded-t-md bg-brand-100" style="height:52%"></div>
-                        <div class="bar flex-1 rounded-t-md bg-brand-200" style="height:48%"></div>
-                        <div class="bar flex-1 rounded-t-md bg-brand-400/70" style="height:68%"></div>
-                        <div class="bar flex-1 rounded-t-md bg-brand-400" style="height:62%"></div>
-                        <div class="bar flex-1 rounded-t-md bg-brand-500" style="height:86%"></div>
-                    </div>
-
-                    <div class="space-y-2.5 pt-2 border-t border-brand-900/5">
-                        <div class="flex items-center justify-between text-xs">
-                            <span class="font-semibold text-[#57534e]">Form &lsquo;I&rsquo; Register</span>
-                            <span class="inline-flex items-center gap-1 font-bold text-emerald-600"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Up to date</span>
-                        </div>
-                        <div class="flex items-center justify-between text-xs">
-                            <span class="font-semibold text-[#57534e]">AGM Minutes</span>
-                            <span class="inline-flex items-center gap-1 font-bold text-emerald-600"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Published</span>
-                        </div>
-                        <div class="flex items-center justify-between text-xs">
-                            <span class="font-semibold text-[#57534e]">GST Filing</span>
-                            <span class="inline-flex items-center gap-1 font-bold text-emerald-600"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Auto-filed</span>
+            <div class="lg:col-span-5 relative hero-item hero-visual-wrap">
+                <!-- Premium visual representation -->
+                <div id="hero-visual-card" class="hero-visual-card relative w-full aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl border-4 border-white glass-card">
+                    <img
+                        id="hero-visual-img"
+                        src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1000&q=80"
+                        alt="Modern premium gated housing society building"
+                        width="1000" height="750"
+                        class="w-full h-full object-cover"
+                        loading="eager" fetchpriority="high" decoding="async">
+                    <div class="absolute inset-0 bg-gradient-to-t from-brand-900/70 via-transparent to-transparent flex items-end p-6">
+                        <div class="text-white space-y-1">
+                            <p class="text-xs uppercase font-bold text-brand-100 tracking-wider">Statutory compliance locked</p>
+                            <p class="text-lg font-bold">Compliance &amp; Finance Management</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Floating status chip -->
-                <div class="reveal hidden sm:flex absolute -bottom-6 -left-6 items-center gap-3 bg-brand-900 text-white rounded-2xl shadow-xl px-4 py-3 float-slow-delay" style="--reveal-delay:360ms">
+                <div id="hero-chip" class="float-idle hidden sm:flex absolute -bottom-6 -left-6 items-center gap-3 bg-brand-900 text-white rounded-2xl shadow-xl px-4 py-3">
                     <div class="w-9 h-9 rounded-xl bg-brand-500/20 flex items-center justify-center text-brand-400">
                         <i class="fa-solid fa-lock text-sm" aria-hidden="true"></i>
                     </div>
@@ -344,15 +300,15 @@
 
     <!-- Feature Grid Section -->
     <section id="features" class="py-24 max-w-7xl mx-auto px-6 space-y-16">
-        <div class="reveal text-center space-y-4 max-w-2xl mx-auto">
+        <div class="fade-single text-center space-y-4 max-w-2xl mx-auto">
             <p class="text-xs uppercase font-bold tracking-widest text-brand-500">Core Features</p>
             <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight text-brand-900">Built to handle everything a society needs</h2>
             <p class="text-sm text-[#78716c]">From accounting compliance to meeting resolutions tracking, ResiEase has you covered.</p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div id="features-grid" class="fade-group grid grid-cols-1 md:grid-cols-3 gap-8">
             <!-- Feature 1 -->
-            <div class="reveal p-8 rounded-2xl glass-card space-y-5" style="--reveal-delay:0ms">
+            <div class="fade-item p-8 rounded-2xl glass-card space-y-5">
                 <div class="w-12 h-12 rounded-2xl bg-brand-100 text-brand-500 flex items-center justify-center text-xl shadow-sm">
                     <i class="fa-solid fa-wallet" aria-hidden="true"></i>
                 </div>
@@ -362,7 +318,7 @@
                 </p>
             </div>
             <!-- Feature 2 -->
-            <div class="reveal p-8 rounded-2xl glass-card space-y-5" style="--reveal-delay:100ms">
+            <div class="fade-item p-8 rounded-2xl glass-card space-y-5">
                 <div class="w-12 h-12 rounded-2xl bg-brand-100 text-brand-500 flex items-center justify-center text-xl shadow-sm">
                     <i class="fa-solid fa-users-cog" aria-hidden="true"></i>
                 </div>
@@ -372,7 +328,7 @@
                 </p>
             </div>
             <!-- Feature 3 -->
-            <div class="reveal p-8 rounded-2xl glass-card space-y-5" style="--reveal-delay:200ms">
+            <div class="fade-item p-8 rounded-2xl glass-card space-y-5">
                 <div class="w-12 h-12 rounded-2xl bg-brand-100 text-brand-500 flex items-center justify-center text-xl shadow-sm">
                     <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
                 </div>
@@ -387,35 +343,35 @@
     <!-- Benefits Section -->
     <section id="benefits" class="py-24 bg-[#F5F5F4]/40 border-y border-brand-900/5">
         <div class="max-w-7xl mx-auto px-6 space-y-16">
-            <div class="reveal text-center space-y-4 max-w-2xl mx-auto">
+            <div class="fade-single text-center space-y-4 max-w-2xl mx-auto">
                 <p class="text-xs uppercase font-bold tracking-widest text-brand-500">Benefits</p>
                 <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight text-brand-900">Why committees switch to ResiEase</h2>
                 <p class="text-sm text-[#78716c]">Less manual chasing, fewer compliance surprises, and a better experience for every resident.</p>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="reveal bg-white rounded-2xl p-6 border border-brand-900/5 shadow-sm space-y-3" style="--reveal-delay:0ms">
+            <div id="benefits-grid" class="fade-group grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="fade-item bg-white rounded-2xl p-6 border border-brand-900/5 shadow-sm space-y-3">
                     <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-500 flex items-center justify-center">
                         <i class="fa-regular fa-clock" aria-hidden="true"></i>
                     </div>
                     <h3 class="text-sm font-bold text-brand-900">Fewer manual hours</h3>
                     <p class="text-xs text-[#78716c] leading-relaxed">Automated billing and reconciliation cut down repetitive treasurer admin work.</p>
                 </div>
-                <div class="reveal bg-white rounded-2xl p-6 border border-brand-900/5 shadow-sm space-y-3" style="--reveal-delay:100ms">
+                <div class="fade-item bg-white rounded-2xl p-6 border border-brand-900/5 shadow-sm space-y-3">
                     <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-500 flex items-center justify-center">
                         <i class="fa-solid fa-money-bill-trend-up" aria-hidden="true"></i>
                     </div>
                     <h3 class="text-sm font-bold text-brand-900">Faster collections</h3>
                     <p class="text-xs text-[#78716c] leading-relaxed">WhatsApp payment links and reminders help members pay on time, with less follow-up.</p>
                 </div>
-                <div class="reveal bg-white rounded-2xl p-6 border border-brand-900/5 shadow-sm space-y-3" style="--reveal-delay:200ms">
+                <div class="fade-item bg-white rounded-2xl p-6 border border-brand-900/5 shadow-sm space-y-3">
                     <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-500 flex items-center justify-center">
                         <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
                     </div>
                     <h3 class="text-sm font-bold text-brand-900">Audit-ready, always</h3>
                     <p class="text-xs text-[#78716c] leading-relaxed">Statutory registers and AGM records stay organised and ready for inspection year-round.</p>
                 </div>
-                <div class="reveal bg-white rounded-2xl p-6 border border-brand-900/5 shadow-sm space-y-3" style="--reveal-delay:300ms">
+                <div class="fade-item bg-white rounded-2xl p-6 border border-brand-900/5 shadow-sm space-y-3">
                     <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-500 flex items-center justify-center">
                         <i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i>
                     </div>
@@ -429,7 +385,7 @@
     <!-- Interactive ROI Calculator Section -->
     <section id="roi-calculator" class="py-24">
         <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            <div class="reveal lg:col-span-5 space-y-6">
+            <div class="fade-single lg:col-span-5 space-y-6">
                 <p class="text-xs uppercase font-bold tracking-widest text-brand-500">ROI Calculator</p>
                 <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight text-brand-900">Calculate how much you save with ResiEase</h2>
                 <p class="text-sm text-[#78716c] leading-relaxed">
@@ -443,7 +399,7 @@
                 </div>
             </div>
 
-            <div class="reveal lg:col-span-7 bg-white rounded-3xl p-8 border border-brand-900/10 shadow-xl space-y-8 glass-card" style="--reveal-delay:150ms">
+            <div class="fade-single lg:col-span-7 bg-white rounded-3xl p-8 border border-brand-900/10 shadow-xl space-y-8 glass-card">
                 <div class="space-y-4">
                     <div class="flex justify-between items-center">
                         <label for="flat-slider" class="text-sm font-bold text-brand-900 uppercase">Number of Flats / Units</label>
@@ -452,20 +408,20 @@
                     <input type="range" id="flat-slider" min="10" max="500" value="120" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand-500" oninput="calculateRoi()">
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-brand-900/5">
+                <div id="roi-stats" class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-brand-900/5">
                     <div class="text-center p-4 bg-brand-50/50 rounded-xl border border-brand-900/5">
                         <h4 class="text-xs font-bold text-gray-500 uppercase mb-1">Admin Time Saved</h4>
-                        <p id="time-saved" class="text-2xl font-extrabold text-brand-900">42 Hours</p>
+                        <p><span id="time-saved" class="text-2xl font-extrabold text-brand-900" data-value="42">0</span><span class="text-2xl font-extrabold text-brand-900"> Hours</span></p>
                         <span class="text-[10px] text-gray-400 font-medium">per month / treasurer</span>
                     </div>
                     <div class="text-center p-4 bg-brand-50/50 rounded-xl border border-brand-900/5">
                         <h4 class="text-xs font-bold text-gray-500 uppercase mb-1">Expected Collection</h4>
-                        <p id="collection-increase" class="text-2xl font-extrabold text-emerald-600">+15%</p>
+                        <p><span class="text-2xl font-extrabold text-emerald-600">+</span><span id="collection-increase" class="text-2xl font-extrabold text-emerald-600" data-value="15">0</span><span class="text-2xl font-extrabold text-emerald-600">%</span></p>
                         <span class="text-[10px] text-gray-400 font-medium">default defaults drop</span>
                     </div>
                     <div class="text-center p-4 bg-brand-50/50 rounded-xl border border-brand-900/5">
                         <h4 class="text-xs font-bold text-gray-500 uppercase mb-1">Statutory Compliance</h4>
-                        <p class="text-2xl font-extrabold text-brand-500">100%</p>
+                        <p><span id="compliance-stat" class="text-2xl font-extrabold text-brand-500" data-value="100">0</span><span class="text-2xl font-extrabold text-brand-500">%</span></p>
                         <span class="text-[10px] text-gray-400 font-medium">automated registers</span>
                     </div>
                 </div>
@@ -475,14 +431,14 @@
 
     <!-- FAQ Accordion Section -->
     <section id="faq" class="py-24 max-w-4xl mx-auto px-6 space-y-12">
-        <div class="reveal text-center space-y-4">
+        <div class="fade-single text-center space-y-4">
             <p class="text-xs uppercase font-bold tracking-widest text-brand-500">FAQ</p>
             <h2 class="text-3xl font-extrabold tracking-tight text-brand-900">Frequently Asked Questions</h2>
         </div>
 
-        <div class="space-y-4">
+        <div id="faq-list" class="fade-group space-y-4">
             <!-- FAQ 1 -->
-            <div class="reveal bg-white rounded-2xl border border-brand-900/10 overflow-hidden shadow-sm" style="--reveal-delay:0ms">
+            <div class="fade-item bg-white rounded-2xl border border-brand-900/10 overflow-hidden shadow-sm">
                 <h3>
                     <button class="w-full p-6 text-left font-bold text-brand-900 flex justify-between items-center gap-4 hover:bg-brand-50/30 transition-colors" aria-expanded="false" aria-controls="faq-answer-1" onclick="toggleFaq(this)">
                         <span>How does the app automate housing society billing?</span>
@@ -498,7 +454,7 @@
                 </div>
             </div>
             <!-- FAQ 2 -->
-            <div class="reveal bg-white rounded-2xl border border-brand-900/10 overflow-hidden shadow-sm" style="--reveal-delay:100ms">
+            <div class="fade-item bg-white rounded-2xl border border-brand-900/10 overflow-hidden shadow-sm">
                 <h3>
                     <button class="w-full p-6 text-left font-bold text-brand-900 flex justify-between items-center gap-4 hover:bg-brand-50/30 transition-colors" aria-expanded="false" aria-controls="faq-answer-2" onclick="toggleFaq(this)">
                         <span>How does the app manage general body meetings (AGM/SGM)?</span>
@@ -514,7 +470,7 @@
                 </div>
             </div>
             <!-- FAQ 3 -->
-            <div class="reveal bg-white rounded-2xl border border-brand-900/10 overflow-hidden shadow-sm" style="--reveal-delay:200ms">
+            <div class="fade-item bg-white rounded-2xl border border-brand-900/10 overflow-hidden shadow-sm">
                 <h3>
                     <button class="w-full p-6 text-left font-bold text-brand-900 flex justify-between items-center gap-4 hover:bg-brand-50/30 transition-colors" aria-expanded="false" aria-controls="faq-answer-3" onclick="toggleFaq(this)">
                         <span>Does the app support local tax structures like GST?</span>
@@ -535,9 +491,9 @@
     <!-- Bottom CTA Section -->
     <section class="py-24 bg-brand-900 text-white text-center relative overflow-hidden">
         <div class="absolute inset-0 opacity-10 pointer-events-none" aria-hidden="true">
-            <div class="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-brand-100 via-transparent to-transparent"></div>
+            <div class="parallax-orb-cta absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-brand-100 via-transparent to-transparent"></div>
         </div>
-        <div class="reveal max-w-4xl mx-auto px-6 space-y-8 relative z-10">
+        <div class="fade-single max-w-4xl mx-auto px-6 space-y-8 relative z-10">
             <h2 class="text-3xl md:text-5xl font-extrabold tracking-tight">Ready to Upgrade Your Society?</h2>
             <p class="text-[#d6d3d1] max-w-xl mx-auto text-base">
                 Digitize your bills, manage AGM meetings, and prepare for audits seamlessly.
@@ -568,7 +524,11 @@
         <i class="fa-solid fa-arrow-up text-sm" aria-hidden="true"></i>
     </button>
 
-    <!-- Interactive script for FAQ, ROI Calculator, nav, and scroll reveal -->
+    <!-- GSAP + ScrollTrigger (already whitelisted via cdn.jsdelivr.net in server.js CSP) -->
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+
+    <!-- Interactive script for FAQ, ROI Calculator, nav, and animation -->
     <script>
         function toggleFaq(button) {
             const expanded = button.getAttribute('aria-expanded') === 'true';
@@ -580,6 +540,20 @@
             icon.classList.toggle('rotate-180', !expanded);
         }
 
+        function animateCount(el, toValue) {
+            const from = { v: parseFloat(el.textContent) || 0 };
+            if (window.gsap) {
+                gsap.to(from, {
+                    v: toValue,
+                    duration: 0.6,
+                    ease: 'power2.out',
+                    onUpdate: function () { el.textContent = Math.round(from.v); }
+                });
+            } else {
+                el.textContent = toValue;
+            }
+        }
+
         function calculateRoi() {
             const slider = document.getElementById('flat-slider');
             const flatCount = parseInt(slider.value, 10);
@@ -588,10 +562,10 @@
 
             // Compute hours saved (approx 0.35 hours per flat per month for invoice matching and manual reconciliation)
             const hours = Math.round(flatCount * 0.35);
-            document.getElementById('time-saved').innerText = `${hours} Hours`;
+            const timeSavedEl = document.getElementById('time-saved');
+            timeSavedEl.dataset.value = hours;
+            animateCount(timeSavedEl, hours);
         }
-
-        calculateRoi();
 
         // Mobile menu
         (function () {
@@ -653,22 +627,120 @@
             });
         })();
 
-        // Scroll-reveal (progressive enhancement — hidden only when .js-anim is present, see head script)
+        // Bold animation layer — GSAP + ScrollTrigger. Everything here only runs when the
+        // visitor has no reduced-motion preference; gsap.from()/ScrollTrigger set their
+        // hidden starting state via inline styles at runtime, so a no-JS client or a
+        // reduced-motion client simply sees the plain, fully visible HTML — nothing is
+        // ever hidden by default CSS.
         (function () {
-            const items = document.querySelectorAll('.reveal');
-            if (!('IntersectionObserver' in window) || !document.documentElement.classList.contains('js-anim')) {
-                items.forEach(function (el) { el.classList.add('is-visible'); });
-                return;
-            }
-            const io = new IntersectionObserver(function (entries) {
-                entries.forEach(function (entry) {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('is-visible');
-                        io.unobserve(entry.target);
+            calculateRoi();
+
+            if (!window.gsap || !window.ScrollTrigger) return;
+            gsap.registerPlugin(ScrollTrigger);
+
+            const mm = gsap.matchMedia();
+
+            mm.add('(prefers-reduced-motion: no-preference)', function () {
+                // Hero entrance: badge, headline, copy, CTAs stagger in; visual scales+fades in alongside.
+                const heroTl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+                heroTl
+                    .from('.hero-item', { opacity: 0, y: 28, duration: 0.8, stagger: 0.15 })
+                    .from('#hero-visual-card', { opacity: 0, scale: 1.06, duration: 1 }, 0.15)
+                    .from('#hero-chip', { opacity: 0, y: 16, duration: 0.6 }, '-=0.3');
+
+                // Slow continuous zoom on the hero photo — a living, premium feel.
+                gsap.to('#hero-visual-img', {
+                    scale: 1.08,
+                    duration: 16,
+                    ease: 'sine.inOut',
+                    yoyo: true,
+                    repeat: -1,
+                    transformOrigin: 'center center'
+                });
+
+                // Mouse-tilt parallax on the hero visual card (desktop/fine-pointer only).
+                if (window.matchMedia('(pointer: fine)').matches) {
+                    const wrap = document.querySelector('.hero-visual-wrap');
+                    const card = document.getElementById('hero-visual-card');
+                    if (wrap && card) {
+                        const setRotX = gsap.quickTo(card, 'rotationX', { duration: 0.6, ease: 'power3' });
+                        const setRotY = gsap.quickTo(card, 'rotationY', { duration: 0.6, ease: 'power3' });
+                        wrap.addEventListener('mousemove', function (e) {
+                            const r = wrap.getBoundingClientRect();
+                            const px = (e.clientX - r.left) / r.width - 0.5;
+                            const py = (e.clientY - r.top) / r.height - 0.5;
+                            setRotY(px * 10);
+                            setRotX(-py * 10);
+                        });
+                        wrap.addEventListener('mouseleave', function () {
+                            setRotX(0);
+                            setRotY(0);
+                        });
+                    }
+                }
+
+                // Scroll-linked parallax on the ambient hero orbs.
+                gsap.utils.toArray('.parallax-orb').forEach(function (orb, i) {
+                    gsap.to(orb, {
+                        y: i % 2 === 0 ? 140 : -140,
+                        ease: 'none',
+                        scrollTrigger: {
+                            trigger: orb.closest('section'),
+                            start: 'top bottom',
+                            end: 'bottom top',
+                            scrub: 1
+                        }
+                    });
+                });
+                gsap.to('.parallax-orb-cta', {
+                    y: 80,
+                    ease: 'none',
+                    scrollTrigger: {
+                        trigger: '.parallax-orb-cta',
+                        start: 'top bottom',
+                        end: 'bottom top',
+                        scrub: 1
                     }
                 });
-            }, { threshold: 0.15, rootMargin: '0px 0px -8% 0px' });
-            items.forEach(function (el) { io.observe(el); });
+
+                // Section heading blocks: fade + rise once, on first scroll into view.
+                gsap.utils.toArray('.fade-single').forEach(function (el) {
+                    gsap.from(el, {
+                        opacity: 0,
+                        y: 50,
+                        duration: 0.8,
+                        scrollTrigger: { trigger: el, start: 'top 82%', toggleActions: 'play none none none' }
+                    });
+                });
+
+                // Card grids / lists: staggered rise, once, on first scroll into view.
+                gsap.utils.toArray('.fade-group').forEach(function (group) {
+                    const items = group.querySelectorAll('.fade-item');
+                    gsap.from(items, {
+                        opacity: 0,
+                        y: 50,
+                        duration: 0.7,
+                        stagger: 0.15,
+                        scrollTrigger: { trigger: group, start: 'top 85%', toggleActions: 'play none none none' }
+                    });
+                });
+
+                // ROI stat counters: count up once when the calculator scrolls into view.
+                ScrollTrigger.create({
+                    trigger: '#roi-stats',
+                    start: 'top 85%',
+                    once: true,
+                    onEnter: function () {
+                        document.querySelectorAll('#roi-stats [data-value]').forEach(function (el) {
+                            animateCount(el, parseFloat(el.dataset.value));
+                        });
+                    }
+                });
+
+                return function cleanup() {
+                    // gsap.matchMedia auto-reverts inline styles / kills tweens+triggers on media change.
+                };
+            });
         })();
     </script>
 </body>
