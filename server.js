@@ -25,7 +25,15 @@ const MIME_TYPES = {
   '.pdf': 'application/pdf',
   '.txt': 'text/plain; charset=utf-8',
   '.doc': 'application/msword',
-  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.xml': 'application/xml; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.webmanifest': 'application/manifest+json; charset=utf-8'
 };
 
 const allowedUploadTypes = new Set([

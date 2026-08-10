@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /$
+Allow: /register
+Disallow: /app
+Disallow: /login
+Disallow: /master.html
+Disallow: /index.html
+Disallow: /api/
+
+Sitemap: https://society-management-app-xh6q.onrender.com/sitemap.xml

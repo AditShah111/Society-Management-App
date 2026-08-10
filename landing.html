@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+
     <!-- SEO Optimization Meta Tags -->
     <title>Society Management & Accounting Software | ResiEase App</title>
     <meta name="description" content="Streamline housing society billing, accounting, and gate security. Get automated invoice generation, visitor tracking, and resident helpdesk in one secure platform.">
     <meta name="keywords" content="society management software, apartment billing accounting, gated community security app, RWA maintenance portal, cooperative housing society GST billing, Chartered Accountants Society Consultants">
     <meta name="robots" content="index, follow, max-image-preview:large">
+    <meta name="theme-color" content="#0B0F19">
     <link rel="canonical" href="https://society-management-app-xh6q.onrender.com/">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230B0F19'/%3E%3Cpath d='M50 20 L82 46 V82 H61 V60 H39 V82 H18 V46 Z' fill='%234f46e5'/%3E%3C/svg%3E">
 
     <!-- Open Graph (OG) tags for social media previews -->
     <meta property="og:title" content="ResiEase - Simplify Society Accounting & Gate Security" />
@@ -17,21 +19,23 @@
     <meta property="og:image" content="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://society-management-app-xh6q.onrender.com/" />
-    
+    <meta property="og:site_name" content="ResiEase" />
+    <meta property="og:locale" content="en_IN" />
+
     <!-- Twitter Cards -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Society Management & Accounting Software | ResiEase" />
     <meta name="twitter:description" content="Simplify housing society billing, accounting, and gate security. Book a free demo today." />
     <meta name="twitter:image" content="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80" />
 
-    <!-- Google Fonts (Inter) -->
+    <!-- Google Fonts (Plus Jakarta Sans - enterprise/B2B SaaS pairing) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- Tailwind CSS (Direct CDN for clean compilation) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -39,14 +43,16 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
                     },
                     colors: {
                         brand: {
                             50: '#eef2ff',
                             100: '#e0e7ff',
+                            400: '#818cf8',
                             500: '#4f46e5', /* Indigo CTA Accent */
                             600: '#4338ca',
+                            700: '#3730a3',
                             900: '#0B0F19', /* Premium Dark */
                         }
                     }
@@ -54,8 +60,24 @@
             }
         }
     </script>
-    
+
+    <!-- Runs before paint: enables the CSS-driven reveal system only when JS is active,
+         so content stays fully visible for no-JS clients, crawlers, and reduced-motion users. -->
+    <script>
+        (function () {
+            var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (!reduceMotion) document.documentElement.classList.add('js-anim');
+        })();
+    </script>
+
     <style>
+        html {
+            scroll-behavior: smooth;
+        }
+        [id] {
+            scroll-margin-top: 6rem;
+        }
+
         /* Liquid Glassmorphic styling */
         .glass-nav {
             background: rgba(250, 250, 249, 0.75);
@@ -63,26 +85,71 @@
             -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px rgba(28, 25, 23, 0.08) solid;
         }
+        .glass-nav.is-scrolled {
+            background: rgba(250, 250, 249, 0.92);
+            box-shadow: 0 8px 24px rgba(11, 15, 25, 0.06);
+        }
         .glass-card {
             background: rgba(255, 255, 255, 0.65);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border: 1px rgba(28, 25, 23, 0.06) solid;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .glass-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 12px 30px rgba(28, 25, 23, 0.08);
-            border-color: rgba(161, 98, 7, 0.25);
+            border-color: rgba(79, 70, 229, 0.25);
         }
-        
-        /* Smooth transitions */
-        .smooth-transition {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+        /* Nav link underline sweep */
+        .nav-link { position: relative; }
+        .nav-link::after {
+            content: '';
+            position: absolute; left: 0; bottom: -4px;
+            width: 100%; height: 2px;
+            background: #4f46e5;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.25s ease;
         }
-        
-        html {
-            scroll-behavior: smooth;
+        .nav-link:hover::after { transform: scaleX(1); }
+
+        /* Scroll-reveal system (progressive enhancement — see head script above) */
+        .js-anim .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            transition-delay: var(--reveal-delay, 0ms);
+        }
+        .js-anim .reveal.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Slow ambient float for hero background blobs / mockup */
+        .float-slow { animation: floatSlow 9s ease-in-out infinite; }
+        .float-slow-delay { animation: floatSlow 11s ease-in-out infinite; animation-delay: -3s; }
+        @keyframes floatSlow {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(0, -14px); }
+        }
+
+        /* Hero mockup bar chart */
+        .bar-track { align-items: flex-end; }
+        .bar { transform-origin: bottom; transition: transform 0.4s ease; }
+        .bar-track:hover .bar { transform: scaleY(1.06); }
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .float-slow, .float-slow-delay { animation: none; }
+            .glass-card:hover { transform: none; }
+        }
+
+        /* Accessible focus states */
+        a:focus-visible, button:focus-visible, input:focus-visible {
+            outline: 2px solid #4f46e5;
+            outline-offset: 2px;
         }
     </style>
 
@@ -91,12 +158,21 @@
     [
       {
         "@context": "https://schema.org",
+        "@type": "Organization",
+        "@id": "https://society-management-app-xh6q.onrender.com/#organization",
+        "name": "ResiEase Technologies",
+        "url": "https://society-management-app-xh6q.onrender.com/",
+        "logo": "https://society-management-app-xh6q.onrender.com/#logo"
+      },
+      {
+        "@context": "https://schema.org",
         "@type": "SoftwareApplication",
         "@id": "https://society-management-app-xh6q.onrender.com/#software",
         "name": "ResiEase Society App",
         "operatingSystem": "Android, iOS, Web",
         "applicationCategory": "BusinessApplication",
         "description": "Comprehensive society management software featuring automated billing, security gate management, resident communication, and accounting.",
+        "publisher": { "@id": "https://society-management-app-xh6q.onrender.com/#organization" },
         "offers": {
           "@type": "Offer",
           "price": "0.00",
@@ -140,63 +216,126 @@
 <body class="bg-[#FAFAF9] text-brand-900 overflow-x-hidden selection:bg-brand-500 selection:text-white">
 
     <!-- Glassmorphic Header -->
-    <header class="fixed top-0 left-0 w-full z-50 glass-nav transition-all duration-300">
+    <header id="site-header" class="fixed top-0 left-0 w-full z-50 glass-nav transition-all duration-300">
         <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
             <a href="#" class="flex items-center gap-2.5">
                 <div class="w-10 h-10 rounded-xl bg-brand-900 flex items-center justify-center text-white shadow-md">
-                    <i class="fa-solid fa-hotel text-lg"></i>
+                    <i class="fa-solid fa-hotel text-lg" aria-hidden="true"></i>
                 </div>
                 <span class="font-extrabold text-xl tracking-tight text-brand-900">ResiEase</span>
             </a>
-            
-            <nav class="hidden md:flex items-center gap-8">
-                <a href="#features" class="text-sm font-medium hover:text-brand-500 transition-colors">Features</a>
-                <a href="#benefits" class="text-sm font-medium hover:text-brand-500 transition-colors">Benefits</a>
-                <a href="#roi-calculator" class="text-sm font-medium hover:text-brand-500 transition-colors">ROI Calculator</a>
-                <a href="#faq" class="text-sm font-medium hover:text-brand-500 transition-colors">FAQ</a>
+
+            <nav class="hidden md:flex items-center gap-8" aria-label="Primary">
+                <a href="#features" class="nav-link text-sm font-medium hover:text-brand-500 transition-colors">Features</a>
+                <a href="#benefits" class="nav-link text-sm font-medium hover:text-brand-500 transition-colors">Benefits</a>
+                <a href="#roi-calculator" class="nav-link text-sm font-medium hover:text-brand-500 transition-colors">ROI Calculator</a>
+                <a href="#faq" class="nav-link text-sm font-medium hover:text-brand-500 transition-colors">FAQ</a>
             </nav>
-            
-            <div class="flex items-center gap-4">
-                <a href="/register" class="px-5 py-2.5 rounded-xl text-sm font-bold bg-brand-900 text-white hover:bg-brand-500 transition-all shadow-md shadow-brand-900/10 cursor-pointer">
+
+            <div class="flex items-center gap-3">
+                <a href="/register" class="hidden sm:inline-flex px-5 py-2.5 rounded-xl text-sm font-bold bg-brand-900 text-white hover:bg-brand-500 transition-all shadow-md shadow-brand-900/10 cursor-pointer">
                     Register Society
                 </a>
+                <button id="mobile-menu-btn" type="button" class="md:hidden w-10 h-10 rounded-xl border border-brand-900/10 flex items-center justify-center text-brand-900" aria-expanded="false" aria-controls="mobile-menu" aria-label="Toggle navigation menu">
+                    <i class="fa-solid fa-bars text-base" id="menu-icon" aria-hidden="true"></i>
+                </button>
             </div>
+        </div>
+
+        <!-- Mobile menu panel -->
+        <div id="mobile-menu" class="md:hidden hidden border-t border-brand-900/5 bg-[#FAFAF9]/98 backdrop-blur-md">
+            <nav class="max-w-7xl mx-auto px-6 py-4 flex flex-col gap-1" aria-label="Mobile">
+                <a href="#features" class="mobile-nav-link px-2 py-3 text-sm font-semibold text-brand-900 border-b border-brand-900/5">Features</a>
+                <a href="#benefits" class="mobile-nav-link px-2 py-3 text-sm font-semibold text-brand-900 border-b border-brand-900/5">Benefits</a>
+                <a href="#roi-calculator" class="mobile-nav-link px-2 py-3 text-sm font-semibold text-brand-900 border-b border-brand-900/5">ROI Calculator</a>
+                <a href="#faq" class="mobile-nav-link px-2 py-3 text-sm font-semibold text-brand-900 border-b border-brand-900/5">FAQ</a>
+                <a href="/register" class="mobile-nav-link mt-3 px-5 py-3 rounded-xl text-sm font-bold bg-brand-900 text-white text-center">Register Society</a>
+            </nav>
         </div>
     </header>
 
     <!-- Hero Section -->
     <section class="relative pt-36 pb-24 md:pt-48 md:pb-36 bg-gradient-to-b from-[#f5f3ef] via-[#FAFAF9] to-[#FAFAF9] overflow-hidden">
-        <div class="absolute inset-0 opacity-40 pointer-events-none">
-            <div class="absolute -top-40 -left-40 w-96 h-96 bg-brand-100 rounded-full blur-3xl"></div>
-            <div class="absolute top-96 right-0 w-80 h-80 bg-brand-100 rounded-full blur-3xl"></div>
+        <div class="absolute inset-0 opacity-40 pointer-events-none" aria-hidden="true">
+            <div class="absolute -top-40 -left-40 w-96 h-96 bg-brand-100 rounded-full blur-3xl float-slow"></div>
+            <div class="absolute top-96 right-0 w-80 h-80 bg-brand-100 rounded-full blur-3xl float-slow-delay"></div>
         </div>
-        
+
         <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
             <div class="lg:col-span-7 space-y-8">
-                <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight text-brand-900 leading-[1.1]">
-                    Run Your Housing Society on <span class="text-brand-500 bg-gradient-to-r from-brand-500 to-brand-600 bg-clip-text text-transparent">Autopilot</span>
+                <div class="reveal inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-100/70 border border-brand-500/10 text-xs font-bold uppercase tracking-wider text-brand-600" style="--reveal-delay:0ms">
+                    <i class="fa-solid fa-shield-halved text-[11px]" aria-hidden="true"></i>
+                    Purpose-built for RWAs &amp; Cooperative Societies
+                </div>
+
+                <h1 class="reveal text-4xl md:text-6xl font-extrabold tracking-tight text-brand-900 leading-[1.1]" style="--reveal-delay:80ms">
+                    Run Your Housing Society on <span class="bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text text-transparent">Autopilot</span>
                 </h1>
-                
-                <p class="text-lg text-[#57534e] max-w-xl leading-relaxed">
+
+                <p class="reveal text-lg text-[#57534e] max-w-xl leading-relaxed" style="--reveal-delay:160ms">
                     Automate billing, streamline audit accounts, and coordinate AGM resolutions. An all-in-one digital portal built for modern apartments and RWAs.
                 </p>
-                
-                <div class="flex flex-col sm:flex-row gap-4 pt-2">
-                    <a href="/register" class="px-8 py-4 rounded-xl text-base font-bold bg-brand-900 text-white hover:bg-brand-500 transition-all text-center shadow-lg shadow-brand-900/10 cursor-pointer">
-                        Register Society <i class="fa-solid fa-arrow-right ml-2 text-sm"></i>
+
+                <div class="reveal flex flex-col sm:flex-row gap-4 pt-2" style="--reveal-delay:240ms">
+                    <a href="/register" class="group px-8 py-4 rounded-xl text-base font-bold bg-brand-900 text-white hover:bg-brand-500 transition-all text-center shadow-lg shadow-brand-900/10 cursor-pointer">
+                        Register Society
+                        <i class="fa-solid fa-arrow-right ml-2 text-sm transition-transform group-hover:translate-x-1" aria-hidden="true"></i>
+                    </a>
+                    <a href="#features" class="px-8 py-4 rounded-xl text-base font-bold text-brand-900 border border-brand-900/15 hover:border-brand-500/40 hover:text-brand-500 transition-all text-center cursor-pointer">
+                        See Features
                     </a>
                 </div>
             </div>
-            
-            <div class="lg:col-span-5 relative">
-                <!-- Premium visual representation -->
-                <div class="relative w-full aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl border-4 border-white glass-card">
-                    <img src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80" alt="Clean Premium Gated Community" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-brand-900/70 via-transparent to-transparent flex items-end p-6">
-                        <div class="text-white space-y-1">
-                            <span class="text-xs uppercase font-bold text-brand-100 tracking-wider">Statutory compliance locked</span>
-                            <h3 class="text-lg font-bold">Compliance & Finance Management</h3>
+
+            <div class="lg:col-span-5 relative reveal" style="--reveal-delay:200ms">
+                <!-- Custom product visual (no external image — faster load, zero layout shift) -->
+                <div class="relative w-full rounded-3xl overflow-hidden shadow-2xl border-4 border-white glass-card p-6 sm:p-7 space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-lg bg-brand-900 flex items-center justify-center text-white text-sm">
+                                <i class="fa-solid fa-book-open" aria-hidden="true"></i>
+                            </div>
+                            <span class="text-sm font-bold text-brand-900">Society Ledger</span>
                         </div>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[11px] font-bold">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>
+                            Auto-reconciled
+                        </span>
+                    </div>
+
+                    <div class="bar-track flex items-end gap-2.5 h-24" role="img" aria-label="Illustration of a rising monthly collections trend">
+                        <div class="bar flex-1 rounded-t-md bg-brand-100" style="height:38%"></div>
+                        <div class="bar flex-1 rounded-t-md bg-brand-100" style="height:52%"></div>
+                        <div class="bar flex-1 rounded-t-md bg-brand-200" style="height:48%"></div>
+                        <div class="bar flex-1 rounded-t-md bg-brand-400/70" style="height:68%"></div>
+                        <div class="bar flex-1 rounded-t-md bg-brand-400" style="height:62%"></div>
+                        <div class="bar flex-1 rounded-t-md bg-brand-500" style="height:86%"></div>
+                    </div>
+
+                    <div class="space-y-2.5 pt-2 border-t border-brand-900/5">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-semibold text-[#57534e]">Form &lsquo;I&rsquo; Register</span>
+                            <span class="inline-flex items-center gap-1 font-bold text-emerald-600"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Up to date</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-semibold text-[#57534e]">AGM Minutes</span>
+                            <span class="inline-flex items-center gap-1 font-bold text-emerald-600"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Published</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-semibold text-[#57534e]">GST Filing</span>
+                            <span class="inline-flex items-center gap-1 font-bold text-emerald-600"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Auto-filed</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Floating status chip -->
+                <div class="reveal hidden sm:flex absolute -bottom-6 -left-6 items-center gap-3 bg-brand-900 text-white rounded-2xl shadow-xl px-4 py-3 float-slow-delay" style="--reveal-delay:360ms">
+                    <div class="w-9 h-9 rounded-xl bg-brand-500/20 flex items-center justify-center text-brand-400">
+                        <i class="fa-solid fa-lock text-sm" aria-hidden="true"></i>
+                    </div>
+                    <div class="leading-tight">
+                        <p class="text-[10px] uppercase tracking-wider text-brand-100/70 font-bold">Statutory compliance</p>
+                        <p class="text-xs font-bold">Locked &amp; audit-ready</p>
                     </div>
                 </div>
             </div>
@@ -205,39 +344,39 @@
 
     <!-- Feature Grid Section -->
     <section id="features" class="py-24 max-w-7xl mx-auto px-6 space-y-16">
-        <div class="text-center space-y-4 max-w-2xl mx-auto">
-            <h2 class="text-xs uppercase font-bold tracking-widest text-brand-500">Core Features</h2>
-            <h3 class="text-3xl md:text-4xl font-extrabold tracking-tight text-brand-900">Built to handle everything a society needs</h3>
+        <div class="reveal text-center space-y-4 max-w-2xl mx-auto">
+            <p class="text-xs uppercase font-bold tracking-widest text-brand-500">Core Features</p>
+            <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight text-brand-900">Built to handle everything a society needs</h2>
             <p class="text-sm text-[#78716c]">From accounting compliance to meeting resolutions tracking, ResiEase has you covered.</p>
         </div>
-        
+
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <!-- Feature 1 -->
-            <div class="p-8 rounded-2xl glass-card space-y-5">
+            <div class="reveal p-8 rounded-2xl glass-card space-y-5" style="--reveal-delay:0ms">
                 <div class="w-12 h-12 rounded-2xl bg-brand-100 text-brand-500 flex items-center justify-center text-xl shadow-sm">
-                    <i class="fa-solid fa-wallet"></i>
+                    <i class="fa-solid fa-wallet" aria-hidden="true"></i>
                 </div>
-                <h4 class="text-xl font-bold text-brand-900">Automated Billing & GST</h4>
+                <h3 class="text-xl font-bold text-brand-900">Automated Billing & GST</h3>
                 <p class="text-sm text-[#78716c] leading-relaxed">
                     Generate compliant maintenance bills, send payment links via WhatsApp, and auto-reconcile ledgers. Supports GST calculations and Tally integration.
                 </p>
             </div>
             <!-- Feature 2 -->
-            <div class="p-8 rounded-2xl glass-card space-y-5">
+            <div class="reveal p-8 rounded-2xl glass-card space-y-5" style="--reveal-delay:100ms">
                 <div class="w-12 h-12 rounded-2xl bg-brand-100 text-brand-500 flex items-center justify-center text-xl shadow-sm">
-                    <i class="fa-solid fa-users-cog"></i>
+                    <i class="fa-solid fa-users-cog" aria-hidden="true"></i>
                 </div>
-                <h4 class="text-xl font-bold text-brand-900">AGM & Resolution Tracker</h4>
+                <h3 class="text-xl font-bold text-brand-900">AGM & Resolution Tracker</h3>
                 <p class="text-sm text-[#78716c] leading-relaxed">
                     Schedule general body meetings (AGM/SGM) digitally. Publish agendas, record attendance, track key resolutions, and archive official Minutes of Meetings.
                 </p>
             </div>
             <!-- Feature 3 -->
-            <div class="p-8 rounded-2xl glass-card space-y-5">
+            <div class="reveal p-8 rounded-2xl glass-card space-y-5" style="--reveal-delay:200ms">
                 <div class="w-12 h-12 rounded-2xl bg-brand-100 text-brand-500 flex items-center justify-center text-xl shadow-sm">
-                    <i class="fa-solid fa-folder-open"></i>
+                    <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
                 </div>
-                <h4 class="text-xl font-bold text-brand-900">Statutory Registers</h4>
+                <h3 class="text-xl font-bold text-brand-900">Statutory Registers</h3>
                 <p class="text-sm text-[#78716c] leading-relaxed">
                     Digitally manage Form 'I' (Register of Members), Form 'J', Share Registers, and nominations as per statutory cooperative society acts.
                 </p>
@@ -245,32 +384,74 @@
         </div>
     </section>
 
+    <!-- Benefits Section -->
+    <section id="benefits" class="py-24 bg-[#F5F5F4]/40 border-y border-brand-900/5">
+        <div class="max-w-7xl mx-auto px-6 space-y-16">
+            <div class="reveal text-center space-y-4 max-w-2xl mx-auto">
+                <p class="text-xs uppercase font-bold tracking-widest text-brand-500">Benefits</p>
+                <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight text-brand-900">Why committees switch to ResiEase</h2>
+                <p class="text-sm text-[#78716c]">Less manual chasing, fewer compliance surprises, and a better experience for every resident.</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="reveal bg-white rounded-2xl p-6 border border-brand-900/5 shadow-sm space-y-3" style="--reveal-delay:0ms">
+                    <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-500 flex items-center justify-center">
+                        <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-brand-900">Fewer manual hours</h3>
+                    <p class="text-xs text-[#78716c] leading-relaxed">Automated billing and reconciliation cut down repetitive treasurer admin work.</p>
+                </div>
+                <div class="reveal bg-white rounded-2xl p-6 border border-brand-900/5 shadow-sm space-y-3" style="--reveal-delay:100ms">
+                    <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-500 flex items-center justify-center">
+                        <i class="fa-solid fa-money-bill-trend-up" aria-hidden="true"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-brand-900">Faster collections</h3>
+                    <p class="text-xs text-[#78716c] leading-relaxed">WhatsApp payment links and reminders help members pay on time, with less follow-up.</p>
+                </div>
+                <div class="reveal bg-white rounded-2xl p-6 border border-brand-900/5 shadow-sm space-y-3" style="--reveal-delay:200ms">
+                    <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-500 flex items-center justify-center">
+                        <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-brand-900">Audit-ready, always</h3>
+                    <p class="text-xs text-[#78716c] leading-relaxed">Statutory registers and AGM records stay organised and ready for inspection year-round.</p>
+                </div>
+                <div class="reveal bg-white rounded-2xl p-6 border border-brand-900/5 shadow-sm space-y-3" style="--reveal-delay:300ms">
+                    <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-500 flex items-center justify-center">
+                        <i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-brand-900">A better resident experience</h3>
+                    <p class="text-xs text-[#78716c] leading-relaxed">Residents track bills, dues, and society updates from one modern self-serve portal.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Interactive ROI Calculator Section -->
-    <section id="roi-calculator" class="py-24 bg-[#F5F5F4]/40 border-y border-brand-900/5">
+    <section id="roi-calculator" class="py-24">
         <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            <div class="lg:col-span-5 space-y-6">
-                <h2 class="text-xs uppercase font-bold tracking-widest text-brand-500 font-bold">ROI Calculator</h2>
-                <h3 class="text-3xl md:text-4xl font-extrabold tracking-tight text-brand-900">Calculate how much you save with ResiEase</h3>
+            <div class="reveal lg:col-span-5 space-y-6">
+                <p class="text-xs uppercase font-bold tracking-widest text-brand-500">ROI Calculator</p>
+                <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight text-brand-900">Calculate how much you save with ResiEase</h2>
                 <p class="text-sm text-[#78716c] leading-relaxed">
                     Manual society management wastes time and causes payment defaults. Slide to input your society's size and see how much admin overhead you can eliminate instantly.
                 </p>
                 <div class="p-6 bg-brand-100/50 rounded-2xl border border-brand-500/10 space-y-2">
-                    <h5 class="text-xs font-bold uppercase text-brand-500"><i class="fa-solid fa-chart-line"></i> Industry Research</h5>
+                    <h3 class="text-xs font-bold uppercase text-brand-500"><i class="fa-solid fa-chart-line" aria-hidden="true"></i> Industry Research</h3>
                     <p class="text-xs text-[#57534e] leading-relaxed">
-                        Industry case studies show housing societies utilizing automated billing systems report a **45% drop in collection delays** on average.
+                        Industry case studies show housing societies utilizing automated billing systems report a <strong>45% drop in collection delays</strong> on average.
                     </p>
                 </div>
             </div>
-            
-            <div class="lg:col-span-7 bg-white rounded-3xl p-8 border border-brand-900/10 shadow-xl space-y-8 glass-card">
+
+            <div class="reveal lg:col-span-7 bg-white rounded-3xl p-8 border border-brand-900/10 shadow-xl space-y-8 glass-card" style="--reveal-delay:150ms">
                 <div class="space-y-4">
                     <div class="flex justify-between items-center">
-                        <label class="text-sm font-bold text-brand-900 uppercase">Number of Flats / Units</label>
+                        <label for="flat-slider" class="text-sm font-bold text-brand-900 uppercase">Number of Flats / Units</label>
                         <span id="flat-count-display" class="px-3 py-1 bg-brand-900 text-white rounded-lg text-sm font-bold">120 Flats</span>
                     </div>
                     <input type="range" id="flat-slider" min="10" max="500" value="120" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand-500" oninput="calculateRoi()">
                 </div>
-                
+
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-brand-900/5">
                     <div class="text-center p-4 bg-brand-50/50 rounded-xl border border-brand-900/5">
                         <h4 class="text-xs font-bold text-gray-500 uppercase mb-1">Admin Time Saved</h4>
@@ -294,40 +475,58 @@
 
     <!-- FAQ Accordion Section -->
     <section id="faq" class="py-24 max-w-4xl mx-auto px-6 space-y-12">
-        <div class="text-center space-y-4">
-            <h2 class="text-xs uppercase font-bold tracking-widest text-brand-500">FAQ</h2>
-            <h3 class="text-3xl font-extrabold tracking-tight text-brand-900">Frequently Asked Questions</h3>
+        <div class="reveal text-center space-y-4">
+            <p class="text-xs uppercase font-bold tracking-widest text-brand-500">FAQ</p>
+            <h2 class="text-3xl font-extrabold tracking-tight text-brand-900">Frequently Asked Questions</h2>
         </div>
-        
+
         <div class="space-y-4">
             <!-- FAQ 1 -->
-            <div class="bg-white rounded-2xl border border-brand-900/10 overflow-hidden shadow-sm">
-                <button class="w-full p-6 text-left font-bold text-brand-900 flex justify-between items-center hover:bg-brand-50/30 transition-colors" onclick="toggleFaq(this)">
-                    <span>How does the app automate housing society billing?</span>
-                    <i class="fa-solid fa-chevron-down text-sm transition-transform duration-300"></i>
-                </button>
-                <div class="px-6 pb-6 text-sm text-[#78716c] leading-relaxed hidden">
-                    The app automates maintenance calculations, generates GST-compliant invoices on the 1st of every month, sends payment links via SMS/WhatsApp, and reconciles payments instantly via UPI, NetBanking, or Cards.
+            <div class="reveal bg-white rounded-2xl border border-brand-900/10 overflow-hidden shadow-sm" style="--reveal-delay:0ms">
+                <h3>
+                    <button class="w-full p-6 text-left font-bold text-brand-900 flex justify-between items-center gap-4 hover:bg-brand-50/30 transition-colors" aria-expanded="false" aria-controls="faq-answer-1" onclick="toggleFaq(this)">
+                        <span>How does the app automate housing society billing?</span>
+                        <i class="fa-solid fa-chevron-down text-sm transition-transform duration-300 shrink-0" aria-hidden="true"></i>
+                    </button>
+                </h3>
+                <div id="faq-answer-1" class="faq-panel grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-out">
+                    <div class="overflow-hidden">
+                        <p class="px-6 pb-6 text-sm text-[#78716c] leading-relaxed">
+                            The app automates maintenance calculations, generates GST-compliant invoices on the 1st of every month, sends payment links via SMS/WhatsApp, and reconciles payments instantly via UPI, NetBanking, or Cards.
+                        </p>
+                    </div>
                 </div>
             </div>
             <!-- FAQ 2 -->
-            <div class="bg-white rounded-2xl border border-brand-900/10 overflow-hidden shadow-sm">
-                <button class="w-full p-6 text-left font-bold text-brand-900 flex justify-between items-center hover:bg-brand-50/30 transition-colors" onclick="toggleFaq(this)">
-                    <span>How does the app manage general body meetings (AGM/SGM)?</span>
-                    <i class="fa-solid fa-chevron-down text-sm transition-transform duration-300"></i>
-                </button>
-                <div class="px-6 pb-6 text-sm text-[#78716c] leading-relaxed hidden">
-                    ResiEase offers a dedicated AGM module where committees can draft schedules, publish agendas, collect member attendances, record critical resolutions, and publish official meeting minutes.
+            <div class="reveal bg-white rounded-2xl border border-brand-900/10 overflow-hidden shadow-sm" style="--reveal-delay:100ms">
+                <h3>
+                    <button class="w-full p-6 text-left font-bold text-brand-900 flex justify-between items-center gap-4 hover:bg-brand-50/30 transition-colors" aria-expanded="false" aria-controls="faq-answer-2" onclick="toggleFaq(this)">
+                        <span>How does the app manage general body meetings (AGM/SGM)?</span>
+                        <i class="fa-solid fa-chevron-down text-sm transition-transform duration-300 shrink-0" aria-hidden="true"></i>
+                    </button>
+                </h3>
+                <div id="faq-answer-2" class="faq-panel grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-out">
+                    <div class="overflow-hidden">
+                        <p class="px-6 pb-6 text-sm text-[#78716c] leading-relaxed">
+                            ResiEase offers a dedicated AGM module where committees can draft schedules, publish agendas, collect member attendances, record critical resolutions, and publish official meeting minutes.
+                        </p>
+                    </div>
                 </div>
             </div>
             <!-- FAQ 3 -->
-            <div class="bg-white rounded-2xl border border-brand-900/10 overflow-hidden shadow-sm">
-                <button class="w-full p-6 text-left font-bold text-brand-900 flex justify-between items-center hover:bg-brand-50/30 transition-colors" onclick="toggleFaq(this)">
-                    <span>Does the app support local tax structures like GST?</span>
-                    <i class="fa-solid fa-chevron-down text-sm transition-transform duration-300"></i>
-                </button>
-                <div class="px-6 pb-6 text-sm text-[#78716c] leading-relaxed hidden">
-                    Absolutely. The software has built-in tax configuration engines that handle localized taxes, including GST for Resident Welfare Associations (RWAs) and cooperative societies, facilitating direct Tally integrations.
+            <div class="reveal bg-white rounded-2xl border border-brand-900/10 overflow-hidden shadow-sm" style="--reveal-delay:200ms">
+                <h3>
+                    <button class="w-full p-6 text-left font-bold text-brand-900 flex justify-between items-center gap-4 hover:bg-brand-50/30 transition-colors" aria-expanded="false" aria-controls="faq-answer-3" onclick="toggleFaq(this)">
+                        <span>Does the app support local tax structures like GST?</span>
+                        <i class="fa-solid fa-chevron-down text-sm transition-transform duration-300 shrink-0" aria-hidden="true"></i>
+                    </button>
+                </h3>
+                <div id="faq-answer-3" class="faq-panel grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-out">
+                    <div class="overflow-hidden">
+                        <p class="px-6 pb-6 text-sm text-[#78716c] leading-relaxed">
+                            Absolutely. The software has built-in tax configuration engines that handle localized taxes, including GST for Resident Welfare Associations (RWAs) and cooperative societies, facilitating direct Tally integrations.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -335,10 +534,10 @@
 
     <!-- Bottom CTA Section -->
     <section class="py-24 bg-brand-900 text-white text-center relative overflow-hidden">
-        <div class="absolute inset-0 opacity-10 pointer-events-none">
+        <div class="absolute inset-0 opacity-10 pointer-events-none" aria-hidden="true">
             <div class="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-brand-100 via-transparent to-transparent"></div>
         </div>
-        <div class="max-w-4xl mx-auto px-6 space-y-8 relative z-10">
+        <div class="reveal max-w-4xl mx-auto px-6 space-y-8 relative z-10">
             <h2 class="text-3xl md:text-5xl font-extrabold tracking-tight">Ready to Upgrade Your Society?</h2>
             <p class="text-[#d6d3d1] max-w-xl mx-auto text-base">
                 Digitize your bills, manage AGM meetings, and prepare for audits seamlessly.
@@ -356,7 +555,7 @@
         <div class="max-w-7xl mx-auto px-6 space-y-4">
             <div class="flex items-center justify-center gap-2">
                 <div class="w-6 h-6 rounded-lg bg-brand-900 flex items-center justify-center text-white text-xs">
-                    <i class="fa-solid fa-hotel"></i>
+                    <i class="fa-solid fa-hotel" aria-hidden="true"></i>
                 </div>
                 <span class="font-extrabold text-sm text-brand-900">ResiEase</span>
             </div>
@@ -364,29 +563,113 @@
         </div>
     </footer>
 
-    <!-- Interactive script for FAQ and ROI Calculator -->
+    <!-- Back to top -->
+    <button id="back-to-top" type="button" aria-label="Back to top" class="fixed bottom-6 right-6 z-40 w-11 h-11 rounded-full bg-brand-900 text-white shadow-lg opacity-0 pointer-events-none translate-y-2 transition-all duration-300 flex items-center justify-center hover:bg-brand-500">
+        <i class="fa-solid fa-arrow-up text-sm" aria-hidden="true"></i>
+    </button>
+
+    <!-- Interactive script for FAQ, ROI Calculator, nav, and scroll reveal -->
     <script>
         function toggleFaq(button) {
-            const content = button.nextElementSibling;
+            const expanded = button.getAttribute('aria-expanded') === 'true';
+            const panel = document.getElementById(button.getAttribute('aria-controls'));
             const icon = button.querySelector('i');
-            content.classList.toggle('hidden');
-            icon.classList.toggle('rotate-180');
+
+            button.setAttribute('aria-expanded', String(!expanded));
+            panel.style.gridTemplateRows = expanded ? '0fr' : '1fr';
+            icon.classList.toggle('rotate-180', !expanded);
         }
-        
+
         function calculateRoi() {
             const slider = document.getElementById('flat-slider');
-            const flatCount = parseInt(slider.value);
-            
-            // Render displays
+            const flatCount = parseInt(slider.value, 10);
+
             document.getElementById('flat-count-display').innerText = `${flatCount} Flats`;
-            
+
             // Compute hours saved (approx 0.35 hours per flat per month for invoice matching and manual reconciliation)
             const hours = Math.round(flatCount * 0.35);
             document.getElementById('time-saved').innerText = `${hours} Hours`;
         }
-        
-        // Run initial ROI calc
+
         calculateRoi();
+
+        // Mobile menu
+        (function () {
+            const btn = document.getElementById('mobile-menu-btn');
+            const menu = document.getElementById('mobile-menu');
+            const icon = document.getElementById('menu-icon');
+
+            function closeMenu() {
+                menu.classList.add('hidden');
+                btn.setAttribute('aria-expanded', 'false');
+                icon.classList.remove('fa-xmark');
+                icon.classList.add('fa-bars');
+            }
+            function openMenu() {
+                menu.classList.remove('hidden');
+                btn.setAttribute('aria-expanded', 'true');
+                icon.classList.remove('fa-bars');
+                icon.classList.add('fa-xmark');
+            }
+
+            btn.addEventListener('click', function () {
+                const isOpen = btn.getAttribute('aria-expanded') === 'true';
+                isOpen ? closeMenu() : openMenu();
+            });
+            menu.querySelectorAll('.mobile-nav-link').forEach(function (link) {
+                link.addEventListener('click', closeMenu);
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') closeMenu();
+            });
+        })();
+
+        // Header scroll shadow + back-to-top visibility
+        (function () {
+            const header = document.getElementById('site-header');
+            const backToTop = document.getElementById('back-to-top');
+            let ticking = false;
+
+            function onScroll() {
+                const y = window.scrollY;
+                header.classList.toggle('is-scrolled', y > 8);
+                if (y > 480) {
+                    backToTop.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-2');
+                } else {
+                    backToTop.classList.add('opacity-0', 'pointer-events-none', 'translate-y-2');
+                }
+                ticking = false;
+            }
+            window.addEventListener('scroll', function () {
+                if (!ticking) {
+                    requestAnimationFrame(onScroll);
+                    ticking = true;
+                }
+            }, { passive: true });
+            onScroll();
+
+            backToTop.addEventListener('click', function () {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        })();
+
+        // Scroll-reveal (progressive enhancement — hidden only when .js-anim is present, see head script)
+        (function () {
+            const items = document.querySelectorAll('.reveal');
+            if (!('IntersectionObserver' in window) || !document.documentElement.classList.contains('js-anim')) {
+                items.forEach(function (el) { el.classList.add('is-visible'); });
+                return;
+            }
+            const io = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        io.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.15, rootMargin: '0px 0px -8% 0px' });
+            items.forEach(function (el) { io.observe(el); });
+        })();
     </script>
 </body>
 </html>
