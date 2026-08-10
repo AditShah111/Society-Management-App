@@ -941,7 +941,94 @@
                         </div>
                         <button type="button" onclick="saveMdcStages()" class="w-full bg-brand-500 hover:bg-brand-600 text-white py-3 rounded-xl font-bold transition-all shadow-md shadow-brand-500/10">Save Milestone Timeline</button>
                     </div>
+
+                    <!-- Panel 4: Team Members & Access Management -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+                        <div class="flex items-center justify-between mb-5">
+                            <div>
+                                <h3 class="text-md font-bold text-gray-800 flex items-center gap-2"><i class="fa-solid fa-users-gear text-brand-500"></i> Team Members & Login Access</h3>
+                                <p class="text-xs text-gray-400 mt-1">Add residents, accountants, and committee members. They will receive login credentials by email.</p>
+                            </div>
+                            <button onclick="openAddMemberModal()" class="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-brand-500/20">
+                                <i class="fa-solid fa-user-plus"></i> Add Member
+                            </button>
+                        </div>
+
+                        <!-- Members Table -->
+                        <div class="overflow-x-auto rounded-xl border border-gray-100">
+                            <table class="w-full text-sm text-left">
+                                <thead>
+                                    <tr class="text-xs uppercase text-gray-400 border-b border-gray-100 bg-gray-50/70">
+                                        <th class="px-4 py-3">Name</th>
+                                        <th class="px-4 py-3">Email</th>
+                                        <th class="px-4 py-3">Role</th>
+                                        <th class="px-4 py-3">Flat / Info</th>
+                                        <th class="px-4 py-3 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="members-table-body" class="divide-y divide-gray-50">
+                                    <tr><td colspan="5" class="text-center py-6 text-gray-400 text-xs">Loading members...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- ============ ADD MEMBER MODAL ============ -->
+                <div id="add-member-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+                        <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-800">Add New Member</h3>
+                                <p class="text-xs text-gray-400 mt-0.5">They will receive an email with their login password.</p>
+                            </div>
+                            <button onclick="closeAddMemberModal()" class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <form id="add-member-form" class="p-6 space-y-4" onsubmit="submitAddMember(event)">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Full Name *</label>
+                                    <input type="text" id="am-name" required placeholder="e.g. Ramesh Gupta" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:border-brand-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Email Address *</label>
+                                    <input type="email" id="am-email" required placeholder="ramesh@gmail.com" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:border-brand-500">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Role *</label>
+                                    <select id="am-role" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:border-brand-500" onchange="toggleFlatField()">
+                                        <option value="">Select role...</option>
+                                        <option value="resident">Resident / Flat Owner</option>
+                                        <option value="society_admin">Committee Member</option>
+                                        <option value="accountant">Accountant</option>
+                                    </select>
+                                </div>
+                                <div id="am-flat-group">
+                                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Flat No <span class="text-gray-300">(Residents)</span></label>
+                                    <input type="text" id="am-flat" placeholder="e.g. A-101" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:border-brand-500">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Phone Number</label>
+                                <input type="tel" id="am-phone" placeholder="e.g. 9876543210" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:border-brand-500">
+                            </div>
+                            <div class="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-xs text-blue-700 flex items-start gap-2">
+                                <i class="fa-solid fa-envelope mt-0.5 flex-shrink-0"></i>
+                                <span>A random secure password will be generated and emailed to this address. The member can log in at <strong>resiease.in/login</strong> using their email and that password, or via OTP.</span>
+                            </div>
+                            <div class="flex gap-3 pt-2">
+                                <button type="button" onclick="closeAddMemberModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-bold text-sm transition-colors">Cancel</button>
+                                <button type="submit" id="am-submit-btn" class="flex-1 bg-brand-500 hover:bg-brand-600 text-white py-3 rounded-xl font-bold text-sm transition-all shadow-md shadow-brand-500/20">
+                                    <i class="fa-solid fa-user-plus mr-2"></i>Add & Send Credentials
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+
 
             </div>
         </main>
@@ -3204,6 +3291,135 @@
             } catch(e) {}
             window.location.href = '/login';
         }
+
+        // --- MDC TEAM MEMBERS MANAGEMENT ---
+        function openAddMemberModal() {
+            document.getElementById('add-member-form').reset();
+            document.getElementById('am-flat-group').classList.remove('hidden');
+            document.getElementById('add-member-modal').classList.remove('hidden');
+            document.getElementById('add-member-modal').classList.add('flex');
+        }
+
+        function closeAddMemberModal() {
+            document.getElementById('add-member-modal').classList.add('hidden');
+            document.getElementById('add-member-modal').classList.remove('flex');
+        }
+
+        function toggleFlatField() {
+            const role = document.getElementById('am-role').value;
+            if (role === 'resident') {
+                document.getElementById('am-flat-group').classList.remove('hidden');
+                document.getElementById('am-flat').required = true;
+            } else {
+                document.getElementById('am-flat-group').classList.add('hidden');
+                document.getElementById('am-flat').required = false;
+            }
+        }
+
+        async function submitAddMember(e) {
+            e.preventDefault();
+            const btn = document.getElementById('am-submit-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Processing...';
+            
+            const payload = {
+                name: document.getElementById('am-name').value,
+                email: document.getElementById('am-email').value,
+                role: document.getElementById('am-role').value,
+                flatNo: document.getElementById('am-flat').value,
+                phone: document.getElementById('am-phone').value
+            };
+
+            try {
+                const res = await fetch('/api/mdc/member', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    showToast('Member added & credentials sent successfully!', 'success');
+                    closeAddMemberModal();
+                    loadMdcMembers(); // Refresh the list
+                } else {
+                    showToast(data.error || 'Failed to add member', 'error');
+                }
+            } catch (err) {
+                showToast('Network error while adding member', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-user-plus mr-2"></i>Add & Send Credentials';
+            }
+        }
+
+        async function loadMdcMembers() {
+            try {
+                const tbody = document.getElementById('members-table-body');
+                if (!tbody) return;
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-gray-400 text-xs"><i class="fa-solid fa-spinner fa-spin mr-2"></i> Loading members...</td></tr>';
+                
+                const res = await fetch('/api/mdc/members');
+                if (!res.ok) throw new Error('Failed to load members');
+                
+                const data = await res.json();
+                if (!data.members || data.members.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-gray-500 text-sm">No members found. Add your first member above.</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = data.members.map(m => `
+                    <tr class="hover:bg-gray-50/50 transition-colors group border-b border-gray-50">
+                        <td class="px-4 py-3 font-semibold text-gray-800">${m.name || '-'}</td>
+                        <td class="px-4 py-3 text-gray-600">${m.email}</td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                m.role === 'super_admin' ? 'bg-purple-100 text-purple-700' :
+                                m.role === 'society_admin' ? 'bg-brand-100 text-brand-700' :
+                                m.role === 'accountant' ? 'bg-blue-100 text-blue-700' :
+                                'bg-gray-100 text-gray-700'
+                            }">
+                                ${(m.role || '').replace('_', ' ')}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-600">${m.flat_no || '-'}</td>
+                        <td class="px-4 py-3 text-right">
+                            ${m.role !== 'super_admin' ? `<button onclick="removeMember('${m.email}')" class="text-gray-400 hover:text-red-500 transition-colors p-1" title="Revoke Access"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                const tbody = document.getElementById('members-table-body');
+                if(tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-red-500 text-xs">Error loading members</td></tr>';
+            }
+        }
+
+        async function removeMember(email) {
+            if (!confirm(`Are you sure you want to revoke access for ${email}? They will no longer be able to log in.`)) return;
+            
+            try {
+                const res = await fetch('/api/mdc/member', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                
+                if (res.ok) {
+                    showToast('Access revoked successfully', 'success');
+                    loadMdcMembers();
+                } else {
+                    const data = await res.json();
+                    showToast(data.error || 'Failed to revoke access', 'error');
+                }
+            } catch (err) {
+                showToast('Network error', 'error');
+            }
+        }
+        
+        // Initial load of members when dashboard loads
+        document.addEventListener("DOMContentLoaded", () => {
+            setTimeout(loadMdcMembers, 2000); // Load after main dashboard is ready
+        });
     </script>
 
     <!-- AGM Upload Modal -->

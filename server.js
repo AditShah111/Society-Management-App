@@ -970,11 +970,24 @@ function validateSocietyRegistrationNo(regNo) {
         const exists = await pool.query('SELECT * FROM user_profiles WHERE society_id = $1 AND (email = $2 OR name = $3)', [session.society_id, resData.email, resData.name]);
         
         if (exists.rows.length === 0) {
+          const resEmail = resData.email || `${resData.flat_no.toLowerCase()}@resiease.local`;
+          
           await pool.query(
             "INSERT INTO user_profiles (society_id, name, email, phone, role) VALUES ($1, $2, $3, $4, 'resident')",
-            [session.society_id, resData.name, resData.email || `${resData.flat_no.toLowerCase()}@resiease.local`, resData.phone || null]
+            [session.society_id, resData.name, resEmail, resData.phone || null]
           );
-          // Optional: we can also create a dummy users table row if we want them to login later, but for now they just receive whatsapp bills.
+          
+          // Create login credentials so they can log in via OTP
+          const emailExists = await pool.query('SELECT email FROM users WHERE LOWER(email) = LOWER($1)', [resEmail]);
+          if (emailExists.rows.length === 0) {
+            const dummyPassword = crypto.randomBytes(8).toString('hex');
+            const salt = crypto.randomBytes(16).toString('hex');
+            const hash = crypto.scryptSync(dummyPassword, salt, 64).toString('hex');
+            await pool.query(
+              'INSERT INTO users (email, salt, password_hash) VALUES ($1, $2, $3)',
+              [resEmail, salt, hash]
+            );
+          }
           importedCount++;
         }
       }
@@ -1485,6 +1498,82 @@ function validateSocietyRegistrationNo(regNo) {
       }
       const db = await getFullStateFromDb(session.society_id);
       return sendJson(res, 200, { success: true, maintenanceBills: db.maintenanceBills, dashboard: deriveDashboard(db) });
+    }
+
+    // --- MDC TEAM MEMBERS MANAGEMENT ---
+    if (req.method === 'GET' && url.pathname === '/api/mdc/members') {
+      if (session.role !== 'super_admin') {
+        return sendJson(res, 403, { error: 'Only super admin can manage team members.' });
+      }
+      const memRes = await pool.query(
+        `SELECT name, email, role, phone, flat_no FROM user_profiles WHERE society_id = $1 ORDER BY role, name`,
+        [session.society_id]
+      );
+      return sendJson(res, 200, { members: memRes.rows });
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/mdc/member') {
+      if (session.role !== 'super_admin') {
+        return sendJson(res, 403, { error: 'Only super admin can manage team members.' });
+      }
+      const { name, email, role, flatNo, phone } = await readJsonBody(req);
+      if (!name || !email || !role) {
+        return sendJson(res, 400, { error: 'Name, email, and role are required.' });
+      }
+      
+      const emailExists = await pool.query('SELECT email FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+      if (emailExists.rows.length > 0) {
+        return sendJson(res, 400, { error: 'Email address already registered in the system.' });
+      }
+      
+      const generatedPassword = crypto.randomBytes(8).toString('hex');
+      const salt = crypto.randomBytes(16).toString('hex');
+      const hash = crypto.scryptSync(generatedPassword, salt, 64).toString('hex');
+      
+      await pool.query(
+        'INSERT INTO users (email, salt, password_hash) VALUES ($1, $2, $3)',
+        [email, salt, hash]
+      );
+      
+      await pool.query(
+        'INSERT INTO user_profiles (email, society_id, name, role, phone, flat_no) VALUES ($1, $2, $3, $4, $5, $6)',
+        [email, session.society_id, name, role, phone || null, flatNo || null]
+      );
+      
+      try {
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
+        });
+        await transporter.sendMail({
+          from: `"ResiEase Registration" <${process.env.GMAIL_USER}>`,
+          to: email,
+          subject: 'Welcome to ResiEase - Your Login Credentials',
+          text: `Hello ${name},\n\nYou have been added as a ${role.replace('_', ' ')} in ResiEase.\n\nHere are your login credentials:\nEmail: ${email}\nPassword: ${generatedPassword}\n\nPlease sign in at https://society-management-app-xh6q.onrender.com/login and change your password in the settings as soon as possible, or use OTP login.\n\nRegards,\nThe ResiEase Team`
+        });
+      } catch (err) {
+        console.error('Failed to send email:', err);
+      }
+      
+      return sendJson(res, 200, { success: true });
+    }
+
+    if (req.method === 'DELETE' && url.pathname === '/api/mdc/member') {
+      if (session.role !== 'super_admin') {
+        return sendJson(res, 403, { error: 'Only super admin can manage team members.' });
+      }
+      const { email } = await readJsonBody(req);
+      if (!email) {
+        return sendJson(res, 400, { error: 'Email is required.' });
+      }
+      if (email.toLowerCase() === session.email.toLowerCase()) {
+        return sendJson(res, 400, { error: 'Cannot remove your own access.' });
+      }
+      
+      await pool.query('DELETE FROM user_profiles WHERE LOWER(email) = LOWER($1) AND society_id = $2', [email, session.society_id]);
+      await pool.query('DELETE FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+      
+      return sendJson(res, 200, { success: true });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/documents') {
