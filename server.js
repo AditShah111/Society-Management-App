@@ -1,4 +1,6 @@
 require('dotenv').config();
+const { AsyncLocalStorage } = require('async_hooks');
+const asyncLocalStorage = new AsyncLocalStorage();
 const dns = require('dns');
 dns.setDefaultResultOrder('ipv4first');
 // CB5 FIXED: Removed global TLS bypass (NODE_TLS_REJECT_UNAUTHORIZED='0') — was disabling certificate validation for ALL outbound HTTPS calls.
@@ -10,6 +12,24 @@ const { Pool } = require('pg');
 const { OAuth2Client } = require('google-auth-library');
 const nodemailer = require('nodemailer');
 const cron = require('node-cron');
+const { z } = require('zod');
+
+// --- Zod Validation Schemas ---
+const schemas = {
+  login: z.object({ email: z.string().email(), password: z.string().min(1) }),
+  onboard: z.object({ email: z.string().email(), name: z.string().min(1), societyName: z.string().min(1), registrationNo: z.string().min(1), googleToken: z.string().optional() }),
+  sendOtp: z.object({ email: z.string().email() }),
+  verifyOtp: z.object({ email: z.string().email(), otp: z.string().length(6) }),
+  addMember: z.object({ name: z.string().min(1), email: z.string().email(), role: z.enum(['resident', 'accountant', 'society_admin', 'master_admin']), flatNo: z.string().optional(), phone: z.string().optional() })
+};
+
+function validatePayload(schema, payload) {
+  const result = schema.safeParse(payload);
+  if (!result.success) {
+    return { valid: false, error: result.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ') };
+  }
+  return { valid: true, data: result.data };
+}
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '1033704835291-2t1v5b1junmn6imkbssvn0ku51v4tpur.apps.googleusercontent.com';
 const googleClient = new OAuth2Client(CLIENT_ID);
@@ -97,19 +117,50 @@ if (process.env.DATABASE_URL) {
       rejectUnauthorized: false
     }
   });
+
+  // RLS Middleware Patch
+  const originalPoolQuery = pool.query.bind(pool);
+  pool.query = async function(text, params) {
+    const store = asyncLocalStorage.getStore();
+    if (store && store.society_id) {
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query(`SET LOCAL app.current_tenant = '${store.society_id}'`);
+        const res = await client.query(text, params);
+        await client.query('COMMIT');
+        return res;
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
+    }
+    return originalPoolQuery(text, params);
+  };
 } else {
   console.warn("WARNING: DATABASE_URL not set in env. Database operations will fail.");
 }
 
-// In-memory Session Store & Helpers
-const SESSIONS = new Map();
+// DB-Backed Session Helpers
+async function invalidateOldSessions(email) {
+  if (!pool) return;
+  await pool.query('DELETE FROM sessions WHERE LOWER(email) = LOWER($1)', [email]);
+}
 
-function invalidateOldSessions(email) {
-  for (const [token, sessionData] of SESSIONS.entries()) {
-    if (sessionData.email.toLowerCase() === email.toLowerCase()) {
-      SESSIONS.delete(token);
-    }
-  }
+async function createSession(token, email, role, society_id) {
+  if (!pool) return;
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  await pool.query(
+    'INSERT INTO sessions (token, email, role, society_id, expires_at) VALUES ($1, $2, $3, $4, $5)',
+    [token, email, role, society_id, expiresAt]
+  );
+}
+
+async function deleteSession(token) {
+  if (!pool) return;
+  await pool.query('DELETE FROM sessions WHERE token = $1', [token]);
 }
 
 function parseCookies(cookieHeader) {
@@ -124,12 +175,26 @@ function parseCookies(cookieHeader) {
   return list;
 }
 
-function getSession(req) {
+async function getSession(req) {
   const cookies = parseCookies(req.headers.cookie);
   const token = cookies.session_token;
-  if (!token) return null;
-  return SESSIONS.get(token) || null;
+  if (!token || !pool) return null;
+  return getSessionFromToken(token);
 }
+
+async function getSessionFromToken(token) {
+  if (!pool) return null;
+  const res = await pool.query('SELECT * FROM sessions WHERE token = $1', [token]);
+  if (res.rows.length === 0) return null;
+  const session = res.rows[0];
+  return {
+    email: session.email,
+    role: session.role,
+    society_id: session.society_id,
+    expiresAt: new Date(session.expires_at).getTime()
+  };
+}
+
 
 // Schema Initializer
 async function initializeDatabase() {
@@ -179,6 +244,19 @@ async function initializeDatabase() {
       );
     `);
     await client.query('ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS phone VARCHAR(20);');
+
+    // ── STEP 3.5: Persistent Sessions
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        token       VARCHAR(255) PRIMARY KEY,
+        email       VARCHAR(255) NOT NULL,
+        role        VARCHAR(50) NOT NULL,
+        society_id  UUID,
+        expires_at  TIMESTAMP WITH TIME ZONE NOT NULL,
+        created_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+    `);
+
 
     // ── STEP 4: society metadata table (per-society settings)
     await client.query(`
@@ -361,10 +439,24 @@ async function initializeDatabase() {
     `);
     await client.query('ALTER TABLE complaints ADD COLUMN IF NOT EXISTS society_id UUID;');
 
-    // CB3 FIXED: Removed ENABLE ROW LEVEL SECURITY calls that had NO backing CREATE POLICY statements.
-    // Without policies, RLS in PostgreSQL with an owner-privileged connection provides zero protection
-    // and creates dangerous false assurance. All multi-tenant data isolation is enforced via
-    // explicit WHERE society_id = $1 clauses on every query — which is the actual protection here.
+    // ── STEP 6: Row-Level Security (RLS) — real policies using app.current_tenant
+    const tenantTables = [
+      'society', 'maintenance_bills', 'financial_records',
+      'agm_meetings', 'agm_documents', 'agm_resolutions',
+      'statutory_documents', 'redevelopment_stages', 'redevelopment_tenders',
+      'complaints'
+    ];
+    for (const tbl of tenantTables) {
+      await client.query(`ALTER TABLE ${tbl} ENABLE ROW LEVEL SECURITY`);
+      await client.query(`ALTER TABLE ${tbl} FORCE ROW LEVEL SECURITY`);
+      // Drop old policy if exists so this is idempotent
+      await client.query(`DROP POLICY IF EXISTS tenant_isolation ON ${tbl}`);
+      await client.query(`
+        CREATE POLICY tenant_isolation ON ${tbl}
+        USING (society_id::text = current_setting('app.current_tenant', true))
+        WITH CHECK (society_id::text = current_setting('app.current_tenant', true))
+      `);
+    }
 
     await client.query('COMMIT');
 
@@ -405,7 +497,7 @@ async function initializeDatabase() {
       const exists = await pool.query('SELECT email FROM users WHERE email = $1', [u.email]);
       if (exists.rows.length === 0) {
         const salt = crypto.randomBytes(16).toString('hex');
-        const passwordHash = crypto.scryptSync(u.password, salt, 64).toString('hex');
+        const passwordHash = crypto.scryptSync(u.password, salt, 64, { N: 16384, r: 8, p: 1 }).toString('hex');
         await pool.query(
           'INSERT INTO users (email, salt, password_hash, is_master_admin) VALUES ($1, $2, $3, $4)',
           [u.email, salt, passwordHash, u.is_master_admin || false]
@@ -744,8 +836,8 @@ async function handleApi(req, res, url) {
       }
 
       const sessionToken = crypto.randomUUID();
-      invalidateOldSessions(email); // Auto-kick old sessions (Option B)
-      SESSIONS.set(sessionToken, { email, role, society_id, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
+      await invalidateOldSessions(email); // Auto-kick old sessions (Option B)
+      await createSession(sessionToken, email, role, society_id);
 
       res.writeHead(200, {
         'Set-Cookie': `session_token=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=86400`,
@@ -759,10 +851,10 @@ async function handleApi(req, res, url) {
       if (isLoginRateLimited(clientIp)) {
         return sendJson(res, 429, { error: 'Too many authentication attempts. Please try again after 15 minutes.' });
       }
-      const { email, password } = await readJsonBody(req);
-      if (!email || !password) {
-        return sendJson(res, 400, { error: 'Email and password are required.' });
-      }
+      const rawBody = await readJsonBody(req);
+      const val = validatePayload(schemas.login, rawBody);
+      if (!val.valid) return sendJson(res, 400, { error: val.error });
+      const { email, password } = val.data;
 
       if (!pool) return sendJson(res, 500, { error: 'Database connection not initialized.' });
 
@@ -772,7 +864,7 @@ async function handleApi(req, res, url) {
         return sendJson(res, 401, { error: 'Invalid email or password.' });
       }
 
-      const hash = crypto.scryptSync(password, user.salt, 64).toString('hex');
+      const hash = crypto.scryptSync(password, user.salt, 64, { N: 16384, r: 8, p: 1 }).toString('hex');
       if (hash !== user.password_hash) {
         return sendJson(res, 401, { error: 'Invalid email or password.' });
       }
@@ -794,8 +886,8 @@ async function handleApi(req, res, url) {
       }
 
       const token = crypto.randomUUID();
-      invalidateOldSessions(email); // Auto-kick old sessions (Option B)
-      SESSIONS.set(token, { email, role, society_id, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
+      await invalidateOldSessions(email); // Auto-kick old sessions (Option B)
+      await createSession(token, email, role, society_id);
 
       res.writeHead(200, {
         'Set-Cookie': `session_token=${token}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=86400`,
@@ -812,7 +904,7 @@ async function handleApi(req, res, url) {
       }));
       const token = cookieMap['session_token'];
       if (token) {
-        SESSIONS.delete(token);
+        await deleteSession(token);
       }
       res.writeHead(200, {
         'Set-Cookie': 'session_token=; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
@@ -873,7 +965,7 @@ function validateSocietyRegistrationNo(regNo) {
     if (req.method === 'POST' && url.pathname === '/api/logout') {
       const sessionToken = req.headers.cookie?.split(';').find(c => c.trim().startsWith('session_token='))?.split('=')[1];
       if (sessionToken) {
-        SESSIONS.delete(sessionToken);
+        await deleteSession(sessionToken);
       }
       res.writeHead(200, {
         'Set-Cookie': 'session_token=; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=0',
@@ -974,7 +1066,7 @@ function validateSocietyRegistrationNo(regNo) {
       }
       
       const sessionToken = req.headers.cookie?.split(';').find(c => c.trim().startsWith('session_token='))?.split('=')[1];
-      const session = SESSIONS.get(sessionToken);
+      const session = await getSessionFromToken(sessionToken);
       if (!session || session.role !== 'super_admin') {
         return sendJson(res, 403, { error: 'Unauthorized.' });
       }
@@ -998,7 +1090,7 @@ function validateSocietyRegistrationNo(regNo) {
           if (emailExists.rows.length === 0) {
             const dummyPassword = crypto.randomBytes(8).toString('hex');
             const salt = crypto.randomBytes(16).toString('hex');
-            const hash = crypto.scryptSync(dummyPassword, salt, 64).toString('hex');
+            const hash = crypto.scryptSync(dummyPassword, salt, 64, { N: 16384, r: 8, p: 1 }).toString('hex');
             await pool.query(
               'INSERT INTO users (email, salt, password_hash) VALUES ($1, $2, $3)',
               [resEmail, salt, hash]
@@ -1048,7 +1140,7 @@ function validateSocietyRegistrationNo(regNo) {
 
       // 2. Create user credentials
       const salt = crypto.randomBytes(16).toString('hex');
-      const hash = crypto.scryptSync(generatedPassword, salt, 64).toString('hex');
+      const hash = crypto.scryptSync(generatedPassword, salt, 64, { N: 16384, r: 8, p: 1 }).toString('hex');
       await pool.query(
         'INSERT INTO users (email, salt, password_hash) VALUES ($1, $2, $3)',
         [email, salt, hash]
@@ -1100,10 +1192,10 @@ function validateSocietyRegistrationNo(regNo) {
         return sendJson(res, 429, { error: 'Too many requests. Please try again after 15 minutes.' });
       }
 
-      const { email } = await readJsonBody(req);
-      if (!email) {
-        return sendJson(res, 400, { error: 'Email is required.' });
-      }
+      const rawBody = await readJsonBody(req);
+      const val = validatePayload(schemas.sendOtp, rawBody);
+      if (!val.valid) return sendJson(res, 400, { error: val.error });
+      const { email } = val.data;
       if (!pool) return sendJson(res, 500, { error: 'Database connection not initialized.' });
 
       // CB1 FIXED: OTP is generated and stored, but NEVER returned in the HTTP response body.
@@ -1142,10 +1234,6 @@ function validateSocietyRegistrationNo(regNo) {
         return sendJson(res, 500, { error: 'Failed to send OTP. Please try again or use password login.' });
       }
 
-      // CB1 FIXED: OTP is NOT included in the response — only a generic success message
-      if (process.env.NODE_ENV !== 'production') {
-        console.log(`[AUTH-OTP DEV] Generated passcode ${otp} for ${email}`);
-      }
       return sendJson(res, 200, { success: true, message: 'A login passcode has been sent to your email address.' });
     }
 
@@ -1155,15 +1243,15 @@ function validateSocietyRegistrationNo(regNo) {
       if (isLoginRateLimited(otpClientIp)) {
         return sendJson(res, 429, { error: 'Too many attempts. Please try again after 15 minutes.' });
       }
-      const { email, code } = await readJsonBody(req);
-      if (!email || !code) {
-        return sendJson(res, 400, { error: 'Email and verification code are required.' });
-      }
+      const rawBody = await readJsonBody(req);
+      const val = validatePayload(schemas.verifyOtp, rawBody);
+      if (!val.valid) return sendJson(res, 400, { error: val.error });
+      const { email, otp } = val.data;
       if (!pool) return sendJson(res, 500, { error: 'Database connection not initialized.' });
 
       const result = await pool.query('SELECT otp_code, otp_expires_at FROM users WHERE LOWER(email) = LOWER($1)', [email]);
       const user = result.rows[0];
-      if (!user || user.otp_code !== code || new Date(user.otp_expires_at) < new Date()) {
+      if (!user || user.otp_code !== otp || new Date(user.otp_expires_at) < new Date()) {
         return sendJson(res, 401, { error: 'Invalid or expired passcode. Please request a new one.' });
       }
 
@@ -1181,7 +1269,7 @@ function validateSocietyRegistrationNo(regNo) {
       }
 
       const token = crypto.randomUUID();
-      SESSIONS.set(token, { email, role: profile.role, society_id: profile.society_id, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
+      await createSession(token, email, profile.role, profile.society_id);
 
       res.writeHead(200, {
         'Set-Cookie': `session_token=${token}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=86400`,
@@ -1194,7 +1282,7 @@ function validateSocietyRegistrationNo(regNo) {
       const cookies = parseCookies(req.headers.cookie);
       const token = cookies.session_token;
       if (token) {
-        SESSIONS.delete(token);
+        await deleteSession(token);
       }
       res.writeHead(200, {
         'Set-Cookie': `session_token=; Path=/; HttpOnly; SameSite=Lax; Secure; Expires=Thu, 01 Jan 1970 00:00:00 GMT`,
@@ -1204,14 +1292,16 @@ function validateSocietyRegistrationNo(regNo) {
     }
 
     // 2. Protect all other API endpoints
-    const session = getSession(req);
+    const session = await getSession(req);
     if (!session || session.expiresAt < Date.now()) {
       if (session) {
         const cookies = parseCookies(req.headers.cookie);
-        SESSIONS.delete(cookies.session_token);
+        await deleteSession(cookies.session_token);
       }
       return sendJson(res, 401, { error: 'Unauthorized' });
     }
+    
+    asyncLocalStorage.enterWith({ society_id: session.society_id });
 
     // Granular Role-Based Access Control (RBAC)
     const method = req.method;
@@ -1532,10 +1622,10 @@ function validateSocietyRegistrationNo(regNo) {
       if (session.role !== 'super_admin') {
         return sendJson(res, 403, { error: 'Only super admin can manage team members.' });
       }
-      const { name, email, role, flatNo, phone } = await readJsonBody(req);
-      if (!name || !email || !role) {
-        return sendJson(res, 400, { error: 'Name, email, and role are required.' });
-      }
+      const rawBody = await readJsonBody(req);
+      const val = validatePayload(schemas.addMember, rawBody);
+      if (!val.valid) return sendJson(res, 400, { error: val.error });
+      const { name, email, role, flatNo, phone } = val.data;
       
       const emailExists = await pool.query('SELECT email FROM users WHERE LOWER(email) = LOWER($1)', [email]);
       if (emailExists.rows.length > 0) {
@@ -1544,7 +1634,7 @@ function validateSocietyRegistrationNo(regNo) {
       
       const generatedPassword = crypto.randomBytes(8).toString('hex');
       const salt = crypto.randomBytes(16).toString('hex');
-      const hash = crypto.scryptSync(generatedPassword, salt, 64).toString('hex');
+      const hash = crypto.scryptSync(generatedPassword, salt, 64, { N: 16384, r: 8, p: 1 }).toString('hex');
       
       await pool.query(
         'INSERT INTO users (email, salt, password_hash) VALUES ($1, $2, $3)',
@@ -1800,7 +1890,7 @@ async function serveStatic(req, res, url) {
     requested = '/register.html';
   } else if (requested === '/login' || requested === '/login.html') {
     // If the user already has a valid session, redirect to /app
-    const session = getSession(req);
+    const session = await getSession(req);
     if (session && session.expiresAt > Date.now()) {
       res.writeHead(302, { 
         'Location': '/app',
@@ -1811,7 +1901,7 @@ async function serveStatic(req, res, url) {
     requested = '/login.html';
   } else if (requested === '/app' || requested === '/index.html' || requested === '/master.html') {
     // Verify session before serving dashboard pages
-    const session = getSession(req);
+    const session = await getSession(req);
     if (!session || session.expiresAt < Date.now()) {
       res.writeHead(302, { 
         'Location': '/login',
@@ -1984,7 +2074,7 @@ const server = http.createServer(async (req, res) => {
   
   // Secure access to local static uploads directory
   if (url.pathname.startsWith('/uploads/')) {
-    const session = getSession(req);
+    const session = await getSession(req);
     if (!session || session.expiresAt < Date.now()) {
       res.writeHead(401, { 'content-type': 'application/json; charset=utf-8' });
       return res.end(JSON.stringify({ error: 'Unauthorized' }));
