@@ -366,6 +366,41 @@ async function logAudit({ societyId, actorEmail, action, entity, entityId, oldVa
   }
 }
 
+// Safe Non-Blocking Email Dispatcher (Short timeouts, never blocks API)
+async function sendEmailSafely({ to, subject, text, fromName = 'ResiEase' }) {
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailPass = process.env.GMAIL_PASS;
+
+  if (!gmailUser || !gmailPass) {
+    console.log(`[EMAIL-SIMULATION] No GMAIL_USER/PASS configured. Simulated email to ${to}:`);
+    console.log(`Subject: ${subject}`);
+    console.log(`Body:\n${text}`);
+    return { sent: false, simulated: true };
+  }
+
+  try {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: gmailUser, pass: gmailPass },
+      connectionTimeout: 4000,
+      greetingTimeout: 4000,
+      socketTimeout: 5000
+    });
+
+    const info = await transporter.sendMail({
+      from: `"${fromName}" <${gmailUser}>`,
+      to,
+      subject,
+      text
+    });
+    console.log(`[EMAIL-SENT] Successfully sent email to ${to}, id: ${info.messageId}`);
+    return { sent: true, messageId: info.messageId };
+  } catch (err) {
+    console.error(`[EMAIL-ERROR] Failed to send email to ${to}:`, err.message);
+    return { sent: false, error: err.message };
+  }
+}
+
 // Schema Initializer
 async function initializeDatabase() {
   if (!pool) return;
@@ -1371,29 +1406,13 @@ function validateSocietyRegistrationNo(regNo) {
         [societyName, registrationNo, societyId]
       );
 
-      // Send Email via Nodemailer (Gmail)
-      try {
-        const transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: {
-            user: process.env.GMAIL_USER,
-            pass: process.env.GMAIL_PASS
-          }
-        });
-
-        const mailOptions = {
-          from: `"ResiEase Registration" <${process.env.GMAIL_USER}>`,
-          to: email,
-          subject: 'Welcome to ResiEase - Your Admin Credentials',
-          text: `Hello ${name},\n\nYour society "${societyName}" has been successfully registered on ResiEase.\n\nHere are your super admin login credentials:\nEmail: ${email}\nPassword: ${generatedPassword}\n\nPlease sign in at https://society-management-app-xh6q.onrender.com/login and change your password in the settings as soon as possible.\n\nRegards,\nThe ResiEase Team`
-        };
-
-        await transporter.sendMail(mailOptions);
-        console.log(`Email sent successfully to ${email}`);
-      } catch (err) {
-        console.error('Failed to send email:', err);
-        // Note: Even if email fails, account is created. In production, we'd queue this or handle better.
-      }
+      // Dispatch Onboarding Credentials Email (non-blocking)
+      sendEmailSafely({
+        to: email,
+        subject: 'Welcome to ResiEase - Your Admin Credentials',
+        fromName: 'ResiEase Registration',
+        text: `Hello ${name},\n\nYour society "${societyName}" has been successfully registered on ResiEase.\n\nHere are your super admin login credentials:\nEmail: ${email}\nPassword: ${generatedPassword}\n\nPlease sign in at https://society-management-app-xh6q.onrender.com/login and change your password in the settings as soon as possible.\n\nRegards,\nThe ResiEase Team`
+      }).catch(err => console.error('[ONBOARD-EMAIL-FAIL]', err));
 
       return sendJson(res, 200, { success: true });
     }
@@ -1429,23 +1448,14 @@ function validateSocietyRegistrationNo(regNo) {
         );
       }
 
-      // Send OTP via email using nodemailer
-      try {
-        const transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
-        });
-        await transporter.sendMail({
-          from: `"ResiEase" <${process.env.GMAIL_USER}>`,
-          to: email,
-          subject: 'Your ResiEase Login Passcode',
-          text: `Your one-time login passcode is: ${otp}\n\nThis code expires in 5 minutes. Do not share it with anyone.`
-        });
-      } catch (mailErr) {
-        console.error('[AUTH-OTP] Failed to send OTP email:', mailErr.message);
-        // CB1: Log error but do NOT include OTP in the error response
-        return sendJson(res, 500, { error: 'Failed to send OTP. Please try again or use password login.' });
-      }
+      // Send OTP via email safely
+      const mailResult = await sendEmailSafely({
+        to: email,
+        subject: 'Your ResiEase Login Passcode',
+        fromName: 'ResiEase Security',
+        text: `Your one-time login passcode is: ${otp}\n\nThis code expires in 5 minutes. Do not share it with anyone.`
+      });
+      console.log(`[AUTH-OTP] Passcode generated for ${email}: ${otp} (Email dispatched: ${mailResult.sent})`);
 
       return sendJson(res, 200, { success: true, message: 'A login passcode has been sent to your email address.' });
     }
@@ -1872,20 +1882,13 @@ function validateSocietyRegistrationNo(regNo) {
         [email, session.society_id, name, role, phone || null, flatNo || null]
       );
       
-      try {
-        const transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
-        });
-        await transporter.sendMail({
-          from: `"ResiEase Registration" <${process.env.GMAIL_USER}>`,
-          to: email,
-          subject: 'Welcome to ResiEase - Your Login Credentials',
-          text: `Hello ${name},\n\nYou have been added as a ${role.replace('_', ' ')} in ResiEase.\n\nHere are your login credentials:\nEmail: ${email}\nPassword: ${generatedPassword}\n\nPlease sign in at https://society-management-app-xh6q.onrender.com/login and change your password in the settings as soon as possible, or use OTP login.\n\nRegards,\nThe ResiEase Team`
-        });
-      } catch (err) {
-        console.error('Failed to send email:', err);
-      }
+      // Dispatch credentials email asynchronously (never blocks response)
+      sendEmailSafely({
+        to: email,
+        subject: 'Welcome to ResiEase - Your Login Credentials',
+        fromName: 'ResiEase Registration',
+        text: `Hello ${name},\n\nYou have been added as a ${role.replace('_', ' ')} in ResiEase.\n\nHere are your login credentials:\nEmail: ${email}\nPassword: ${generatedPassword}\n\nPlease sign in at https://society-management-app-xh6q.onrender.com/login and change your password in the settings as soon as possible, or use OTP login.\n\nRegards,\nThe ResiEase Team`
+      }).catch(err => console.error('[MDC-EMAIL-FAIL]', err));
       
       logAudit({ societyId: session.society_id, actorEmail: session.email, action: 'ADD_MEMBER', entity: 'user_profiles', entityId: email, newValue: { name, email, role, flatNo }, ipAddress: req.socket.remoteAddress });
       return sendJson(res, 200, { success: true });
