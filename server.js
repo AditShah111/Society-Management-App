@@ -182,6 +182,11 @@ const MIME_TYPES = {
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
   '.webp': 'image/webp',
+  '.mp3': 'audio/mpeg',
+  '.wav': 'audio/wav',
+  '.m4a': 'audio/mp4',
+  '.aac': 'audio/aac',
+  '.ogg': 'audio/ogg',
   '.webmanifest': 'application/manifest+json; charset=utf-8'
 };
 
@@ -2317,6 +2322,7 @@ async function serveStatic(req, res, url) {
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
         "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
         "img-src 'self' data: https: blob:",
+        "media-src 'self' data: blob:",
         "connect-src 'self' https://accounts.google.com",
         "frame-src https://accounts.google.com",
         "frame-ancestors 'none'"

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ResiEase - Interactive Animated Product Tour</title>
+    <title>ResiEase - Studio Voice Animated Product Tour</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -70,6 +70,9 @@
 </head>
 <body class="bg-[#06080E] text-gray-100 min-h-screen flex flex-col justify-between selection:bg-indigo-600 selection:text-white">
 
+    <!-- Audio Element: ElevenLabs Studio Voiceover -->
+    <audio id="elevenlabs-audio" src="/assets/audio/mascot_voiceover.mp3" preload="auto"></audio>
+
     <!-- Top Navigation Header -->
     <header class="border-b border-gray-800/90 bg-[#0A0E1A]/95 backdrop-blur-md px-6 py-3.5 flex items-center justify-between sticky top-0 z-50">
         <div class="flex items-center gap-3">
@@ -80,7 +83,7 @@
                 <span class="font-extrabold text-xl tracking-tight text-white">ResiEase</span>
             </a>
             <span class="inline-flex text-xs bg-indigo-500/15 text-indigo-400 font-extrabold px-3 py-1 rounded-full border border-indigo-500/30 items-center gap-1.5 shadow-sm">
-                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Animated Product Tour
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Studio Voice Active
             </span>
         </div>
 
@@ -94,7 +97,7 @@
         </div>
     </header>
 
-    <!-- Main Interactive Stage -->
+    <!-- Main Interactive Showcase Stage -->
     <main class="flex-1 max-w-6xl mx-auto w-full p-3 md:p-6 space-y-4">
         
         <!-- Video Showcase Frame (16:9 Viewport) -->
@@ -196,8 +199,8 @@
                 </div>
 
                 <div class="flex items-center gap-2 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 text-xs font-mono text-gray-200 shadow">
-                    <i class="fa-solid fa-circle text-[8px] text-red-500 animate-pulse"></i>
-                    <span id="timer-display">00:00 / 01:45</span>
+                    <i class="fa-solid fa-circle text-[8px] text-emerald-400 animate-pulse"></i>
+                    <span id="timer-display">00:00 / 01:50</span>
                 </div>
             </div>
 
@@ -224,9 +227,9 @@
                             <i class="fa-solid fa-forward-step"></i>
                         </button>
 
-                        <button id="voice-btn" onclick="toggleVoice()" class="text-xs font-extrabold px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-indigo-400 flex items-center gap-1.5 transition-colors">
-                            <i class="fa-solid fa-volume-high" id="voice-icon"></i> <span id="voice-label">Character Voice ON</span>
-                        </button>
+                        <div class="flex items-center gap-1.5 text-xs font-extrabold text-indigo-400 bg-gray-800/80 px-3 py-1.5 rounded-xl border border-gray-700">
+                            <i class="fa-solid fa-waveform-lines animate-pulse text-emerald-400"></i> Studio Voice Active
+                        </div>
                     </div>
 
                     <!-- Step Selector Buttons -->
@@ -246,12 +249,12 @@
         <!-- DEDICATED LIVE SUBTITLES HUD (BELOW VIDEO) -->
         <div class="bg-[#0C101D] border border-indigo-500/30 rounded-2xl p-4 shadow-xl flex items-start gap-4">
             <div class="w-10 h-10 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shrink-0 mt-0.5">
-                <i class="fa-solid fa-face-laugh-beam text-xl text-yellow-400"></i>
+                <i class="fa-solid fa-microphone-lines text-xl text-yellow-400"></i>
             </div>
             <div class="space-y-1 flex-1">
                 <div class="flex items-center justify-between">
-                    <span class="text-[10px] uppercase tracking-wider font-black text-indigo-400">Resi's High-Energy Character Narration</span>
-                    <span class="text-[10px] bg-emerald-500/20 text-emerald-400 font-extrabold px-2.5 py-0.5 rounded-full">Synchronized Software Zoom</span>
+                    <span class="text-[10px] uppercase tracking-wider font-black text-indigo-400">Resi's Studio Character Voiceover</span>
+                    <span class="text-[10px] bg-emerald-500/20 text-emerald-400 font-extrabold px-2.5 py-0.5 rounded-full">ElevenLabs Studio Master</span>
                 </div>
                 <p id="caption-text" class="text-sm md:text-base font-bold text-gray-100 leading-relaxed">
                     "Hello, hello, hello my wonderful friends! Welcome to ResiEase! I am your super-friendly buddy Resi, and today I will save you 100 hours of headache! Let's take a tour of the entire software right now!"
@@ -268,69 +271,23 @@
             billing: "data:image/jpeg;base64,${billing}"
         };
 
-        // Web Audio Synthesizer for Fun Cartoon & Click Sound Effects
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playSfx(type) {
-            try {
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-                const now = audioCtx.currentTime;
-
-                if (type === 'click') {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(440, now);
-                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.08);
-                    gain.gain.setValueAtTime(0.3, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start(now);
-                    osc.stop(now + 0.08);
-                } else if (type === 'ding') {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(1046.5, now); // C6
-                    osc.frequency.setValueAtTime(1318.5, now + 0.08); // E6
-                    gain.gain.setValueAtTime(0.4, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start(now);
-                    osc.stop(now + 0.3);
-                } else if (type === 'chaching') {
-                    [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
-                        const osc = audioCtx.createOscillator();
-                        const gain = audioCtx.createGain();
-                        osc.type = 'sine';
-                        osc.frequency.setValueAtTime(freq, now + i * 0.06);
-                        gain.gain.setValueAtTime(0.3, now + i * 0.06);
-                        gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.06 + 0.25);
-                        osc.connect(gain);
-                        gain.connect(audioCtx.destination);
-                        osc.start(now + i * 0.06);
-                        osc.stop(now + i * 0.06 + 0.25);
-                    });
-                }
-            } catch(e) {}
-        }
+        const audio = document.getElementById('elevenlabs-audio');
 
         const scenes = [
             {
                 title: "Hello, My Friends! Welcome to ResiEase!",
                 badge: "Step 1 of 7 • Overview",
+                startTime: 0,
+                endTime: 16,
                 mascotImg: mascotImages.waving,
                 actionText: "Hello my friends! 👋",
                 caption: "Hello, hello, hello my wonderful friends! Welcome to ResiEase! I am your super-friendly buddy Resi, and today I will save you 100 hours of headache! No more fighting with paper receipts or messy spreadsheets! Let's take a tour of the entire software right now!",
-                voiceText: "Hello, hello, hello my wonderful friends! Welcome to ResiEase! I am your super-friendly buddy Resi, and today I will save you 100 hours of headache! No more fighting with paper receipts or messy spreadsheets! Let's take a tour of the entire software right now!",
-                duration: 14,
                 camera: { scale: 1, x: 0, y: 0 },
                 activeNav: 'nav-dash',
                 waypoints: [
-                    { time: 0, top: '45%', left: '50%', action: 'Hello friends! 👋', sfx: 'click' },
-                    { time: 4, top: '48%', left: '38%', action: 'Look at Collections! 💰', sfx: 'ding' },
-                    { time: 8, top: '48%', left: '68%', action: 'Zero Overdue! 🛡️', sfx: 'ding' }
+                    { time: 0, top: '45%', left: '50%', action: 'Hello friends! 👋' },
+                    { time: 5, top: '48%', left: '38%', action: 'Look at Collections! 💰' },
+                    { time: 10, top: '48%', left: '68%', action: 'Zero Overdue! 🛡️' }
                 ],
                 visualHtml: `
                     <div class="space-y-4">
@@ -382,17 +339,17 @@
             {
                 title: "Registering Your Building in 10 Seconds",
                 badge: "Step 2 of 7 • Setup",
+                startTime: 16,
+                endTime: 32,
                 mascotImg: mascotImages.pointing,
                 actionText: "Watch me click! 👆",
                 caption: "Step one: Look at this sleek registration screen! Watch my pointer click right here on the building name. Typing Lotus Housing Society, typing the official government registration number, and BAM! Look at that green tick mark! The whole building is registered in ten seconds flat! Thank you very much!",
-                voiceText: "Step one: Look at this sleek registration screen! Watch my pointer click right here on the building name. Typing Lotus Housing Society, typing the official government registration number, and bam! Look at that green tick mark! The whole building is registered in ten seconds flat! Thank you very much!",
-                duration: 15,
                 camera: { scale: 1.15, x: 20, y: 10 },
                 activeNav: 'nav-dash',
                 waypoints: [
-                    { time: 0, top: '35%', left: '55%', action: 'Typing Society Name ✍️', sfx: 'click' },
-                    { time: 5, top: '52%', left: '55%', action: 'Verifying Registration 🔍', sfx: 'ding' },
-                    { time: 9, top: '75%', left: '55%', action: 'Clicking Register! 🚀', sfx: 'ding' }
+                    { time: 16, top: '35%', left: '55%', action: 'Typing Society Name ✍️' },
+                    { time: 22, top: '52%', left: '55%', action: 'Verifying Registration 🔍' },
+                    { time: 27, top: '75%', left: '55%', action: 'Clicking Register! 🚀' }
                 ],
                 visualHtml: `
                     <div class="max-w-md mx-auto bg-white rounded-2xl shadow-xl border border-gray-200 p-5 space-y-4">
@@ -422,17 +379,17 @@
             {
                 title: "Easy 6-Digit Code Sign-In",
                 badge: "Step 3 of 7 • Simple Sign-In",
+                startTime: 32,
+                endTime: 47,
                 mascotImg: mascotImages.pointing,
                 actionText: "Secret Code! ⚡",
                 caption: "Step two: Logging in is easier than eating a hot samosa! No giant passwords to forget. Just type your email address, click send, and a six-digit secret code pops into your inbox. Type eight, four, two, nine, one, seven, and WE ARE IN! Look at this dashboard!",
-                voiceText: "Step two: Logging in is easier than eating a hot samosa! No giant passwords to forget. Just type your email address, click send, and a six-digit secret code pops into your inbox. Type eight, four, two, nine, one, seven, and we are in! Look at this dashboard!",
-                duration: 14,
                 camera: { scale: 1.12, x: 25, y: 15 },
                 activeNav: 'nav-dash',
                 waypoints: [
-                    { time: 0, top: '35%', left: '55%', action: 'Sending 6-Digit OTP ✉️', sfx: 'click' },
-                    { time: 4, top: '55%', left: '55%', action: 'Typing 8-4-2-9-1-7 🔢', sfx: 'ding' },
-                    { time: 8, top: '75%', left: '55%', action: 'Super Admin Access! 🛡️', sfx: 'ding' }
+                    { time: 32, top: '35%', left: '55%', action: 'Sending 6-Digit OTP ✉️' },
+                    { time: 37, top: '55%', left: '55%', action: 'Typing 8-4-2-9-1-7 🔢' },
+                    { time: 42, top: '75%', left: '55%', action: 'Super Admin Access! 🛡️' }
                 ],
                 visualHtml: `
                     <div class="max-w-sm mx-auto bg-white rounded-2xl shadow-xl border border-gray-200 p-6 text-center space-y-4">
@@ -458,18 +415,18 @@
             {
                 title: "Master Data Centre & Adding Members",
                 badge: "Step 4 of 7 • Registry",
+                startTime: 47,
+                endTime: 66,
                 mascotImg: mascotImages.billing,
                 actionText: "Adding Members! 👥",
                 caption: "Step three: Look at the full dashboard! On the left sidebar, watch me click on the Master Data Centre! Here we see all 48 flats and our team. Now watch closely: I click '+ Add Member', type neighbor Moksha, assign flat 102 as Accountant, click Save, and BOOM! An email with her secret login password is sent instantly! No phone calls needed!",
-                voiceText: "Step three: Look at the full dashboard! On the left sidebar, watch me click on the Master Data Centre! Here we see all 48 flats and our team. Now watch closely: I click Add Member, type neighbor Moksha, assign flat 102 as Accountant, click Save, and boom! An email with her secret login password is sent instantly! No phone calls needed!",
-                duration: 17,
                 camera: { scale: 1.05, x: 10, y: -5 },
                 activeNav: 'nav-mdc',
                 waypoints: [
-                    { time: 0, top: '35%', left: '15%', action: 'Clicking Master Data 📁', sfx: 'click' },
-                    { time: 4, top: '28%', left: '75%', action: 'Clicking + Add Member ➕', sfx: 'click' },
-                    { time: 9, top: '55%', left: '55%', action: 'Typing Moksha / Flat 102 ✍️', sfx: 'ding' },
-                    { time: 13, top: '70%', left: '80%', action: 'Password Emailed! ✉️', sfx: 'ding' }
+                    { time: 47, top: '35%', left: '15%', action: 'Clicking Master Data 📁' },
+                    { time: 52, top: '28%', left: '75%', action: 'Clicking + Add Member ➕' },
+                    { time: 58, top: '55%', left: '55%', action: 'Typing Moksha / Flat 102 ✍️' },
+                    { time: 62, top: '70%', left: '80%', action: 'Password Emailed! ✉️' }
                 ],
                 visualHtml: `
                     <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200 space-y-3.5">
@@ -520,18 +477,18 @@
             {
                 title: "1-Click Monthly Batch Billing & WhatsApp",
                 badge: "Step 5 of 7 • Finance",
+                startTime: 66,
+                endTime: 86,
                 mascotImg: mascotImages.billing,
                 actionText: "Generating Bills! ⚡",
                 caption: "Step four: Oh boy, this is the grand finale! Monthly maintenance bills! Normally this takes three days of crying and calculators. But watch my pointer click 'Generate Batch Invoices'. One single click... CHA-CHING! All 48 bills calculated, GST added, and sent straight to everyone's WhatsApp on their phones! Isn't that absolute magic?!",
-                voiceText: "Step four: Oh boy, this is the grand finale! Monthly maintenance bills! Normally this takes three days of crying and calculators. But watch my pointer click Generate Batch Invoices. One single click, cha-ching! All 48 bills calculated, GST added, and sent straight to everyone's WhatsApp on their phones! Isn't that absolute magic?!",
-                duration: 18,
                 camera: { scale: 1.08, x: 15, y: -5 },
                 activeNav: 'nav-billing',
                 waypoints: [
-                    { time: 0, top: '48%', left: '15%', action: 'Clicking Billing & GST 📄', sfx: 'click' },
-                    { time: 4, top: '28%', left: '75%', action: 'Generate Batch Bills ⚡', sfx: 'click' },
-                    { time: 8, top: '50%', left: '50%', action: 'Calculating 48 Bills 🧮', sfx: 'chaching' },
-                    { time: 13, top: '75%', left: '50%', action: 'WhatsApp Sent to 48 Flats! 📲', sfx: 'ding' }
+                    { time: 66, top: '48%', left: '15%', action: 'Clicking Billing & GST 📄' },
+                    { time: 71, top: '28%', left: '75%', action: 'Generate Batch Bills ⚡' },
+                    { time: 76, top: '50%', left: '50%', action: 'Calculating 48 Bills 🧮' },
+                    { time: 81, top: '75%', left: '50%', action: 'WhatsApp Sent to 48 Flats! 📲' }
                 ],
                 visualHtml: `
                     <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200 space-y-4">
@@ -575,17 +532,17 @@
             {
                 title: "AGM Meetings & Legal Vault",
                 badge: "Step 6 of 7 • Meetings",
+                startTime: 86,
+                endTime: 101,
                 mascotImg: mascotImages.pointing,
                 actionText: "Audit Vault Safe! 📁",
                 caption: "Step five: Annual General Meetings! Click on Meetings. You can schedule the date, write down the big building decisions, and permanently lock audit reports in our safe vault so no government registrar can ever trouble you!",
-                voiceText: "Step five: Annual General Meetings! Click on Meetings. You can schedule the date, write down the big building decisions, and permanently lock audit reports in our safe vault so no government registrar can ever trouble you!",
-                duration: 15,
                 camera: { scale: 1.05, x: 15, y: 5 },
                 activeNav: 'nav-agm',
                 waypoints: [
-                    { time: 0, top: '62%', left: '15%', action: 'Clicking AGM & Meetings 📅', sfx: 'click' },
-                    { time: 5, top: '45%', left: '55%', action: 'Recording Resolution #4 ⚖️', sfx: 'ding' },
-                    { time: 10, top: '75%', left: '40%', action: 'Audit Report Saved 📁', sfx: 'ding' }
+                    { time: 86, top: '62%', left: '15%', action: 'Clicking AGM & Meetings 📅' },
+                    { time: 91, top: '45%', left: '55%', action: 'Recording Resolution #4 ⚖️' },
+                    { time: 96, top: '75%', left: '40%', action: 'Audit Report Saved 📁' }
                 ],
                 visualHtml: `
                     <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200 space-y-3.5 text-left">
@@ -612,16 +569,16 @@
             {
                 title: "Ready to Upgrade Your Building?",
                 badge: "Step 7 of 7 • Free Trial",
+                startTime: 101,
+                endTime: 118,
                 mascotImg: mascotImages.waving,
                 actionText: "Try It Free! 🚀",
                 caption: "And there you have it, my friends! Clean, fast, fun, and 100% automated! Click that big 'Start Free Trial' button below, and let's get your building running on autopilot today! Thank you, and welcome to ResiEase!",
-                voiceText: "And there you have it, my friends! Clean, fast, fun, and 100% automated! Click that big Start Free Trial button below, and let's get your building running on autopilot today! Thank you, and welcome to ResiEase!",
-                duration: 12,
                 camera: { scale: 1, x: 0, y: 0 },
                 activeNav: 'nav-dash',
                 waypoints: [
-                    { time: 0, top: '40%', left: '50%', action: 'Awesome! 🎉', sfx: 'chaching' },
-                    { time: 5, top: '65%', left: '50%', action: 'Click Free Trial! 👉', sfx: 'click' }
+                    { time: 101, top: '40%', left: '50%', action: 'Awesome! 🎉' },
+                    { time: 108, top: '65%', left: '50%', action: 'Click Free Trial! 👉' }
                 ],
                 visualHtml: `
                     <div class="w-full h-full flex flex-col items-center justify-center p-6 text-center space-y-3">
@@ -645,12 +602,9 @@
 
         let currentSceneIndex = 0;
         let isPlaying = false;
-        let isVoiceEnabled = true;
-        let timer = null;
-        let elapsedSeconds = 0;
-        let totalDuration = scenes.reduce((sum, s) => sum + s.duration, 0);
+        const totalDuration = scenes[scenes.length - 1].endTime;
 
-        function moveMascotTo(top, left, actionText, sfx) {
+        function moveMascotTo(top, left, actionText) {
             const pointer = document.getElementById('interactive-mascot-pointer');
             const bubble = document.getElementById('mascot-action-bubble');
             if (pointer) {
@@ -661,8 +615,6 @@
                 bubble.innerText = actionText;
             }
 
-            if (sfx) playSfx(sfx);
-
             // Create Animated Click Ripple
             const ripple = document.createElement('div');
             ripple.className = 'click-ripple';
@@ -670,22 +622,6 @@
             ripple.style.left = left;
             document.querySelector('#software-viewport').appendChild(ripple);
             setTimeout(() => ripple.remove(), 600);
-        }
-
-        function speakNarration(text) {
-            if (!isVoiceEnabled || !('speechSynthesis' in window)) return;
-            window.speechSynthesis.cancel();
-            
-            const utterance = new SpeechSynthesisUtterance(text);
-            const voices = window.speechSynthesis.getVoices();
-            // Energetic, upbeat cartoon/animated character voice
-            const bestVoice = voices.find(v => (v.name.includes('Natural') || v.name.includes('Jenny') || v.name.includes('Google US English') || v.name.includes('Zira')) && v.lang.startsWith('en')) || voices.find(v => v.lang.startsWith('en')) || voices[0];
-            
-            if (bestVoice) utterance.voice = bestVoice;
-            utterance.pitch = 1.35; // Energetic, lively, fun pitch
-            utterance.rate = 1.06;  // Natural animated cadence
-
-            window.speechSynthesis.speak(utterance);
         }
 
         function renderScene(index) {
@@ -722,84 +658,81 @@
 
             // Initial waypoint for scene
             if (s.waypoints && s.waypoints.length > 0) {
-                moveMascotTo(s.waypoints[0].top, s.waypoints[0].left, s.waypoints[0].action, s.waypoints[0].sfx);
-            }
-
-            if (isVoiceEnabled && isPlaying) {
-                speakNarration(s.voiceText);
+                moveMascotTo(s.waypoints[0].top, s.waypoints[0].left, s.waypoints[0].action);
             }
         }
 
         function togglePlay() {
-            isPlaying = !isPlaying;
             const icon = document.getElementById('play-icon');
-            if (isPlaying) {
-                icon.className = 'fa-solid fa-pause text-sm';
-                renderScene(currentSceneIndex);
-                startPlayback();
+            if (audio.paused) {
+                audio.play().then(() => {
+                    isPlaying = true;
+                    icon.className = 'fa-solid fa-pause text-sm';
+                }).catch(e => {
+                    console.error('Audio play error:', e);
+                });
             } else {
+                audio.pause();
+                isPlaying = false;
                 icon.className = 'fa-solid fa-play text-sm';
-                clearInterval(timer);
-                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
             }
         }
 
-        function startPlayback() {
-            clearInterval(timer);
-            timer = setInterval(() => {
-                elapsedSeconds++;
-                updateProgress();
+        // Synchronize timeline with audio
+        audio.ontimeupdate = function() {
+            const curTime = audio.currentTime;
+            updateProgress(curTime);
 
-                let sceneStart = 0;
-                for (let i = 0; i < scenes.length; i++) {
-                    const s = scenes[i];
-                    if (elapsedSeconds >= sceneStart && elapsedSeconds < sceneStart + s.duration) {
-                        const sceneTime = elapsedSeconds - sceneStart;
-                        if (currentSceneIndex !== i) {
-                            currentSceneIndex = i;
-                            renderScene(i);
-                        }
+            for (let i = 0; i < scenes.length; i++) {
+                const s = scenes[i];
+                if (curTime >= s.startTime && curTime < s.endTime) {
+                    if (currentSceneIndex !== i) {
+                        currentSceneIndex = i;
+                        renderScene(i);
+                    }
 
-                        // Check Waypoints for Pointer Gliding
-                        if (s.waypoints) {
-                            for (let w of s.waypoints) {
-                                if (sceneTime === w.time) {
-                                    moveMascotTo(w.top, w.left, w.action, w.sfx);
-                                    break;
-                                }
+                    // Check Waypoints
+                    if (s.waypoints) {
+                        for (let w of s.waypoints) {
+                            if (Math.floor(curTime) === w.time) {
+                                moveMascotTo(w.top, w.left, w.action);
+                                break;
                             }
                         }
-                        break;
                     }
-                    sceneStart += s.duration;
+                    break;
                 }
+            }
+        };
 
-                if (elapsedSeconds >= totalDuration) {
-                    elapsedSeconds = 0;
-                    currentSceneIndex = 0;
-                    togglePlay();
-                }
-            }, 1000);
-        }
+        audio.onended = function() {
+            isPlaying = false;
+            document.getElementById('play-icon').className = 'fa-solid fa-play text-sm';
+            audio.currentTime = 0;
+            currentSceneIndex = 0;
+            renderScene(0);
+            updateProgress(0);
+        };
 
-        function updateProgress() {
-            const pct = (elapsedSeconds / totalDuration) * 100;
+        function updateProgress(curTime) {
+            const pct = (curTime / totalDuration) * 100;
             document.getElementById('progress-bar').style.width = `${pct}%`;
             
-            const currM = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0');
-            const currS = (elapsedSeconds % 60).toString().padStart(2, '0');
+            const currM = Math.floor(curTime / 60).toString().padStart(2, '0');
+            const currS = Math.floor(curTime % 60).toString().padStart(2, '0');
             const totM = Math.floor(totalDuration / 60).toString().padStart(2, '0');
-            const totS = (totalDuration % 60).toString().padStart(2, '0');
+            const totS = Math.floor(totalDuration % 60).toString().padStart(2, '0');
             document.getElementById('timer-display').innerText = `${currM}:${currS} / ${totM}:${totS}`;
         }
 
         function jumpToScene(index) {
             currentSceneIndex = index;
-            let accTime = 0;
-            for (let i = 0; i < index; i++) accTime += scenes[i].duration;
-            elapsedSeconds = accTime;
-            updateProgress();
+            audio.currentTime = scenes[index].startTime;
             renderScene(index);
+            updateProgress(audio.currentTime);
+            if (audio.paused) {
+                togglePlay();
+            }
         }
 
         function nextScene() {
@@ -814,44 +747,18 @@
             }
         }
 
-        function toggleVoice() {
-            isVoiceEnabled = !isVoiceEnabled;
-            const icon = document.getElementById('voice-icon');
-            const label = document.getElementById('voice-label');
-
-            if (isVoiceEnabled) {
-                icon.className = 'fa-solid fa-volume-high';
-                label.innerText = 'Character Voice ON';
-                if (isPlaying) speakNarration(scenes[currentSceneIndex].voiceText);
-            } else {
-                icon.className = 'fa-solid fa-volume-xmark';
-                label.innerText = 'Voice: MUTED';
-                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-            }
-        }
-
         function seekVideo(event) {
             const bar = event.currentTarget;
             const rect = bar.getBoundingClientRect();
             const clickX = event.clientX - rect.left;
             const ratio = clickX / rect.width;
-            elapsedSeconds = Math.floor(ratio * totalDuration);
-            updateProgress();
-            
-            let sceneStart = 0;
-            for (let i = 0; i < scenes.length; i++) {
-                if (elapsedSeconds >= sceneStart && elapsedSeconds < sceneStart + scenes[i].duration) {
-                    currentSceneIndex = i;
-                    renderScene(i);
-                    break;
-                }
-                sceneStart += scenes[i].duration;
-            }
+            audio.currentTime = ratio * totalDuration;
+            updateProgress(audio.currentTime);
         }
 
         // Initialize Scene 1
         renderScene(0);
-        updateProgress();
+        updateProgress(0);
     </script>
 </body>
 </html>
