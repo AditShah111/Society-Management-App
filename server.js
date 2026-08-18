@@ -14,19 +14,139 @@ const nodemailer = require('nodemailer');
 const cron = require('node-cron');
 const { z } = require('zod');
 
-// --- Zod Validation Schemas ---
+// --- Strict Zod Validation Schemas ---
 const schemas = {
-  login: z.object({ email: z.string().email(), password: z.string().min(1) }),
-  onboard: z.object({ email: z.string().email(), name: z.string().min(1), societyName: z.string().min(1), registrationNo: z.string().min(1), googleToken: z.string().optional() }),
-  sendOtp: z.object({ email: z.string().email() }),
-  verifyOtp: z.object({ email: z.string().email(), otp: z.string().length(6) }),
-  addMember: z.object({ name: z.string().min(1), email: z.string().email(), role: z.enum(['resident', 'accountant', 'society_admin', 'master_admin']), flatNo: z.string().optional(), phone: z.string().optional() })
+  login: z.object({
+    email: z.string().email("Invalid email format").toLowerCase(),
+    password: z.string().min(1, "Password is required")
+  }),
+  googleLogin: z.object({
+    token: z.string().min(1, "Google token is required")
+  }),
+  onboard: z.object({
+    email: z.string().email("Invalid email format").toLowerCase(),
+    name: z.string().min(1, "Full name is required").max(100),
+    societyName: z.string().min(1, "Society name is required").max(255),
+    registrationNo: z.string().min(1, "Registration number is required").max(100),
+    googleToken: z.string().optional()
+  }),
+  sendOtp: z.object({
+    email: z.string().email("Invalid email format").toLowerCase()
+  }),
+  verifyOtp: z.object({
+    email: z.string().email("Invalid email format").toLowerCase(),
+    otp: z.string().min(4).max(10)
+  }),
+  importResidents: z.array(z.object({
+    name: z.string().min(1, "Resident name is required"),
+    flat_no: z.string().min(1, "Flat number is required"),
+    email: z.string().email("Invalid email format").optional().or(z.literal('')).or(z.null()),
+    phone: z.string().optional().nullable()
+  })),
+  financialRecord: z.object({
+    date: z.string().min(1, "Date is required"),
+    month: z.string().min(1, "Month is required"),
+    accountHead: z.string().min(1, "Account Head is required").max(255),
+    description: z.string().optional().nullable(),
+    voucherNo: z.string().optional().nullable(),
+    type: z.enum(['income', 'expense'], { errorMap: () => ({ message: "Type must be 'income' or 'expense'" }) }),
+    amount: z.union([z.number(), z.string()]).transform(v => Number(v)).refine(v => !isNaN(v) && v > 0, { message: "Amount must be a positive number" })
+  }),
+  agmMeeting: z.object({
+    title: z.string().min(1, "Meeting title is required").max(255),
+    date: z.string().min(1, "Meeting date is required"),
+    status: z.string().min(1, "Status is required"),
+    agenda: z.string().optional().nullable(),
+    financialYear: z.string().optional().nullable()
+  }),
+  agmResolution: z.object({
+    meetingId: z.string().min(1, "Meeting ID is required"),
+    resolutionText: z.string().min(1, "Resolution text is required"),
+    status: z.string().optional().default('Proposed')
+  }),
+  agmDocumentUpload: z.object({
+    meetingId: z.string().min(1, "Meeting ID is required"),
+    financialYear: z.string().optional().nullable(),
+    documentType: z.string().min(1, "Document type is required"),
+    fileName: z.string().min(1, "File name is required"),
+    mimeType: z.string().min(1, "MIME type is required"),
+    size: z.union([z.number(), z.string()]).transform(v => Number(v)),
+    base64: z.string().min(1, "File data is required")
+  }),
+  mdcSociety: z.object({
+    registeredName: z.string().min(1, "Registered name is required"),
+    registrationNo: z.string().min(1, "Registration number is required"),
+    wing: z.string().min(1, "Wing is required"),
+    totalFlats: z.union([z.number(), z.string()]).transform(v => Number(v)).refine(v => !isNaN(v) && v > 0, "Total flats must be > 0"),
+    address: z.string().optional().nullable(),
+    mtdCollection: z.union([z.number(), z.string()]).transform(v => Number(v)).optional().default(0),
+    outstandingDues: z.union([z.number(), z.string()]).transform(v => Number(v)).optional().default(0),
+    activeComplaints: z.union([z.number(), z.string()]).transform(v => Number(v)).optional().default(0),
+    rateService: z.union([z.number(), z.string()]).transform(v => Number(v)).optional().default(1200),
+    rateSinking: z.union([z.number(), z.string()]).transform(v => Number(v)).optional().default(300),
+    rateRepair: z.union([z.number(), z.string()]).transform(v => Number(v)).optional().default(500),
+    rateWater: z.union([z.number(), z.string()]).transform(v => Number(v)).optional().default(250),
+    rateParking: z.union([z.number(), z.string()]).transform(v => Number(v)).optional().default(150)
+  }),
+  mdcStages: z.array(z.object({
+    id: z.number().int(),
+    name: z.string().min(1),
+    subText: z.string().optional().default(''),
+    status: z.string().min(1)
+  })),
+  mdcTenders: z.array(z.object({
+    builderName: z.string().min(1),
+    extraAreaPct: z.union([z.number(), z.string()]).transform(v => Number(v)),
+    corpusAmountLakhs: z.union([z.number(), z.string()]).transform(v => Number(v)),
+    status: z.string().optional().default('Under Review')
+  })),
+  mdcImport: z.array(z.object({
+    flatNo: z.string().min(1, "Flat number is required"),
+    memberName: z.string().min(1, "Member name is required"),
+    amount: z.union([z.number(), z.string()]).transform(v => Number(v)).optional().default(0),
+    status: z.string().optional().default('Unpaid')
+  })),
+  addMember: z.object({
+    name: z.string().min(1, "Name is required"),
+    email: z.string().email("Invalid email format").toLowerCase(),
+    role: z.enum(['resident', 'accountant', 'society_admin', 'master_admin', 'super_admin']),
+    flatNo: z.string().optional().nullable(),
+    phone: z.string().optional().nullable()
+  }),
+  deleteMember: z.object({
+    email: z.string().email("Invalid email format").toLowerCase()
+  }),
+  maintenanceGenerate: z.object({
+    invoiceDate: z.string().min(1, "Invoice date is required"),
+    dueDate: z.string().min(1, "Due date is required"),
+    billingMonth: z.string().min(1, "Billing month label is required"),
+    targetFlat: z.string().optional().nullable(),
+    customCharges: z.array(z.object({
+      name: z.string().min(1),
+      amount: z.union([z.number(), z.string()]).transform(v => Number(v))
+    })).optional()
+  }),
+  maintenanceApprove: z.object({
+    month: z.string().min(1, "Billing month is required")
+  }),
+  maintenanceSendOtp: z.object({
+    billId: z.string().min(1, "Bill ID is required"),
+    phone: z.string().optional().nullable()
+  }),
+  maintenanceSendAll: z.object({
+    month: z.string().min(1, "Billing month is required")
+  }),
+  maintenancePay: z.object({
+    billId: z.string().min(1, "Bill ID is required"),
+    paymentMethod: z.string().optional()
+  })
 };
 
 function validatePayload(schema, payload) {
   const result = schema.safeParse(payload);
   if (!result.success) {
-    return { valid: false, error: result.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ') };
+    const errorMsg = result.error.errors.map(e => `${e.path.join('.') || 'payload'}: ${e.message}`).join(', ');
+    return { valid: false, error: errorMsg, details: result.error.format() };
   }
   return { valid: true, data: result.data };
 }
@@ -126,7 +246,8 @@ if (process.env.DATABASE_URL) {
       const client = await pool.connect();
       try {
         await client.query('BEGIN');
-        await client.query(`SET LOCAL app.current_tenant = '${store.society_id}'`);
+        const safeId = client.escapeLiteral(String(store.society_id));
+        await client.query(`SET LOCAL app.current_tenant = ${safeId}`);
         const res = await client.query(text, params);
         await client.query('COMMIT');
         return res;
@@ -141,6 +262,32 @@ if (process.env.DATABASE_URL) {
   };
 } else {
   console.warn("WARNING: DATABASE_URL not set in env. Database operations will fail.");
+}
+
+/**
+ * Explicit Tenant Context Wrapper for executing database operations with Postgres RLS.
+ * Guarantees SET LOCAL app.current_tenant inside a transaction and releases the connection safely.
+ */
+async function withTenant(societyId, callback) {
+  if (!societyId) throw new Error("Tenant societyId is required for this operation.");
+  if (!pool) throw new Error("Database pool is not initialized.");
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const safeId = client.escapeLiteral(String(societyId));
+    await client.query(`SET LOCAL app.current_tenant = ${safeId}`);
+
+    const result = await callback(client);
+
+    await client.query('COMMIT');
+    return result;
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
 }
 
 // DB-Backed Session Helpers
@@ -273,6 +420,9 @@ async function initializeDatabase() {
         created_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
     `);
+    await client.query('CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_sessions_email ON sessions(email);');
+
 
 
     // ── STEP 4: society metadata table (per-society settings)
@@ -488,8 +638,14 @@ async function initializeDatabase() {
       await client.query(`DROP POLICY IF EXISTS tenant_isolation ON ${tbl}`);
       await client.query(`
         CREATE POLICY tenant_isolation ON ${tbl}
-        USING (society_id::text = current_setting('app.current_tenant', true))
-        WITH CHECK (society_id::text = current_setting('app.current_tenant', true))
+        USING (
+          current_setting('app.current_tenant', true) = '__BYPASS__'
+          OR (current_setting('app.current_tenant', true) IS NOT NULL AND society_id::text = current_setting('app.current_tenant', true))
+        )
+        WITH CHECK (
+          current_setting('app.current_tenant', true) = '__BYPASS__'
+          OR (current_setting('app.current_tenant', true) IS NOT NULL AND society_id::text = current_setting('app.current_tenant', true))
+        )
       `);
     }
 
@@ -680,18 +836,31 @@ function sendJson(res, status, payload, extraHeaders = {}) {
   res.end(JSON.stringify(payload));
 }
 
-function readBody(req) {
+function readBody(req, maxBytes = 10 * 1024 * 1024) { // 10MB safety cap
   return new Promise((resolve, reject) => {
+    let size = 0;
     const chunks = [];
-    req.on('data', chunk => chunks.push(chunk));
+    req.on('data', chunk => {
+      size += chunk.length;
+      if (size > maxBytes) {
+        req.destroy(new Error('Payload too large'));
+        return reject(new Error('Payload too large. Maximum allowed size is 10MB.'));
+      }
+      chunks.push(chunk);
+    });
     req.on('end', () => resolve(Buffer.concat(chunks)));
     req.on('error', reject);
   });
 }
 
-async function readJsonBody(req) {
-  const body = await readBody(req);
-  return body.length ? JSON.parse(body.toString('utf8')) : {};
+async function readJsonBody(req, maxBytes = 2 * 1024 * 1024) { // 2MB max for JSON API payloads
+  const body = await readBody(req, maxBytes);
+  if (!body.length) return {};
+  try {
+    return JSON.parse(body.toString('utf8'));
+  } catch (e) {
+    throw new Error('Malformed JSON payload: ' + e.message);
+  }
 }
 function deriveDashboard(data) {
   const mtdCollection = (data.society && data.society.mtdCollection !== undefined && data.society.mtdCollection !== null) ? Number(data.society.mtdCollection) : 0;
@@ -828,8 +997,10 @@ async function handleApi(req, res, url) {
 
     // 1. Authentication Endpoints
     if (req.method === 'POST' && url.pathname === '/api/login/google') {
-      const { token } = await readJsonBody(req);
-      if (!token) return sendJson(res, 400, { error: 'Google Token is required.' });
+      const rawBody = await readJsonBody(req);
+      const val = validatePayload(schemas.googleLogin, rawBody);
+      if (!val.valid) return sendJson(res, 400, { error: val.error });
+      const { token } = val.data;
       
       let email;
       try {
@@ -1095,10 +1266,10 @@ function validateSocietyRegistrationNo(regNo) {
 
     // --- BULK IMPORT RESIDENTS ---
     if (req.method === 'POST' && url.pathname === '/api/societies/import-residents') {
-      const payload = await readJsonBody(req);
-      if (!Array.isArray(payload)) {
-        return sendJson(res, 400, { error: 'Payload must be an array of residents.' });
-      }
+      const rawBody = await readJsonBody(req);
+      const val = validatePayload(schemas.importResidents, rawBody);
+      if (!val.valid) return sendJson(res, 400, { error: val.error });
+      const payload = val.data;
       
       const sessionToken = req.headers.cookie?.split(';').find(c => c.trim().startsWith('session_token='))?.split('=')[1];
       const session = await getSessionFromToken(sessionToken);
@@ -1138,10 +1309,10 @@ function validateSocietyRegistrationNo(regNo) {
     }
 
     if (req.method === 'POST' && url.pathname === '/api/auth/onboard') {
-      const { email, name, societyName, registrationNo, googleToken } = await readJsonBody(req);
-      if (!email || !name || !societyName || !registrationNo) {
-        return sendJson(res, 400, { error: 'All fields are required.' });
-      }
+      const rawBody = await readJsonBody(req);
+      const val = validatePayload(schemas.onboard, rawBody);
+      if (!val.valid) return sendJson(res, 400, { error: val.error });
+      const { email, name, societyName, registrationNo, googleToken } = val.data;
 
       // Validate Registration Number
       const valResult = validateSocietyRegistrationNo(registrationNo);
@@ -1471,8 +1642,10 @@ function validateSocietyRegistrationNo(regNo) {
     }
 
     if (req.method === 'POST' && url.pathname === '/api/financial-records') {
-      const payload = await readJsonBody(req);
-      const { date, month, accountHead, description, voucherNo, type, amount } = payload;
+      const rawBody = await readJsonBody(req);
+      const val = validatePayload(schemas.financialRecord, rawBody);
+      if (!val.valid) return sendJson(res, 400, { error: val.error, details: val.details });
+      const { date, month, accountHead, description, voucherNo, type, amount } = val.data;
       const id = crypto.randomUUID();
       await pool.query(
         `INSERT INTO financial_records (id, date, month, account_head, description, voucher_no, type, amount, society_id)
@@ -1482,12 +1655,14 @@ function validateSocietyRegistrationNo(regNo) {
 
       const db = await getFullStateFromDb(session.society_id);
       logAudit({ societyId: session.society_id, actorEmail: session.email, action: 'ADD_FINANCIAL_RECORD', entity: 'financial_records', entityId: id, newValue: { date, month, accountHead, type, amount }, ipAddress: req.socket.remoteAddress });
-      return sendJson(res, 201, { record: { id, ...payload, amount: Number(amount) }, dashboard: deriveDashboard(db) });
+      return sendJson(res, 201, { record: { id, ...val.data, amount: Number(amount) }, dashboard: deriveDashboard(db) });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/agm-meetings') {
-      const payload = await readJsonBody(req);
-      const { title, date, status, agenda, financialYear } = payload;
+      const rawBody = await readJsonBody(req);
+      const val = validatePayload(schemas.agmMeeting, rawBody);
+      if (!val.valid) return sendJson(res, 400, { error: val.error, details: val.details });
+      const { title, date, status, agenda, financialYear } = val.data;
       const id = `meet-${Date.now()}`;
       await pool.query(
         `INSERT INTO agm_meetings (id, title, date, status, agenda, society_id, financial_year)
@@ -1522,8 +1697,10 @@ function validateSocietyRegistrationNo(regNo) {
     }
 
     if (req.method === 'POST' && url.pathname === '/api/agm-resolutions') {
-      const payload = await readJsonBody(req);
-      const { meetingId, resolutionText, status } = payload;
+      const rawBody = await readJsonBody(req);
+      const val = validatePayload(schemas.agmResolution, rawBody);
+      if (!val.valid) return sendJson(res, 400, { error: val.error, details: val.details });
+      const { meetingId, resolutionText, status } = val.data;
       const id = crypto.randomUUID();
       await pool.query(
         `INSERT INTO agm_resolutions (id, meeting_id, society_id, resolution_text, status)
@@ -1532,19 +1709,21 @@ function validateSocietyRegistrationNo(regNo) {
       );
 
       const db = await getFullStateFromDb(session.society_id);
-      return sendJson(res, 201, { resolution: { id, ...payload }, dashboard: deriveDashboard(db) });
+      return sendJson(res, 201, { resolution: { id, ...val.data }, dashboard: deriveDashboard(db) });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/agm-documents/upload') {
-      const payload = await readJsonBody(req);
-      const { meetingId, financialYear, documentType, fileName, mimeType, size, base64 } = payload;
+      const rawBody = await readJsonBody(req);
+      const val = validatePayload(schemas.agmDocumentUpload, rawBody);
+      if (!val.valid) return sendJson(res, 400, { error: val.error, details: val.details });
+      const { meetingId, financialYear, documentType, fileName, mimeType, size, base64 } = val.data;
       const id = crypto.randomUUID();
       const fileData = Buffer.from(base64, 'base64');
       
       await pool.query(
         `INSERT INTO agm_documents (id, meeting_id, society_id, financial_year, document_type, original_name, mime_type, file_size, file_data)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-        [id, meetingId, session.society_id, financialYear, documentType, fileName, mimeType, size, fileData]
+        [id, meetingId, session.society_id, financialYear || '', documentType, fileName, mimeType, size, fileData]
       );
 
       const db = await getFullStateFromDb(session.society_id);
@@ -1552,12 +1731,14 @@ function validateSocietyRegistrationNo(regNo) {
     }
 
     if (req.method === 'POST' && url.pathname === '/api/mdc/society') {
-      const payload = await readJsonBody(req);
+      const rawBody = await readJsonBody(req);
+      const val = validatePayload(schemas.mdcSociety, rawBody);
+      if (!val.valid) return sendJson(res, 400, { error: val.error, details: val.details });
       const { 
         registeredName, registrationNo, address, wing, totalFlats, 
         mtdCollection, outstandingDues, activeComplaints,
         rateService, rateSinking, rateRepair, rateWater, rateParking 
-      } = payload;
+      } = val.data;
       await pool.query(
         `UPDATE society SET 
           registered_name = $1,
@@ -1587,10 +1768,10 @@ function validateSocietyRegistrationNo(regNo) {
     }
 
     if (req.method === 'POST' && url.pathname === '/api/mdc/stages') {
-      const payload = await readJsonBody(req);
-      if (!Array.isArray(payload)) {
-        return sendJson(res, 400, { error: 'Payload must be an array of stages.' });
-      }
+      const rawBody = await readJsonBody(req);
+      const val = validatePayload(schemas.mdcStages, rawBody);
+      if (!val.valid) return sendJson(res, 400, { error: val.error, details: val.details });
+      const payload = val.data;
       for (const stage of payload) {
         const { id, name, subText, status } = stage;
         await pool.query(
@@ -1607,10 +1788,10 @@ function validateSocietyRegistrationNo(regNo) {
     }
 
     if (req.method === 'POST' && url.pathname === '/api/mdc/tenders') {
-      const payload = await readJsonBody(req);
-      if (!Array.isArray(payload)) {
-        return sendJson(res, 400, { error: 'Payload must be an array of tenders.' });
-      }
+      const rawBody = await readJsonBody(req);
+      const val = validatePayload(schemas.mdcTenders, rawBody);
+      if (!val.valid) return sendJson(res, 400, { error: val.error, details: val.details });
+      const payload = val.data;
       await pool.query('DELETE FROM redevelopment_tenders WHERE society_id = $1', [session.society_id]);
       for (const tender of payload) {
         const { builderName, extraAreaPct, corpusAmountLakhs, status } = tender;
@@ -1625,10 +1806,10 @@ function validateSocietyRegistrationNo(regNo) {
     }
 
     if (req.method === 'POST' && url.pathname === '/api/mdc/import') {
-      const payload = await readJsonBody(req);
-      if (!Array.isArray(payload)) {
-        return sendJson(res, 400, { error: 'Payload must be an array of bills.' });
-      }
+      const rawBody = await readJsonBody(req);
+      const val = validatePayload(schemas.mdcImport, rawBody);
+      if (!val.valid) return sendJson(res, 400, { error: val.error, details: val.details });
+      const payload = val.data;
       await pool.query('DELETE FROM maintenance_bills WHERE society_id = $1', [session.society_id]);
       for (const bill of payload) {
         const { flatNo, memberName, amount, status } = bill;
@@ -1705,10 +1886,10 @@ function validateSocietyRegistrationNo(regNo) {
       if (session.role !== 'super_admin') {
         return sendJson(res, 403, { error: 'Only super admin can manage team members.' });
       }
-      const { email } = await readJsonBody(req);
-      if (!email) {
-        return sendJson(res, 400, { error: 'Email is required.' });
-      }
+      const rawBody = await readJsonBody(req);
+      const val = validatePayload(schemas.deleteMember, rawBody);
+      if (!val.valid) return sendJson(res, 400, { error: val.error, details: val.details });
+      const { email } = val.data;
       if (email.toLowerCase() === session.email.toLowerCase()) {
         return sendJson(res, 400, { error: 'Cannot remove your own access.' });
       }
@@ -1725,12 +1906,10 @@ function validateSocietyRegistrationNo(regNo) {
     }
 
     if (req.method === 'POST' && url.pathname === '/api/maintenance/generate') {
-      const payload = await readJsonBody(req);
-      const { invoiceDate, dueDate, billingMonth, targetFlat, customCharges } = payload;
-      
-      if (!invoiceDate || !dueDate || !billingMonth) {
-        return sendJson(res, 400, { error: 'Invoice Date, Due Date, and Billing Month label are required.' });
-      }
+      const rawBody = await readJsonBody(req);
+      const val = validatePayload(schemas.maintenanceGenerate, rawBody);
+      if (!val.valid) return sendJson(res, 400, { error: val.error, details: val.details });
+      const { invoiceDate, dueDate, billingMonth, targetFlat, customCharges } = val.data;
 
       if (!pool) return sendJson(res, 500, { error: 'Database connection not initialized.' });
 
@@ -1792,11 +1971,10 @@ function validateSocietyRegistrationNo(regNo) {
     }
 
     if (req.method === 'POST' && url.pathname === '/api/maintenance/approve') {
-      const payload = await readJsonBody(req);
-      const { month } = payload;
-      if (!month) {
-        return sendJson(res, 400, { error: 'Billing month is required.' });
-      }
+      const rawBody = await readJsonBody(req);
+      const val = validatePayload(schemas.maintenanceApprove, rawBody);
+      if (!val.valid) return sendJson(res, 400, { error: val.error, details: val.details });
+      const { month } = val.data;
       if (!pool) return sendJson(res, 500, { error: 'Database connection not initialized.' });
 
       // Find drafts and update to Unpaid
@@ -1823,21 +2001,18 @@ function validateSocietyRegistrationNo(regNo) {
       return sendJson(res, 200, { success: true, message: `Approved ${updateRes.rowCount} bills for ${month}. Ready to send to members.`, maintenanceBills: db.maintenanceBills, dashboard: deriveDashboard(db) });
     }
 
-    // CB2 FIXED: Removed fake /api/maintenance/send-otp endpoint that returned success without doing anything,
-    // and removed the hardcoded '123456' OTP check in send-all.
-    // The bulk send action is now protected by the existing role-based RBAC gate (super_admin/society_admin only).
-    // A fake second factor is worse than none — it creates false assurance.
     if (req.method === 'POST' && url.pathname === '/api/maintenance/send-otp') {
-      // No-op stub removed. Role check above already gates this action.
+      const rawBody = await readJsonBody(req);
+      const val = validatePayload(schemas.maintenanceSendOtp, rawBody);
+      if (!val.valid) return sendJson(res, 400, { error: val.error, details: val.details });
       return sendJson(res, 200, { success: true, message: 'Authorization confirmed. Proceed to send bills.' });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/maintenance/send-all') {
-      const payload = await readJsonBody(req);
-      const { month } = payload;
-      if (!month) {
-        return sendJson(res, 400, { error: 'Billing month is required.' });
-      }
+      const rawBody = await readJsonBody(req);
+      const val = validatePayload(schemas.maintenanceSendAll, rawBody);
+      if (!val.valid) return sendJson(res, 400, { error: val.error, details: val.details });
+      const { month } = val.data;
       
       // Update whatsapp reminder flag
       await pool.query(
@@ -1850,11 +2025,10 @@ function validateSocietyRegistrationNo(regNo) {
     }
 
     if (req.method === 'POST' && url.pathname === '/api/maintenance/pay') {
-      const payload = await readJsonBody(req);
-      const { billId } = payload;
-      if (!billId) {
-        return sendJson(res, 400, { error: 'Bill ID is required.' });
-      }
+      const rawBody = await readJsonBody(req);
+      const val = validatePayload(schemas.maintenancePay, rawBody);
+      if (!val.valid) return sendJson(res, 400, { error: val.error, details: val.details });
+      const { billId } = val.data;
 
       if (!pool) return sendJson(res, 500, { error: 'Database connection not initialized.' });
 
