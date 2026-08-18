@@ -414,6 +414,7 @@ async function initializeDatabase() {
       );
     `);
     await client.query('ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS phone VARCHAR(20);');
+    await client.query('ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS flat_no VARCHAR(50);');
 
     // ── STEP 3.5: Persistent Sessions
     await client.query(`
@@ -1293,8 +1294,8 @@ function validateSocietyRegistrationNo(regNo) {
           const resEmail = resData.email || `${resData.flat_no.toLowerCase()}@resiease.local`;
           
           await pool.query(
-            "INSERT INTO user_profiles (society_id, name, email, phone, role) VALUES ($1, $2, $3, $4, 'resident')",
-            [session.society_id, resData.name, resEmail, resData.phone || null]
+            "INSERT INTO user_profiles (society_id, name, email, phone, role, flat_no) VALUES ($1, $2, $3, $4, 'resident', $5)",
+            [session.society_id, resData.name, resEmail, resData.phone || null, resData.flat_no || null]
           );
           
           // Create login credentials so they can log in via OTP
@@ -1850,19 +1851,21 @@ function validateSocietyRegistrationNo(regNo) {
       if (!val.valid) return sendJson(res, 400, { error: val.error });
       const { name, email, role, flatNo, phone } = val.data;
       
-      const emailExists = await pool.query('SELECT email FROM users WHERE LOWER(email) = LOWER($1)', [email]);
-      if (emailExists.rows.length > 0) {
-        return sendJson(res, 400, { error: 'Email address already registered in the system.' });
+      const profileExists = await pool.query('SELECT email FROM user_profiles WHERE LOWER(email) = LOWER($1) AND society_id = $2', [email, session.society_id]);
+      if (profileExists.rows.length > 0) {
+        return sendJson(res, 400, { error: 'A member with this email is already registered in this society.' });
       }
       
       const generatedPassword = crypto.randomBytes(8).toString('hex');
-      const salt = crypto.randomBytes(16).toString('hex');
-      const hash = crypto.scryptSync(generatedPassword, salt, 64, { N: 16384, r: 8, p: 1 }).toString('hex');
-      
-      await pool.query(
-        'INSERT INTO users (email, salt, password_hash) VALUES ($1, $2, $3)',
-        [email, salt, hash]
-      );
+      const userExists = await pool.query('SELECT email FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+      if (userExists.rows.length === 0) {
+        const salt = crypto.randomBytes(16).toString('hex');
+        const hash = crypto.scryptSync(generatedPassword, salt, 64, { N: 16384, r: 8, p: 1 }).toString('hex');
+        await pool.query(
+          'INSERT INTO users (email, salt, password_hash) VALUES ($1, $2, $3)',
+          [email, salt, hash]
+        );
+      }
       
       await pool.query(
         'INSERT INTO user_profiles (email, society_id, name, role, phone, flat_no) VALUES ($1, $2, $3, $4, $5, $6)',
