@@ -2027,9 +2027,12 @@ if (typeof tailwind !== 'undefined') {
                 const data = await res.json();
                 
                 if (res.ok) {
-                    showToast('Member added & credentials sent successfully!', 'success');
+                    showToast('Member added & credentials generated successfully!', 'success');
                     closeAddMemberModal();
                     loadMdcMembers(); // Refresh the list
+                    if (data.tempPassword) {
+                        showCredentialsModal(data.email || payload.email, data.tempPassword, data.role || payload.role, data.name || payload.name, false);
+                    }
                 } else {
                     showToast(data.error || 'Failed to add member', 'error');
                 }
@@ -2038,6 +2041,67 @@ if (typeof tailwind !== 'undefined') {
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa-solid fa-user-plus mr-2"></i>Add & Send Credentials';
+            }
+        }
+
+        let lastGeneratedCreds = { email: '', password: '', role: '', name: '' };
+
+        function showCredentialsModal(email, password, role, name, isResend = false) {
+            lastGeneratedCreds = { email, password, role, name };
+            const titleEl = document.getElementById('cred-modal-title');
+            if (titleEl) titleEl.textContent = isResend ? 'Credentials Regenerated!' : 'Credentials Dispatched!';
+            const emailEl = document.getElementById('cred-disp-email');
+            if (emailEl) emailEl.textContent = email;
+            const passEl = document.getElementById('cred-disp-pass');
+            if (passEl) passEl.textContent = password;
+            const roleEl = document.getElementById('cred-disp-role');
+            if (roleEl) roleEl.textContent = (role || 'resident').replace('_', ' ');
+            
+            const modal = document.getElementById('credentials-display-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        }
+
+        function closeCredentialsModal() {
+            const modal = document.getElementById('credentials-display-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        function copyGeneratedPassword() {
+            if (lastGeneratedCreds.password) {
+                navigator.clipboard.writeText(lastGeneratedCreds.password);
+                showToast('Password copied to clipboard!', 'success');
+            }
+        }
+
+        function copyAllCredentials() {
+            const text = `ResiEase Login Credentials:\nPortal: https://society-management-app-xh6q.onrender.com/login\nEmail: ${lastGeneratedCreds.email}\nPassword: ${lastGeneratedCreds.password}\nRole: ${lastGeneratedCreds.role}`;
+            navigator.clipboard.writeText(text);
+            showToast('All credentials copied to clipboard!', 'success');
+        }
+
+        async function resendMemberCredentials(email) {
+            try {
+                showToast(`Regenerating credentials for ${email}...`);
+                const res = await fetch('/api/mdc/member/resend-credentials', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast('New credentials generated & dispatched!', 'success');
+                    showCredentialsModal(email, data.tempPassword, data.role, data.name, true);
+                } else {
+                    showToast(data.error || 'Failed to resend credentials', 'error');
+                }
+            } catch (err) {
+                showToast('Network error while resending credentials', 'error');
             }
         }
 
@@ -2071,8 +2135,11 @@ if (typeof tailwind !== 'undefined') {
                             </span>
                         </td>
                         <td class="px-4 py-3 text-gray-600">${escapeHtml(m.flat_no || '-')}</td>
-                        <td class="px-4 py-3 text-right">
-                            ${m.role !== 'super_admin' ? `<button class="remove-member-btn text-gray-400 hover:text-red-500 transition-colors p-1" title="Revoke Access"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+                        <td class="px-4 py-3 text-right space-x-1 whitespace-nowrap">
+                            <button type="button" class="resend-member-btn inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 px-2.5 py-1 rounded-lg transition-colors" title="Resend Login Credentials">
+                                <i class="fa-solid fa-key"></i> Resend
+                            </button>
+                            ${m.role !== 'super_admin' ? `<button type="button" class="remove-member-btn text-gray-400 hover:text-red-500 transition-colors p-1" title="Revoke Access"><i class="fa-solid fa-trash-can"></i></button>` : ''}
                         </td>
                     </tr>
                 `).join('');
@@ -2108,12 +2175,20 @@ if (typeof tailwind !== 'undefined') {
         document.addEventListener("DOMContentLoaded", () => {
             setTimeout(loadMdcMembers, 2000); // Load after main dashboard is ready
             
-            // Safe event delegation for remove-member buttons — avoids XSS via onclick injection
+            // Safe event delegation for member actions
             document.addEventListener('click', function(e) {
-                const btn = e.target.closest('.remove-member-btn');
-                if (btn) {
-                    const email = btn.closest('tr')?.dataset?.email;
+                const removeBtn = e.target.closest('.remove-member-btn');
+                if (removeBtn) {
+                    const email = removeBtn.closest('tr')?.dataset?.email;
                     if (email) removeMember(email);
+                    return;
+                }
+
+                const resendBtn = e.target.closest('.resend-member-btn');
+                if (resendBtn) {
+                    const email = resendBtn.closest('tr')?.dataset?.email;
+                    if (email) resendMemberCredentials(email);
+                    return;
                 }
             });
         });

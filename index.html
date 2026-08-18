@@ -1027,6 +1027,43 @@
                                 </button>
                             </div>
                         </form>
+                </div>
+
+                <!-- Credentials Generated Display Modal -->
+                <div id="credentials-display-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative">
+                        <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl mb-4">
+                            <i class="fa-solid fa-key"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900 mb-1" id="cred-modal-title">Credentials Dispatched!</h3>
+                        <p class="text-xs text-gray-500 mb-4" id="cred-modal-sub">An automated email was dispatched to the member. You can also share these credentials directly.</p>
+                        
+                        <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-2.5 mb-5">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-gray-500">Email:</span>
+                                <span class="font-semibold text-gray-800" id="cred-disp-email">-</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-gray-500">Temporary Password:</span>
+                                <div class="flex items-center gap-2">
+                                    <code class="bg-white border border-gray-200 px-2.5 py-1 rounded text-sm font-mono font-bold text-brand-600" id="cred-disp-pass">-</code>
+                                    <button type="button" onclick="copyGeneratedPassword()" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded transition-colors" title="Copy Password"><i class="fa-solid fa-copy"></i></button>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-gray-500">Role:</span>
+                                <span class="font-semibold text-gray-800 uppercase text-[10px]" id="cred-disp-role">-</span>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button type="button" onclick="copyAllCredentials()" class="flex-1 bg-brand-500 hover:bg-brand-600 text-white py-2.5 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-copy"></i> Copy Credentials
+                            </button>
+                            <button type="button" onclick="closeCredentialsModal()" class="px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl font-bold text-xs transition-colors">
+                                Done
+                            </button>
+                        </div>
                     </div>
                 </div>
 

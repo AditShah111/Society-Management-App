@@ -122,6 +122,9 @@ const schemas = {
   deleteMember: z.object({
     email: z.string().email("Invalid email format").toLowerCase()
   }),
+  resendCredentials: z.object({
+    email: z.string().email("Invalid email format").toLowerCase()
+  }),
   maintenanceGenerate: z.object({
     invoiceDate: z.string().min(1, "Invoice date is required"),
     dueDate: z.string().min(1, "Due date is required"),
@@ -1860,38 +1863,85 @@ function validateSocietyRegistrationNo(regNo) {
       const val = validatePayload(schemas.addMember, rawBody);
       if (!val.valid) return sendJson(res, 400, { error: val.error });
       const { name, email, role, flatNo, phone } = val.data;
-      
-      const profileExists = await pool.query('SELECT email FROM user_profiles WHERE LOWER(email) = LOWER($1) AND society_id = $2', [email, session.society_id]);
-      if (profileExists.rows.length > 0) {
-        return sendJson(res, 400, { error: 'A member with this email is already registered in this society.' });
-      }
-      
+
       const generatedPassword = crypto.randomBytes(8).toString('hex');
+      const salt = crypto.randomBytes(16).toString('hex');
+      const hash = crypto.scryptSync(generatedPassword, salt, 64, { N: 16384, r: 8, p: 1 }).toString('hex');
+
+      // Check user record
       const userExists = await pool.query('SELECT email FROM users WHERE LOWER(email) = LOWER($1)', [email]);
       if (userExists.rows.length === 0) {
-        const salt = crypto.randomBytes(16).toString('hex');
-        const hash = crypto.scryptSync(generatedPassword, salt, 64, { N: 16384, r: 8, p: 1 }).toString('hex');
         await pool.query(
           'INSERT INTO users (email, salt, password_hash) VALUES ($1, $2, $3)',
           [email, salt, hash]
         );
+      } else {
+        // Reset password so new credentials work
+        await pool.query(
+          'UPDATE users SET salt = $1, password_hash = $2, otp_code = NULL, otp_expires_at = NULL WHERE LOWER(email) = LOWER($3)',
+          [salt, hash, email]
+        );
       }
-      
-      await pool.query(
-        'INSERT INTO user_profiles (email, society_id, name, role, phone, flat_no) VALUES ($1, $2, $3, $4, $5, $6)',
-        [email, session.society_id, name, role, phone || null, flatNo || null]
-      );
-      
+
+      // Check profile record
+      const profExists = await pool.query('SELECT email FROM user_profiles WHERE LOWER(email) = LOWER($1) AND society_id = $2', [email, session.society_id]);
+      if (profExists.rows.length === 0) {
+        await pool.query(
+          'INSERT INTO user_profiles (email, society_id, name, role, phone, flat_no) VALUES ($1, $2, $3, $4, $5, $6)',
+          [email, session.society_id, name, role, phone || null, flatNo || null]
+        );
+      } else {
+        await pool.query(
+          'UPDATE user_profiles SET name = $1, role = $2, phone = $3, flat_no = $4 WHERE LOWER(email) = LOWER($5) AND society_id = $6',
+          [name, role, phone || null, flatNo || null, email, session.society_id]
+        );
+      }
+
       // Dispatch credentials email asynchronously (never blocks response)
       sendEmailSafely({
         to: email,
         subject: 'Welcome to ResiEase - Your Login Credentials',
         fromName: 'ResiEase Registration',
-        text: `Hello ${name},\n\nYou have been added as a ${role.replace('_', ' ')} in ResiEase.\n\nHere are your login credentials:\nEmail: ${email}\nPassword: ${generatedPassword}\n\nPlease sign in at https://society-management-app-xh6q.onrender.com/login and change your password in the settings as soon as possible, or use OTP login.\n\nRegards,\nThe ResiEase Team`
+        text: `Hello ${name},\n\nYou have been registered as a ${role.replace('_', ' ')} in ResiEase.\n\nHere are your login credentials:\nEmail: ${email}\nPassword: ${generatedPassword}\n\nPlease sign in at https://society-management-app-xh6q.onrender.com/login and change your password in the settings as soon as possible, or use OTP login.\n\nRegards,\nThe ResiEase Team`
       }).catch(err => console.error('[MDC-EMAIL-FAIL]', err));
-      
-      logAudit({ societyId: session.society_id, actorEmail: session.email, action: 'ADD_MEMBER', entity: 'user_profiles', entityId: email, newValue: { name, email, role, flatNo }, ipAddress: req.socket.remoteAddress });
-      return sendJson(res, 200, { success: true });
+
+      logAudit({ societyId: session.society_id, actorEmail: session.email, action: 'ADD_OR_UPDATE_MEMBER', entity: 'user_profiles', entityId: email, newValue: { name, email, role, flatNo }, ipAddress: req.socket.remoteAddress });
+      return sendJson(res, 200, { success: true, message: 'Member credentials generated and dispatched.', email, name, role, tempPassword: generatedPassword });
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/mdc/member/resend-credentials') {
+      if (session.role !== 'super_admin') {
+        return sendJson(res, 403, { error: 'Only super admin can manage team members.' });
+      }
+      const rawBody = await readJsonBody(req);
+      const val = validatePayload(schemas.resendCredentials, rawBody);
+      if (!val.valid) return sendJson(res, 400, { error: val.error });
+      const { email } = val.data;
+
+      const profRes = await pool.query('SELECT name, role FROM user_profiles WHERE LOWER(email) = LOWER($1) AND society_id = $2', [email, session.society_id]);
+      if (profRes.rows.length === 0) {
+        return sendJson(res, 404, { error: 'Member not found in this society.' });
+      }
+      const profile = profRes.rows[0];
+
+      const generatedPassword = crypto.randomBytes(8).toString('hex');
+      const salt = crypto.randomBytes(16).toString('hex');
+      const hash = crypto.scryptSync(generatedPassword, salt, 64, { N: 16384, r: 8, p: 1 }).toString('hex');
+
+      await pool.query(
+        'UPDATE users SET salt = $1, password_hash = $2, otp_code = NULL, otp_expires_at = NULL WHERE LOWER(email) = LOWER($3)',
+        [salt, hash, email]
+      );
+
+      sendEmailSafely({
+        to: email,
+        subject: 'ResiEase - Your Updated Login Credentials',
+        fromName: 'ResiEase Registration',
+        text: `Hello ${profile.name || 'Member'},\n\nYour ResiEase login credentials have been reset.\n\nEmail: ${email}\nPassword: ${generatedPassword}\n\nPlease sign in at https://society-management-app-xh6q.onrender.com/login and change your password in settings, or use OTP login.\n\nRegards,\nThe ResiEase Team`
+      }).catch(err => console.error('[RESEND-EMAIL-FAIL]', err));
+
+      logAudit({ societyId: session.society_id, actorEmail: session.email, action: 'RESEND_CREDENTIALS', entity: 'user_profiles', entityId: email, newValue: { email }, ipAddress: req.socket.remoteAddress });
+      return sendJson(res, 200, { success: true, message: 'New credentials generated and dispatched.', email, name: profile.name, role: profile.role, tempPassword: generatedPassword });
     }
 
     if (req.method === 'DELETE' && url.pathname === '/api/mdc/member') {
