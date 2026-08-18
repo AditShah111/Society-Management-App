@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ResiEase - Interactive Product Demo with Resi</title>
+    <title>ResiEase - Simple & Fun Guided Demo</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -15,35 +15,35 @@
         /* Interactive Pointer Mascot Glider */
         #interactive-mascot-pointer {
             position: absolute;
-            z-index: 40;
+            z-index: 50;
             pointer-events: none;
-            transition: top 1s cubic-bezier(0.34, 1.56, 0.64, 1), left 1s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.3s ease;
-            filter: drop-shadow(0 10px 20px rgba(79, 70, 229, 0.5));
+            transition: top 0.9s cubic-bezier(0.34, 1.56, 0.64, 1), left 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
+            filter: drop-shadow(0 12px 24px rgba(79, 70, 229, 0.6));
         }
         
         .mascot-avatar-bob {
             animation: mascotHover 2s ease-in-out infinite alternate;
         }
         @keyframes mascotHover {
-            0% { transform: translateY(0px) rotate(0deg); }
+            0% { transform: translateY(0px) rotate(-2deg); }
             100% { transform: translateY(-8px) rotate(3deg); }
         }
 
         /* Mouse Click Ripple Effect */
         .click-ripple {
             position: absolute;
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             border: 3px solid #818cf8;
-            background: rgba(99, 102, 241, 0.3);
+            background: rgba(99, 102, 241, 0.35);
             transform: translate(-50%, -50%) scale(0);
             animation: clickWave 0.6s ease-out forwards;
             pointer-events: none;
         }
         @keyframes clickWave {
             0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; }
         }
 
         .pulse-target {
@@ -51,7 +51,7 @@
         }
         @keyframes targetPulse {
             0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
-            50% { box-shadow: 0 0 0 12px rgba(99, 102, 241, 0); }
+            50% { box-shadow: 0 0 0 14px rgba(99, 102, 241, 0); }
         }
 
         .progress-glow {
@@ -71,7 +71,7 @@
                 <span class="font-extrabold text-xl tracking-tight text-white">ResiEase</span>
             </a>
             <span class="inline-flex text-xs bg-indigo-500/15 text-indigo-400 font-extrabold px-3 py-1 rounded-full border border-indigo-500/30 items-center gap-1.5 shadow-sm">
-                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Live Guided Demo
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Fun &amp; Easy Tour
             </span>
         </div>
 
@@ -86,7 +86,7 @@
     </header>
 
     <!-- Main Video Stage -->
-    <main class="flex-1 max-w-6xl mx-auto w-full p-4 md:p-6 space-y-5">
+    <main class="flex-1 max-w-5xl mx-auto w-full p-4 md:p-6 space-y-5">
         
         <!-- Video Player Frame (16:9) -->
         <div class="relative w-full aspect-video bg-[#0D121F] rounded-3xl overflow-hidden shadow-2xl border-2 border-indigo-500/30 flex flex-col justify-between group">
@@ -100,16 +100,16 @@
             <div id="interactive-mascot-pointer" style="top: 50%; left: 50%;">
                 <div class="relative flex flex-col items-center">
                     <!-- Action Tooltip Badge -->
-                    <div id="mascot-action-bubble" class="whitespace-nowrap bg-indigo-600 text-white font-extrabold text-[11px] px-2.5 py-1 rounded-full shadow-xl border border-indigo-300/40 mb-1 animate-pulse">
-                        Hey there! 👋
+                    <div id="mascot-action-bubble" class="whitespace-nowrap bg-indigo-600 text-white font-extrabold text-xs px-3 py-1 rounded-full shadow-2xl border-2 border-white/60 mb-1 animate-pulse">
+                        Hello! 👋
                     </div>
                     
                     <!-- Small Mascot Character Body -->
                     <div class="mascot-avatar-bob relative w-14 h-14 md:w-16 md:h-16 rounded-2xl overflow-hidden border-2 border-white shadow-2xl bg-indigo-950">
-                        <img id="mascot-pointer-img" src="/assets/mascot/resi_waving.jpg" alt="Resi Pointer" class="w-full h-full object-cover">
+                        <img id="mascot-pointer-img" src="data:image/jpeg;base64,${waving}" alt="Resi Pointer" class="w-full h-full object-cover">
                     </div>
 
-                    <!-- Glowing Pointer Laser Hand at bottom -->
+                    <!-- Glowing Pointer Arrow Indicator -->
                     <div class="w-4 h-4 bg-indigo-400 rounded-full border-2 border-white -mt-1 shadow-lg shadow-indigo-400 animate-ping"></div>
                 </div>
             </div>
@@ -118,16 +118,16 @@
             <div class="relative z-20 p-5 flex justify-between items-start pointer-events-none bg-gradient-to-b from-black/80 via-black/20 to-transparent">
                 <div class="space-y-1">
                     <span id="scene-badge" class="inline-block px-3 py-1 rounded-lg bg-indigo-600 text-[11px] font-black text-white uppercase tracking-wider shadow-md">
-                        Scene 1 of 7
+                        Step 1 of 7
                     </span>
                     <h2 id="scene-title" class="text-base md:text-xl font-extrabold text-white drop-shadow-md">
-                        Welcome to ResiEase!
+                        Hello! Welcome to ResiEase!
                     </h2>
                 </div>
 
                 <div class="flex items-center gap-2 bg-black/70 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 text-xs font-mono text-gray-200">
                     <i class="fa-solid fa-circle text-[8px] text-red-500 animate-pulse"></i>
-                    <span id="timer-display">00:00 / 01:40</span>
+                    <span id="timer-display">00:00 / 01:30</span>
                 </div>
             </div>
 
@@ -146,11 +146,11 @@
                             <i class="fa-solid fa-play text-sm" id="play-icon"></i>
                         </button>
                         
-                        <button onclick="prevScene()" class="text-gray-400 hover:text-white p-2 transition-colors" title="Previous Scene">
+                        <button onclick="prevScene()" class="text-gray-400 hover:text-white p-2 transition-colors" title="Previous Step">
                             <i class="fa-solid fa-backward-step"></i>
                         </button>
 
-                        <button onclick="nextScene()" class="text-gray-400 hover:text-white p-2 transition-colors" title="Next Scene">
+                        <button onclick="nextScene()" class="text-gray-400 hover:text-white p-2 transition-colors" title="Next Step">
                             <i class="fa-solid fa-forward-step"></i>
                         </button>
 
@@ -159,15 +159,15 @@
                         </button>
                     </div>
 
-                    <!-- Scene Tabs -->
+                    <!-- Step Tabs -->
                     <div class="flex items-center gap-1.5 overflow-x-auto">
-                        <button onclick="jumpToScene(0)" class="scene-tab text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-indigo-600 text-white transition-colors">1. Welcome</button>
+                        <button onclick="jumpToScene(0)" class="scene-tab text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-indigo-600 text-white transition-colors">1. Hello</button>
                         <button onclick="jumpToScene(1)" class="scene-tab text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-gray-800 text-gray-400 hover:text-white transition-colors">2. Register</button>
                         <button onclick="jumpToScene(2)" class="scene-tab text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-gray-800 text-gray-400 hover:text-white transition-colors">3. Login</button>
-                        <button onclick="jumpToScene(3)" class="scene-tab text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-gray-800 text-gray-400 hover:text-white transition-colors">4. MDC</button>
-                        <button onclick="jumpToScene(4)" class="scene-tab text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-gray-800 text-gray-400 hover:text-white transition-colors">5. Billing</button>
-                        <button onclick="jumpToScene(5)" class="scene-tab text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-gray-800 text-gray-400 hover:text-white transition-colors">6. AGM</button>
-                        <button onclick="jumpToScene(6)" class="scene-tab text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-gray-800 text-gray-400 hover:text-white transition-colors">7. Ready</button>
+                        <button onclick="jumpToScene(3)" class="scene-tab text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-gray-800 text-gray-400 hover:text-white transition-colors">4. Add People</button>
+                        <button onclick="jumpToScene(4)" class="scene-tab text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-gray-800 text-gray-400 hover:text-white transition-colors">5. Easy Bills</button>
+                        <button onclick="jumpToScene(5)" class="scene-tab text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-gray-800 text-gray-400 hover:text-white transition-colors">6. Meetings</button>
+                        <button onclick="jumpToScene(6)" class="scene-tab text-[10px] font-extrabold px-2.5 py-1 rounded-lg bg-gray-800 text-gray-400 hover:text-white transition-colors">7. Try Free</button>
                     </div>
                 </div>
             </div>
@@ -176,15 +176,15 @@
         <!-- DEDICATED LIVE SUBTITLES HUD (BELOW VIDEO) -->
         <div class="bg-[#0C101D] border border-indigo-500/20 rounded-2xl p-4 shadow-xl flex items-start gap-4">
             <div class="w-10 h-10 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shrink-0 mt-0.5">
-                <i class="fa-solid fa-sparkles text-lg"></i>
+                <i class="fa-solid fa-face-smile text-lg"></i>
             </div>
             <div class="space-y-1 flex-1">
                 <div class="flex items-center justify-between">
-                    <span class="text-[10px] uppercase tracking-wider font-black text-indigo-400">Resi's High-Energy Narration</span>
-                    <span class="text-[10px] bg-emerald-500/20 text-emerald-400 font-extrabold px-2 py-0.5 rounded">Pointer Sync Active</span>
+                    <span class="text-[10px] uppercase tracking-wider font-black text-indigo-400">Resi's Friendly Guide</span>
+                    <span class="text-[10px] bg-emerald-500/20 text-emerald-400 font-extrabold px-2 py-0.5 rounded">Simple Words</span>
                 </div>
                 <p id="caption-text" class="text-sm md:text-base font-semibold text-gray-100 leading-relaxed">
-                    "Hey there! Super excited to welcome you! I'm Resi, your 24/7 smart society co-pilot. Let's see how ResiEase automates your entire housing society on autopilot!"
+                    "Hello! Welcome to ResiEase! I'm Resi, your friendly helper! Managing an apartment building can be hard, but I'm here to make it super easy and fun! Let's take a look!"
                 </p>
             </div>
         </div>
@@ -192,95 +192,101 @@
 
     <!-- Interactive Player Engine -->
     <script>
+        const mascotImages = {
+            waving: "data:image/jpeg;base64,${waving}",
+            pointing: "data:image/jpeg;base64,${pointing}",
+            billing: "data:image/jpeg;base64,${billing}"
+        };
+
         const scenes = [
             {
-                title: "Hey There! Welcome to ResiEase",
-                badge: "Scene 1 of 7 • Introduction",
-                mascotImg: "/assets/mascot/resi_waving.jpg",
-                actionText: "Hey there! 👋",
-                caption: "Hey there! Super excited to welcome you! I'm Resi, your 24/7 smart society co-pilot. If you're tired of lost receipts, endless spreadsheets, and chaotic meetings, you are going to LOVE this! Let's dive in!",
-                voiceText: "Hey there! Super excited to welcome you! I'm Resi, your twenty-four seven smart society co-pilot! If you are tired of lost receipts, endless spreadsheets, and chaotic meetings, you are going to love this! Let's dive right in!",
+                title: "Hello! Welcome to ResiEase!",
+                badge: "Step 1 of 7 • Welcome",
+                mascotImg: mascotImages.waving,
+                actionText: "Hello there! 👋",
+                caption: "Hello! Welcome to ResiEase! I'm Resi, your friendly helper! Managing an apartment building can be super hard with so many papers, calls, and bills. But don't worry, I'm here to make it super easy and fast! Let's take a look!",
+                voiceText: "Hello! Welcome to ResiEase! I'm Resi, your friendly helper! Managing an apartment building can be super hard with so many papers, calls, and bills. But don't worry, I am here to make it super easy and fast! Let's take a look!",
                 duration: 13,
                 waypoints: [
-                    { time: 0, top: '45%', left: '50%', action: 'Hey there! 👋' },
-                    { time: 4, top: '65%', left: '30%', action: 'Look at GST Invoices! 📄' },
-                    { time: 8, top: '65%', left: '70%', action: 'Instant WhatsApp! 💬' }
+                    { time: 0, top: '45%', left: '50%', action: 'Hello there! 👋' },
+                    { time: 4, top: '65%', left: '30%', action: 'Fast Bills! 📄' },
+                    { time: 8, top: '65%', left: '70%', action: 'WhatsApp Alerts! 💬' }
                 ],
                 visualHtml: `
                     <div class="w-full h-full flex flex-col items-center justify-center p-6 bg-gradient-to-br from-[#0B0F19] via-[#1A1842] to-[#0B0F19] text-center">
                         <div class="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center text-white text-3xl shadow-xl shadow-indigo-500/50 mb-3">
                             <i class="fa-solid fa-hotel"></i>
                         </div>
-                        <h1 class="text-2xl md:text-4xl font-extrabold text-white mb-2 tracking-tight">Run Your Housing Society on <span class="text-indigo-400">Autopilot</span></h1>
-                        <p class="text-gray-300 max-w-lg text-xs md:text-sm mb-6">The modern all-in-one operating system built for cooperative housing societies and RWAs.</p>
+                        <h1 class="text-2xl md:text-4xl font-extrabold text-white mb-2 tracking-tight">Making Building Management <span class="text-indigo-400">Super Easy!</span></h1>
+                        <p class="text-gray-300 max-w-lg text-xs md:text-sm mb-6">No more messy papers. Send bills, add neighbors, and save notes in one place.</p>
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-3 max-w-lg w-full text-left text-xs">
-                            <div id="target-s1-1" class="p-3 bg-white/10 rounded-xl backdrop-blur-md border border-white/15 font-bold"><i class="fa-solid fa-file-invoice text-indigo-400 mr-1.5"></i> Auto GST Invoices</div>
-                            <div id="target-s1-2" class="p-3 bg-white/10 rounded-xl backdrop-blur-md border border-white/15 font-bold"><i class="fa-brands fa-whatsapp text-emerald-400 mr-1.5"></i> WhatsApp Dispatch</div>
-                            <div class="p-3 bg-white/10 rounded-xl backdrop-blur-md border border-white/15 font-bold col-span-2 md:col-span-1"><i class="fa-solid fa-shield-halved text-purple-400 mr-1.5"></i> Legal Audit Vault</div>
+                            <div class="p-3 bg-white/10 rounded-xl backdrop-blur-md border border-white/15 font-bold"><i class="fa-solid fa-file-invoice text-indigo-400 mr-1.5"></i> 1-Click Bills</div>
+                            <div class="p-3 bg-white/10 rounded-xl backdrop-blur-md border border-white/15 font-bold"><i class="fa-brands fa-whatsapp text-emerald-400 mr-1.5"></i> WhatsApp Sent</div>
+                            <div class="p-3 bg-white/10 rounded-xl backdrop-blur-md border border-white/15 font-bold col-span-2 md:col-span-1"><i class="fa-solid fa-shield-halved text-purple-400 mr-1.5"></i> 100% Safe</div>
                         </div>
                     </div>
                 `
             },
             {
-                title: "Super-Fast Society Registration",
-                badge: "Scene 2 of 7 • Onboarding",
-                mascotImg: "/assets/mascot/resi_pointing.jpg",
+                title: "Adding Your Building",
+                badge: "Step 2 of 7 • Quick Setup",
+                mascotImg: mascotImages.pointing,
                 actionText: "Watch me click! 👆",
-                caption: "Watch this magic! To register your society, look right where my pointer is clicking. We enter our society name, type our official registration number, and BAM! ResiEase instantly verifies state compliance!",
-                voiceText: "Watch this magic! To register your society, look right where my pointer is clicking! We enter our society name, type our official registration number, and bam! ResiEase instantly verifies state compliance! Look at that green checkmark!",
-                duration: 15,
+                caption: "First, let's add your building! Watch my pointer right here. We type the building name, type the building registration number, and click the big button! Look at that green tick! Your building is ready in ten seconds!",
+                voiceText: "First, let's add your building! Watch my pointer right here. We type the building name, type the building registration number, and click the big button! Look at that green tick! Your building is ready in ten seconds!",
+                duration: 14,
                 waypoints: [
-                    { time: 0, top: '40%', left: '50%', action: 'Entering Name... ✍️' },
-                    { time: 5, top: '58%', left: '50%', action: 'Verifying Registration... 🔍' },
-                    { time: 10, top: '78%', left: '50%', action: 'Clicking Register! 🚀' }
+                    { time: 0, top: '40%', left: '50%', action: 'Typing Name... ✍️' },
+                    { time: 5, top: '58%', left: '50%', action: 'Checking Number... 🔍' },
+                    { time: 9, top: '78%', left: '50%', action: 'Clicking Done! 🚀' }
                 ],
                 visualHtml: `
                     <div class="w-full h-full flex items-center justify-center p-6 bg-[#090D18]">
                         <div class="w-full max-w-md bg-white text-gray-900 p-6 rounded-2xl shadow-2xl border border-gray-200 space-y-3.5">
                             <div class="flex items-center justify-between border-b pb-2">
-                                <h3 class="font-extrabold text-sm text-gray-900 flex items-center gap-2"><i class="fa-solid fa-building-circle-check text-indigo-600"></i> Register Housing Society</h3>
-                                <span class="text-[10px] bg-emerald-100 text-emerald-800 font-black px-2.5 py-0.5 rounded-full">Format Validated</span>
+                                <h3 class="font-extrabold text-sm text-gray-900 flex items-center gap-2"><i class="fa-solid fa-building-circle-check text-indigo-600"></i> Add Your Building</h3>
+                                <span class="text-[10px] bg-emerald-100 text-emerald-800 font-black px-2.5 py-0.5 rounded-full">✓ Ready</span>
                             </div>
                             <div class="space-y-3 text-left text-xs">
                                 <div>
-                                    <label class="block text-gray-500 font-bold mb-1">Society Registered Name</label>
-                                    <div id="target-s2-name" class="p-2.5 bg-indigo-50/50 rounded-xl border border-indigo-200 font-bold text-gray-800">Lotus Co-operative Housing Society Ltd.</div>
+                                    <label class="block text-gray-500 font-bold mb-1">Building Name</label>
+                                    <div class="p-2.5 bg-indigo-50/50 rounded-xl border border-indigo-200 font-bold text-gray-800">Lotus Housing Society</div>
                                 </div>
                                 <div>
-                                    <label class="block text-gray-500 font-bold mb-1">Statutory Registration Number</label>
-                                    <div id="target-s2-reg" class="p-2.5 bg-emerald-50 rounded-xl border-2 border-emerald-400 font-mono font-black text-emerald-900 flex justify-between items-center">
+                                    <label class="block text-gray-500 font-bold mb-1">Government Building Number</label>
+                                    <div class="p-2.5 bg-emerald-50 rounded-xl border-2 border-emerald-400 font-mono font-black text-emerald-900 flex justify-between items-center">
                                         MUM/WP/HSG/TC/12345/2026
                                         <i class="fa-solid fa-circle-check text-emerald-600 text-base"></i>
                                     </div>
                                 </div>
-                                <button id="target-s2-btn" class="w-full py-2.5 bg-indigo-600 text-white font-extrabold rounded-xl shadow-lg shadow-indigo-600/30">Create Society Account &rarr;</button>
+                                <button class="w-full py-2.5 bg-indigo-600 text-white font-extrabold rounded-xl shadow-lg shadow-indigo-600/30">Save Building &rarr;</button>
                             </div>
                         </div>
                     </div>
                 `
             },
             {
-                title: "1-Click Secure Login",
-                badge: "Scene 3 of 7 • Security",
-                mascotImg: "/assets/mascot/resi_pointing.jpg",
-                actionText: "Instant OTP! ⚡",
-                caption: "Now, let's sign in! No complicated passwords to memorize. Just punch in your email, get a secure 6-digit OTP right in your inbox, and you're in! Bank-grade, multi-tenant role security verified!",
-                voiceText: "Now, let's sign in! No complicated passwords to memorize! Just punch in your email, get a secure 6-digit OTP right in your inbox, and you're in! Bank-grade, multi-tenant security!",
+                title: "Easy & Safe Sign-In",
+                badge: "Step 3 of 7 • Simple Sign In",
+                mascotImg: mascotImages.pointing,
+                actionText: "Secret Code! ⚡",
+                caption: "Next, let's sign in! You don't need to remember hard passwords anymore. Just type your email, and we send a quick six-digit code right to you. Type it in, and you're in! Super safe and easy!",
+                voiceText: "Next, let's sign in! You don't need to remember hard passwords anymore. Just type your email, and we send a quick six-digit code right to you. Type it in, and you are in! Super safe and easy!",
                 duration: 13,
                 waypoints: [
-                    { time: 0, top: '35%', left: '50%', action: 'Generating OTP... ✉️' },
-                    { time: 5, top: '55%', left: '50%', action: 'Entering 6 Digits... 🔢' },
-                    { time: 9, top: '75%', left: '50%', action: 'Access Verified! 🛡️' }
+                    { time: 0, top: '35%', left: '50%', action: 'Sending Code... ✉️' },
+                    { time: 4, top: '55%', left: '50%', action: 'Typing 6 Numbers... 🔢' },
+                    { time: 8, top: '75%', left: '50%', action: 'Logged In! 🔓' }
                 ],
                 visualHtml: `
                     <div class="w-full h-full flex items-center justify-center p-6 bg-gradient-to-br from-slate-900 to-indigo-950">
                         <div class="w-full max-w-sm bg-white text-gray-900 p-6 rounded-2xl shadow-2xl text-center space-y-4">
                             <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">
-                                <i class="fa-solid fa-key"></i>
+                                <i class="fa-solid fa-envelope-open-text"></i>
                             </div>
-                            <h3 class="font-extrabold text-base text-gray-900">Secure OTP Sign-In</h3>
+                            <h3 class="font-extrabold text-base text-gray-900">Simple Sign-In</h3>
                             <div class="p-3 bg-gray-50 rounded-xl border border-gray-200 text-left text-xs space-y-2">
-                                <span class="text-gray-500 font-bold">One-Time Login Code</span>
+                                <span class="text-gray-500 font-bold">Type the 6-Digit Code</span>
                                 <div class="flex gap-1.5 justify-center font-mono text-base font-black text-indigo-600">
                                     <span class="w-8 h-9 border-2 border-indigo-500 rounded-lg flex items-center justify-center bg-indigo-50">8</span>
                                     <span class="w-8 h-9 border-2 border-indigo-500 rounded-lg flex items-center justify-center bg-indigo-50">4</span>
@@ -290,37 +296,37 @@
                                     <span class="w-8 h-9 border-2 border-indigo-500 rounded-lg flex items-center justify-center bg-indigo-50">7</span>
                                 </div>
                             </div>
-                            <span class="inline-block text-[11px] text-emerald-600 font-extrabold"><i class="fa-solid fa-circle-check"></i> Super Admin Role Granted</span>
+                            <span class="inline-block text-[11px] text-emerald-600 font-extrabold"><i class="fa-solid fa-circle-check"></i> You are Logged In!</span>
                         </div>
                     </div>
                 `
             },
             {
-                title: "Master Data Centre (MDC) & Team Registry",
-                badge: "Scene 4 of 7 • Registry",
-                mascotImg: "/assets/mascot/resi_billing.jpg",
-                actionText: "Adding Members! 👥",
-                caption: "Welcome to the Master Data Centre — the society's brain! Watch me click '+ Add Member'. Type their flat, name, and role, hit save—and BOOM! Login credentials are automatically emailed to them in two seconds flat!",
-                voiceText: "Welcome inside the Master Data Centre, the society's brain! Watch me click 'Add Member'. Type their flat, name, and role, hit save, and boom! Login credentials are automatically emailed to them in two seconds flat!",
-                duration: 16,
+                title: "Adding Neighbors & Members",
+                badge: "Step 4 of 7 • People List",
+                mascotImg: mascotImages.billing,
+                actionText: "Adding People! 👥",
+                caption: "Now, let's add everyone who lives in the building! Watch me click 'Add Member'. We type their name, flat number, and click send! Instantly, they get an email with their login key. No calling everyone one by one!",
+                voiceText: "Now, let's add everyone who lives in the building! Watch me click 'Add Member'. We type their name, flat number, and click send! Instantly, they get an email with their login key. No calling everyone one by one!",
+                duration: 15,
                 waypoints: [
                     { time: 0, top: '25%', left: '78%', action: 'Clicking Add Member! ➕' },
-                    { time: 6, top: '55%', left: '45%', action: 'Auto-Generating Password 🔑' },
-                    { time: 11, top: '70%', left: '80%', action: 'Email Dispatched! ✉️' }
+                    { time: 5, top: '55%', left: '45%', action: 'Making Password 🔑' },
+                    { time: 10, top: '70%', left: '80%', action: 'Email Sent! ✉️' }
                 ],
                 visualHtml: `
                     <div class="w-full h-full p-6 bg-[#090D18] flex flex-col justify-center">
                         <div class="bg-white text-gray-900 rounded-2xl p-5 shadow-2xl border border-gray-200 space-y-3">
                             <div class="flex justify-between items-center border-b pb-2">
-                                <h4 class="font-bold text-xs text-gray-800 flex items-center gap-2"><i class="fa-solid fa-users-gear text-indigo-600"></i> Team Members & Access Management</h4>
-                                <span id="target-s4-add" class="bg-indigo-600 text-white text-[10px] font-extrabold px-3 py-1 rounded-lg pulse-target">+ Add Member</span>
+                                <h4 class="font-bold text-xs text-gray-800 flex items-center gap-2"><i class="fa-solid fa-users text-indigo-600"></i> Building Neighbors List</h4>
+                                <span class="bg-indigo-600 text-white text-[10px] font-extrabold px-3 py-1 rounded-lg pulse-target">+ Add Member</span>
                             </div>
                             <table class="w-full text-[11px] text-left">
                                 <thead class="bg-gray-50 text-gray-500 uppercase text-[9px]">
                                     <tr><th class="p-2">Name</th><th class="p-2">Email</th><th class="p-2">Role</th><th class="p-2 text-right">Actions</th></tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
-                                    <tr><td class="p-2 font-bold">Adit Shah</td><td class="p-2 font-mono text-gray-500">adit.shah01@gmail.com</td><td class="p-2"><span class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-[9px] font-bold">SUPER ADMIN</span></td><td class="p-2 text-right text-gray-400">Admin</td></tr>
+                                    <tr><td class="p-2 font-bold">Adit Shah</td><td class="p-2 font-mono text-gray-500">adit.shah01@gmail.com</td><td class="p-2"><span class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-[9px] font-bold">PRESIDENT</span></td><td class="p-2 text-right text-gray-400">Admin</td></tr>
                                     <tr class="bg-indigo-50/70"><td class="p-2 font-bold">Moksha Shah</td><td class="p-2 font-mono text-gray-500">moksha591@gmail.com</td><td class="p-2"><span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[9px] font-bold">ACCOUNTANT</span></td><td class="p-2 text-right space-x-1"><span class="text-indigo-600 font-bold bg-white px-2 py-1 rounded border border-indigo-200">Resend</span><span class="text-red-600 font-bold bg-white px-2 py-1 rounded border border-red-200">Delete</span></td></tr>
                                 </tbody>
                             </table>
@@ -329,70 +335,70 @@
                 `
             },
             {
-                title: "1-Click Automated Batch Maintenance Billing",
-                badge: "Scene 5 of 7 • Finance",
-                mascotImg: "/assets/mascot/resi_billing.jpg",
-                actionText: "Generating Bills! ⚡",
-                caption: "Now for the showstopper: 1-Click Batch Maintenance Billing! Look at this button right here. One single click calculates all 48 maintenance bills, generates GST invoices, and dispatches WhatsApp payment links directly to residents' phones!",
-                voiceText: "Now for the showstopper: One-click batch maintenance billing! Look at this button right here. One single click calculates all 48 maintenance bills, generates GST invoices, and dispatches WhatsApp payment links directly to residents' phones!",
-                duration: 17,
+                title: "Monthly Bills in 1 Click!",
+                badge: "Step 5 of 7 • Bills",
+                mascotImg: mascotImages.billing,
+                actionText: "1-Click Bills! ⚡",
+                caption: "Here comes the best part! Monthly maintenance bills! Instead of writing fifty bills by hand, watch this: I click this one button, and WHOOSH! ResiEase creates bills for every flat and sends them straight to WhatsApp with payment links! Isn't that awesome?!",
+                voiceText: "Here comes the best part! Monthly maintenance bills! Instead of writing fifty bills by hand, watch this: I click this one button, and whoosh! ResiEase creates bills for every flat and sends them straight to WhatsApp with payment links! Isn't that awesome?!",
+                duration: 16,
                 waypoints: [
-                    { time: 0, top: '25%', left: '80%', action: 'Clicking Generate Batch ⚡' },
-                    { time: 6, top: '50%', left: '50%', action: 'Calculating GST Rates 🧮' },
-                    { time: 12, top: '75%', left: '50%', action: 'WhatsApp 48/48 Sent! 📲' }
+                    { time: 0, top: '25%', left: '80%', action: 'Clicking Make Bills ⚡' },
+                    { time: 5, top: '50%', left: '50%', action: 'Totaling 48 Flats 🧮' },
+                    { time: 10, top: '75%', left: '50%', action: 'WhatsApp 48/48 Sent! 📲' }
                 ],
                 visualHtml: `
                     <div class="w-full h-full p-6 bg-[#090D18] flex items-center justify-center">
                         <div class="w-full max-w-lg bg-white text-gray-900 rounded-2xl p-5 shadow-2xl border border-gray-100 space-y-3">
                             <div class="flex justify-between items-center">
                                 <div>
-                                    <h4 class="font-extrabold text-sm text-gray-900">August 2026 Batch Billing</h4>
-                                    <p class="text-[10px] text-gray-500">48 Flats Target • Total: ₹2,16,000</p>
+                                    <h4 class="font-extrabold text-sm text-gray-900">This Month's Building Bills</h4>
+                                    <p class="text-[10px] text-gray-500">48 Flats • Total: ₹2,16,000</p>
                                 </div>
-                                <span id="target-s5-approve" class="bg-emerald-100 text-emerald-800 text-xs font-black px-3 py-1 rounded-full flex items-center gap-1">
-                                    <i class="fa-solid fa-circle-check"></i> Approved & Sent
+                                <span class="bg-emerald-100 text-emerald-800 text-xs font-black px-3 py-1 rounded-full flex items-center gap-1">
+                                    <i class="fa-solid fa-circle-check"></i> All Sent!
                                 </span>
                             </div>
                             <div class="grid grid-cols-3 gap-2 text-center text-xs">
-                                <div class="p-2.5 bg-gray-50 rounded-xl border"><span class="block text-gray-400 text-[10px]">SERVICE</span> ₹1,200</div>
-                                <div class="p-2.5 bg-gray-50 rounded-xl border"><span class="block text-gray-400 text-[10px]">SINKING</span> ₹300</div>
-                                <div class="p-2.5 bg-gray-50 rounded-xl border"><span class="block text-gray-400 text-[10px]">REPAIR</span> ₹500</div>
+                                <div class="p-2.5 bg-gray-50 rounded-xl border"><span class="block text-gray-400 text-[10px]">LIFT & LIGHTS</span> ₹1,200</div>
+                                <div class="p-2.5 bg-gray-50 rounded-xl border"><span class="block text-gray-400 text-[10px]">SAVINGS FUND</span> ₹300</div>
+                                <div class="p-2.5 bg-gray-50 rounded-xl border"><span class="block text-gray-400 text-[10px]">REPAIRS</span> ₹500</div>
                             </div>
                             <div class="p-2.5 bg-emerald-50 rounded-xl border-2 border-emerald-300 text-emerald-900 text-xs font-extrabold flex items-center justify-between">
-                                <span><i class="fa-brands fa-whatsapp text-emerald-600 text-sm mr-1"></i> WhatsApp Reminders Dispatched</span>
-                                <span>48 / 48 Delivered</span>
+                                <span><i class="fa-brands fa-whatsapp text-emerald-600 text-sm mr-1"></i> Sent to WhatsApp Phones</span>
+                                <span>48 of 48 Delivered!</span>
                             </div>
                         </div>
                     </div>
                 `
             },
             {
-                title: "General Body Meetings (AGM/SGM)",
-                badge: "Scene 6 of 7 • Compliance",
-                mascotImg: "/assets/mascot/resi_pointing.jpg",
-                actionText: "Passed Resolution! ⚖️",
-                caption: "Need to host your AGM? No stress! Click right here on Meetings. Publish notices, upload audit documents, and record official committee resolutions permanently in the legal vault. You're always 100% audit-proof!",
-                voiceText: "Need to host your AGM? No stress! Click right here on Meetings. Publish notices, upload audit documents, and record official committee resolutions permanently in the legal vault. You are always 100% audit-proof!",
-                duration: 15,
+                title: "Building Meetings & Notes",
+                badge: "Step 6 of 7 • Meetings",
+                mascotImg: mascotImages.pointing,
+                actionText: "Saving Notes! ⚖️",
+                caption: "Need to hold a building meeting? Just click here! You can set the meeting date, write down what everyone agreed on, and save all important papers in one safe place so nothing ever gets lost!",
+                voiceText: "Need to hold a building meeting? Just click here! You can set the meeting date, write down what everyone agreed on, and save all important papers in one safe place so nothing ever gets lost!",
+                duration: 14,
                 waypoints: [
-                    { time: 0, top: '25%', left: '75%', action: 'Scheduling Meeting 📅' },
-                    { time: 6, top: '55%', left: '45%', action: 'Recording Resolution ⚖️' },
-                    { time: 11, top: '75%', left: '30%', action: 'Audit Vault Stored 📁' }
+                    { time: 0, top: '25%', left: '75%', action: 'Setting Date 📅' },
+                    { time: 5, top: '55%', left: '45%', action: 'Saving Decision ⚖️' },
+                    { time: 10, top: '75%', left: '30%', action: 'Saved in Safe Vault 📁' }
                 ],
                 visualHtml: `
                     <div class="w-full h-full p-6 bg-[#0F172A] flex items-center justify-center">
                         <div class="w-full max-w-md bg-white text-gray-900 rounded-2xl p-5 shadow-2xl border border-gray-100 space-y-3 text-left">
                             <div class="flex justify-between items-center border-b pb-2">
-                                <h4 class="font-bold text-xs text-gray-900"><i class="fa-solid fa-gavel text-indigo-600 mr-1.5"></i> AGM 2026 - Resolution Record</h4>
-                                <span class="bg-indigo-100 text-indigo-700 text-[10px] font-black px-2 py-0.5 rounded">Passed</span>
+                                <h4 class="font-bold text-xs text-gray-900"><i class="fa-solid fa-clipboard-check text-indigo-600 mr-1.5"></i> Annual Meeting Notes</h4>
+                                <span class="bg-indigo-100 text-indigo-700 text-[10px] font-black px-2 py-0.5 rounded">Saved</span>
                             </div>
                             <div class="space-y-2 text-xs">
                                 <div class="p-2.5 bg-gray-50 rounded-xl border border-gray-200">
-                                    <p class="font-bold text-gray-800 mb-1">Resolution #04: Redevelopment Tender</p>
-                                    <p class="text-gray-500 text-[11px]">Approved 35% extra carpet area tender for Wing A redevelopment.</p>
+                                    <p class="font-bold text-gray-800 mb-1">Decision #1: Painting the Building</p>
+                                    <p class="text-gray-500 text-[11px]">All members agreed to start painting next month.</p>
                                 </div>
                                 <div class="flex gap-2">
-                                    <span class="text-[10px] font-bold text-gray-600 bg-gray-100 px-2.5 py-1 rounded"><i class="fa-solid fa-file-pdf text-red-500 mr-1"></i> Audit_Report_2026.pdf</span>
+                                    <span class="text-[10px] font-bold text-gray-600 bg-gray-100 px-2.5 py-1 rounded"><i class="fa-solid fa-file-pdf text-red-500 mr-1"></i> Meeting_Report.pdf</span>
                                 </div>
                             </div>
                         </div>
@@ -400,24 +406,24 @@
                 `
             },
             {
-                title: "Ready to Upgrade Your Society?",
-                badge: "Scene 7 of 7 • Get Started",
-                mascotImg: "/assets/mascot/resi_waving.jpg",
+                title: "Ready to Try It Yourself?",
+                badge: "Step 7 of 7 • Done!",
+                mascotImg: mascotImages.waving,
                 actionText: "Let's Go! 🚀",
-                caption: "How incredible was that?! Running your housing society has never been this fast, fun, and effortless. Click 'Start Free Trial' below to get your society up and running in 60 seconds! Let's build a smarter community together!",
-                voiceText: "How incredible was that?! Running your housing society has never been this fast, fun, and effortless! Click Start Free Trial below to get your society up and running in 60 seconds! Let's build a smarter community together!",
+                caption: "And that's how simple it is! No more headaches, no more lost papers. Click the 'Start Free Trial' button below to get your building started today! I can't wait to help you!",
+                voiceText: "And that's how simple it is! No more headaches, no more lost papers. Click the Start Free Trial button below to get your building started today! I can't wait to help you!",
                 duration: 11,
                 waypoints: [
                     { time: 0, top: '35%', left: '50%', action: 'Awesome! 🎉' },
-                    { time: 5, top: '75%', left: '40%', action: 'Click Free Trial! 👉' }
+                    { time: 4, top: '75%', left: '40%', action: 'Click Free Trial! 👉' }
                 ],
                 visualHtml: `
-                    <div class="w-full h-full flex flex-col items-center justify-center p-6 md:p-10 bg-gradient-to-t from-indigo-950 via-[#0B0F19] to-[#0B0F19] text-center">
+                    <div class="w-full h-full flex flex-col items-center justify-center p-6 bg-gradient-to-t from-indigo-950 via-[#0B0F19] to-[#0B0F19] text-center">
                         <div class="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center text-white text-3xl shadow-xl mb-3">
                             <i class="fa-solid fa-rocket"></i>
                         </div>
-                        <h2 class="text-2xl md:text-3xl font-extrabold text-white mb-2">Upgrade Your Society with ResiEase</h2>
-                        <p class="text-gray-300 max-w-md text-xs mb-5">Digitize bills, automate member registers, and streamline AGM meetings today.</p>
+                        <h2 class="text-2xl md:text-3xl font-extrabold text-white mb-2">Try ResiEase for Free!</h2>
+                        <p class="text-gray-300 max-w-md text-xs mb-5">Start running your apartment building with zero stress today.</p>
                         <div class="flex gap-3">
                             <a href="/register" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs shadow-lg shadow-indigo-600/50">Start Free Trial &rarr;</a>
                             <a href="/login" class="px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs">Sign In to Dashboard</a>
@@ -460,12 +466,12 @@
             
             const utterance = new SpeechSynthesisUtterance(text);
             const voices = window.speechSynthesis.getVoices();
-            // Select cheerful, natural English female / upbeat voice
-            const bestVoice = voices.find(v => (v.name.includes('Jenny') || v.name.includes('Zira') || v.name.includes('Samantha') || v.name.includes('Google US English')) && v.lang.startsWith('en')) || voices.find(v => v.lang.startsWith('en')) || voices[0];
+            // Select cheerful, friendly voice
+            const bestVoice = voices.find(v => (v.name.includes('Jenny') || v.name.includes('Zira') || v.name.includes('Samantha') || v.name.includes('Google US English') || v.name.includes('Natural')) && v.lang.startsWith('en')) || voices.find(v => v.lang.startsWith('en')) || voices[0];
             
             if (bestVoice) utterance.voice = bestVoice;
-            utterance.pitch = 1.25; // Cheerful, lively, upbeat pitch
-            utterance.rate = 1.04;  // Energetic natural tempo
+            utterance.pitch = 1.25; // Cheerful friendly pitch
+            utterance.rate = 1.02;  // Natural easy pace
 
             window.speechSynthesis.speak(utterance);
         }
