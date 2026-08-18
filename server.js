@@ -2266,6 +2266,8 @@ async function serveStatic(req, res, url) {
   let requested = decodeURIComponent(url.pathname);
   if (requested === '/') {
     requested = '/landing.html';
+  } else if (requested === '/demo' || requested === '/demo.html') {
+    requested = '/demo.html';
   } else if (requested === '/register' || requested === '/register.html') {
     requested = '/register.html';
   } else if (requested === '/login' || requested === '/login.html') {

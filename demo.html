@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResiEase - Interactive Product Demo Video</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif; }
+        .mascot-bounce { animation: mascotFloat 3s ease-in-out infinite; }
+        @keyframes mascotFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        .progress-glow {
+            box-shadow: 0 0 12px rgba(79, 70, 229, 0.6);
+        }
+    </style>
+</head>
+<body class="bg-[#0B0F19] text-white min-h-screen flex flex-col justify-between select-none">
+
+    <!-- Top Navigation Header -->
+    <header class="border-b border-gray-800 bg-[#0E1322]/80 backdrop-blur-md px-6 py-4 flex items-center justify-between z-30">
+        <div class="flex items-center gap-3">
+            <a href="/" class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md">
+                    <i class="fa-solid fa-hotel text-base"></i>
+                </div>
+                <span class="font-extrabold text-lg tracking-tight text-white">ResiEase</span>
+            </a>
+            <span class="text-xs bg-indigo-500/20 text-indigo-400 font-bold px-2.5 py-1 rounded-full border border-indigo-500/30 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span> Product Demo Walkthrough
+            </span>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <a href="/register" class="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-xl transition-all shadow-md shadow-indigo-600/30">
+                Register Free Trial
+            </a>
+            <a href="/login" class="text-xs font-semibold text-gray-300 hover:text-white bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-xl transition-all">
+                Sign In
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Cinematic Video Stage -->
+    <main class="flex-1 flex flex-col items-center justify-center p-4 md:p-8 max-w-6xl mx-auto w-full">
+        
+        <!-- Video Player Container (16:9 Aspect Ratio) -->
+        <div class="relative w-full aspect-video bg-[#111827] rounded-3xl overflow-hidden shadow-2xl border border-gray-800 flex flex-col justify-between group">
+            
+            <!-- Video Canvas / Screen Visuals -->
+            <div id="video-screen" class="absolute inset-0 z-0 bg-cover bg-center transition-all duration-700">
+                <!-- Dynamic Scene Content Rendered Here -->
+            </div>
+
+            <!-- Dark Vignette Overlay for Crisp Contrast -->
+            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/60 pointer-events-none z-10"></div>
+
+            <!-- Top Overlay: Scene Title & Badge -->
+            <div class="relative z-20 p-6 flex justify-between items-start pointer-events-none">
+                <div class="space-y-1">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 text-xs font-bold text-indigo-400 uppercase tracking-wider">
+                        <span id="scene-badge">Scene 1 of 7</span>
+                    </div>
+                    <h2 id="scene-title" class="text-xl md:text-2xl font-extrabold text-white drop-shadow-md">
+                        Welcome to ResiEase
+                    </h2>
+                </div>
+
+                <div class="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 text-xs text-gray-300">
+                    <i class="fa-solid fa-film text-indigo-400"></i>
+                    <span id="timer-display" class="font-mono">00:00 / 03:00</span>
+                </div>
+            </div>
+
+            <!-- Mascot Guide PIP (Picture-In-Picture) Presenter -->
+            <div id="mascot-container" class="absolute bottom-20 right-6 z-20 flex items-end gap-3 transition-all duration-500">
+                <!-- Speech Bubble -->
+                <div id="speech-bubble" class="max-w-xs bg-white/95 backdrop-blur-md text-gray-900 p-4 rounded-2xl rounded-br-none shadow-2xl border border-white/40 text-xs leading-relaxed font-semibold transition-all">
+                    Hello! I'm <strong>Resi</strong>, your smart society guide. Click <strong>Play Demo</strong> below to explore how ResiEase automates your society!
+                </div>
+
+                <!-- Mascot 3D Avatar -->
+                <div class="mascot-bounce relative w-24 h-24 md:w-28 md:h-28 rounded-2xl overflow-hidden border-2 border-indigo-500 shadow-xl bg-indigo-950 shrink-0">
+                    <img id="mascot-img" src="/uploads/mascot/resi_waving.jpg" alt="Resi Mascot Guide" class="w-full h-full object-cover">
+                </div>
+            </div>
+
+            <!-- Bottom Subtitles / Caption Bar -->
+            <div class="relative z-20 px-8 pb-16 pointer-events-none">
+                <div class="max-w-2xl bg-black/75 backdrop-blur-md border border-white/15 px-5 py-3 rounded-2xl text-center mx-auto shadow-2xl">
+                    <p id="caption-text" class="text-sm md:text-base font-medium text-gray-100 leading-snug">
+                        "Welcome to ResiEase — the all-in-one housing society operating system."
+                    </p>
+                </div>
+            </div>
+
+            <!-- Bottom Video Control Bar -->
+            <div class="relative z-30 bg-[#0E1322]/95 backdrop-blur-md px-6 py-3 border-t border-gray-800 flex flex-col gap-2">
+                
+                <!-- Progress Scrubber -->
+                <div class="relative w-full h-2 bg-gray-800 rounded-full cursor-pointer overflow-hidden group/bar" onclick="seekVideo(event)">
+                    <div id="progress-bar" class="h-full bg-indigo-600 progress-glow transition-all duration-300 w-0"></div>
+                </div>
+
+                <!-- Control Buttons -->
+                <div class="flex items-center justify-between pt-1">
+                    <div class="flex items-center gap-3">
+                        <!-- Play/Pause Button -->
+                        <button id="play-btn" onclick="togglePlay()" class="w-10 h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center transition-all shadow-md shadow-indigo-600/30">
+                            <i class="fa-solid fa-play text-sm" id="play-icon"></i>
+                        </button>
+                        
+                        <!-- Prev Scene -->
+                        <button onclick="prevScene()" class="text-gray-400 hover:text-white p-2 transition-colors" title="Previous Scene">
+                            <i class="fa-solid fa-backward-step"></i>
+                        </button>
+
+                        <!-- Next Scene -->
+                        <button onclick="nextScene()" class="text-gray-400 hover:text-white p-2 transition-colors" title="Next Scene">
+                            <i class="fa-solid fa-forward-step"></i>
+                        </button>
+
+                        <!-- Audio Narration Toggle -->
+                        <button id="voice-btn" onclick="toggleVoice()" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-indigo-400 flex items-center gap-1.5 transition-colors">
+                            <i class="fa-solid fa-volume-high" id="voice-icon"></i> <span id="voice-label">Voiceover ON</span>
+                        </button>
+                    </div>
+
+                    <!-- Scene Jumper Tabs -->
+                    <div class="hidden md:flex items-center gap-1.5">
+                        <button onclick="jumpToScene(0)" class="scene-tab text-[11px] font-bold px-2.5 py-1 rounded-lg bg-indigo-600 text-white transition-colors">1. Welcome</button>
+                        <button onclick="jumpToScene(1)" class="scene-tab text-[11px] font-bold px-2.5 py-1 rounded-lg bg-gray-800 text-gray-400 hover:text-white transition-colors">2. Register</button>
+                        <button onclick="jumpToScene(2)" class="scene-tab text-[11px] font-bold px-2.5 py-1 rounded-lg bg-gray-800 text-gray-400 hover:text-white transition-colors">3. Login</button>
+                        <button onclick="jumpToScene(3)" class="scene-tab text-[11px] font-bold px-2.5 py-1 rounded-lg bg-gray-800 text-gray-400 hover:text-white transition-colors">4. MDC &amp; Members</button>
+                        <button onclick="jumpToScene(4)" class="scene-tab text-[11px] font-bold px-2.5 py-1 rounded-lg bg-gray-800 text-gray-400 hover:text-white transition-colors">5. Billing</button>
+                        <button onclick="jumpToScene(5)" class="scene-tab text-[11px] font-bold px-2.5 py-1 rounded-lg bg-gray-800 text-gray-400 hover:text-white transition-colors">6. AGM Meetings</button>
+                        <button onclick="jumpToScene(6)" class="scene-tab text-[11px] font-bold px-2.5 py-1 rounded-lg bg-gray-800 text-gray-400 hover:text-white transition-colors">7. Get Started</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Video Description & Key Action Links -->
+        <div class="w-full mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-gray-400">
+            <div class="bg-[#0E1322] p-4 rounded-2xl border border-gray-800/80">
+                <span class="text-indigo-400 font-bold block mb-1">🤖 AI-Powered Mascot</span>
+                Presenter "Resi" is generated using Gemini Omni multimodal image &amp; video character consistent pipeline.
+            </div>
+            <div class="bg-[#0E1322] p-4 rounded-2xl border border-gray-800/80">
+                <span class="text-indigo-400 font-bold block mb-1">🎙️ Real-time Speech Voiceover</span>
+                Narrated dynamically using synchronized audio synthesis matched to visual workflows.
+            </div>
+            <div class="bg-[#0E1322] p-4 rounded-2xl border border-gray-800/80">
+                <span class="text-indigo-400 font-bold block mb-1">🚀 Try the Live App</span>
+                Ready to explore yourself? <a href="/login" class="text-indigo-400 underline font-bold">Launch ResiEase Portal &rarr;</a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Interactive Player Engine -->
+    <script>
+        const scenes = [
+            {
+                title: "Welcome to ResiEase",
+                badge: "Scene 1 of 7 • Introduction",
+                mascotImg: "/uploads/mascot/resi_waving.jpg",
+                caption: "Managing a housing society used to mean endless spreadsheets, lost receipts, and chaotic meetings. Welcome to ResiEase — the all-in-one operating system that runs your society on autopilot!",
+                voiceText: "Managing a housing society used to mean endless spreadsheets, lost receipts, and chaotic meetings. Welcome to ResiEase, the all-in-one operating system that runs your society on autopilot!",
+                duration: 12,
+                visualHtml: `
+                    <div class="w-full h-full flex flex-col items-center justify-center p-8 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-center">
+                        <div class="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center text-white text-3xl shadow-xl shadow-indigo-500/30 mb-4 animate-bounce">
+                            <i class="fa-solid fa-hotel"></i>
+                        </div>
+                        <h1 class="text-3xl md:text-5xl font-extrabold text-white mb-3 tracking-tight">Run Your Housing Society on <span class="text-indigo-400">Autopilot</span></h1>
+                        <p class="text-gray-300 max-w-xl text-sm md:text-base leading-relaxed">Automate maintenance billing, statutory registry, and AGM resolutions seamlessly in one secure platform.</p>
+                        <div class="mt-6 flex gap-3">
+                            <span class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold">1-Click WhatsApp Invoices</span>
+                            <span class="px-4 py-2 rounded-xl bg-white/10 text-white text-xs font-bold">Bank-Grade Multi-Tenant RLS</span>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                title: "Society Registration & Setup",
+                badge: "Scene 2 of 7 • Onboarding",
+                mascotImg: "/uploads/mascot/resi_pointing.jpg",
+                caption: "Getting started takes less than a minute. Enter your society's registered name and statutory registration number. Real-time validation ensures compliance with state bye-laws right out of the box.",
+                voiceText: "Getting started takes less than a minute. Enter your society's registered name and statutory registration number. Our real-time validation ensures compliance with state bye-laws right out of the box.",
+                duration: 14,
+                visualHtml: `
+                    <div class="w-full h-full flex items-center justify-center p-8 bg-[#0F172A]">
+                        <div class="w-full max-w-md bg-white text-gray-900 p-6 rounded-2xl shadow-2xl border border-gray-100 space-y-4">
+                            <div class="flex items-center justify-between border-b pb-3">
+                                <h3 class="font-bold text-sm text-gray-800">Register Housing Society</h3>
+                                <span class="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">Format Validated</span>
+                            </div>
+                            <div class="space-y-3 text-left text-xs">
+                                <div>
+                                    <label class="block text-gray-500 font-semibold mb-1">Society Registered Name</label>
+                                    <div class="p-2.5 bg-gray-50 rounded-xl border border-gray-200 font-semibold text-gray-800">Lotus Co-operative Housing Society Ltd.</div>
+                                </div>
+                                <div>
+                                    <label class="block text-gray-500 font-semibold mb-1">Statutory Registration Number</label>
+                                    <div class="p-2.5 bg-emerald-50 rounded-xl border border-emerald-300 font-mono font-bold text-emerald-800 flex justify-between items-center">
+                                        MUM/WP/HSG/TC/12345/2026
+                                        <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                title: "Dual-Mode Authentication & Access",
+                badge: "Scene 3 of 7 • Security",
+                mascotImg: "/uploads/mascot/resi_pointing.jpg",
+                caption: "No more forgotten passwords. Committee members and residents sign in instantly using secure One-Time Passcodes (OTP) or traditional credentials with automatic role protection.",
+                voiceText: "No more forgotten passwords. Committee members and residents sign in instantly using secure One-Time Passcodes or traditional credentials with automatic role protection.",
+                duration: 12,
+                visualHtml: `
+                    <div class="w-full h-full flex items-center justify-center p-8 bg-gradient-to-r from-slate-900 to-indigo-950">
+                        <div class="w-full max-w-sm bg-white text-gray-900 p-6 rounded-2xl shadow-2xl text-center space-y-4">
+                            <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">
+                                <i class="fa-solid fa-key"></i>
+                            </div>
+                            <h3 class="font-bold text-base text-gray-900">Sign In to ResiEase</h3>
+                            <div class="p-3 bg-gray-50 rounded-xl border border-gray-200 text-left text-xs space-y-2">
+                                <span class="text-gray-500 font-medium">6-Digit One-Time Login Code</span>
+                                <div class="flex gap-2 justify-center font-mono text-lg font-bold text-indigo-600">
+                                    <span class="w-8 h-10 border-2 border-indigo-500 rounded-lg flex items-center justify-center bg-indigo-50">8</span>
+                                    <span class="w-8 h-10 border-2 border-indigo-500 rounded-lg flex items-center justify-center bg-indigo-50">4</span>
+                                    <span class="w-8 h-10 border-2 border-indigo-500 rounded-lg flex items-center justify-center bg-indigo-50">2</span>
+                                    <span class="w-8 h-10 border-2 border-indigo-500 rounded-lg flex items-center justify-center bg-indigo-50">9</span>
+                                    <span class="w-8 h-10 border-2 border-indigo-500 rounded-lg flex items-center justify-center bg-indigo-50">1</span>
+                                    <span class="w-8 h-10 border-2 border-indigo-500 rounded-lg flex items-center justify-center bg-indigo-50">7</span>
+                                </div>
+                            </div>
+                            <div class="text-[11px] text-emerald-600 font-bold flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-shield-check"></i> Bank-grade encryption verified
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                title: "Master Data Centre (MDC) & Team Registry",
+                badge: "Scene 4 of 7 • Registry",
+                mascotImg: "/uploads/mascot/resi_billing.jpg",
+                caption: "The Master Data Centre is your society's brain. Define flat allocations and default funds in seconds. Need to onboard residents or accountants? Add them with one click — credentials arrive by email instantly.",
+                voiceText: "The Master Data Centre is your society's brain. Define flat allocations and default funds in seconds. Need to onboard residents or accountants? Add them with one click — ResiEase automatically emails their login credentials instantly.",
+                duration: 15,
+                visualHtml: `
+                    <div class="w-full h-full p-6 bg-[#0B0F19] flex flex-col justify-center">
+                        <div class="bg-white text-gray-900 rounded-2xl p-5 shadow-2xl border border-gray-200 space-y-3">
+                            <div class="flex justify-between items-center border-b pb-2">
+                                <h4 class="font-bold text-xs text-gray-800 flex items-center gap-2"><i class="fa-solid fa-users-gear text-indigo-600"></i> Team Members & Access Management</h4>
+                                <span class="bg-indigo-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg">+ Add Member</span>
+                            </div>
+                            <table class="w-full text-[11px] text-left">
+                                <thead class="bg-gray-50 text-gray-500 uppercase text-[9px]">
+                                    <tr><th class="p-2">Name</th><th class="p-2">Email</th><th class="p-2">Role</th><th class="p-2 text-right">Actions</th></tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr><td class="p-2 font-bold">Adit Shah</td><td class="p-2 font-mono text-gray-500">adit.shah01@gmail.com</td><td class="p-2"><span class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-[9px] font-bold">SUPER ADMIN</span></td><td class="p-2 text-right text-gray-400">Admin</td></tr>
+                                    <tr class="bg-indigo-50/50"><td class="p-2 font-bold">Moksha Shah</td><td class="p-2 font-mono text-gray-500">moksha591@gmail.com</td><td class="p-2"><span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[9px] font-bold">ACCOUNTANT</span></td><td class="p-2 text-right space-x-1"><span class="text-indigo-600 font-bold bg-white px-2 py-1 rounded border border-indigo-200">Resend</span><span class="text-red-600 font-bold bg-white px-2 py-1 rounded border border-red-200">Delete</span></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                title: "1-Click Automated Maintenance Billing",
+                badge: "Scene 5 of 7 • Finance",
+                mascotImg: "/uploads/mascot/resi_billing.jpg",
+                caption: "Generate monthly maintenance bills for 50 or 500 flats in three seconds. Add custom heads, preview drafts, approve the batch, and digitally dispatch bills straight to members' WhatsApp with integrated payment tracking.",
+                voiceText: "Generate monthly maintenance bills for 50 or 500 flats in three seconds. Add custom heads, preview drafts, approve the batch, and digitally dispatch bills straight to members' WhatsApp with integrated payment tracking.",
+                duration: 16,
+                visualHtml: `
+                    <div class="w-full h-full p-6 bg-[#0B0F19] flex items-center justify-center">
+                        <div class="w-full max-w-lg bg-white text-gray-900 rounded-2xl p-6 shadow-2xl border border-gray-100 space-y-4">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-bold text-sm text-gray-900">August 2026 Batch Billing</h4>
+                                    <p class="text-[10px] text-gray-500">48 Flats Target • Total: ₹2,16,000</p>
+                                </div>
+                                <span class="bg-emerald-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                                    <i class="fa-solid fa-circle-check"></i> Approved & Sent
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                                <div class="p-3 bg-gray-50 rounded-xl border"><span class="block text-gray-400 text-[10px]">SERVICE</span> ₹1,200</div>
+                                <div class="p-3 bg-gray-50 rounded-xl border"><span class="block text-gray-400 text-[10px]">SINKING</span> ₹300</div>
+                                <div class="p-3 bg-gray-50 rounded-xl border"><span class="block text-gray-400 text-[10px]">REPAIR</span> ₹500</div>
+                            </div>
+                            <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-between">
+                                <span><i class="fa-brands fa-whatsapp text-emerald-600 text-sm mr-1"></i> WhatsApp Reminders Dispatched</span>
+                                <span>48 / 48 Delivered</span>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                title: "General Body Meetings (AGM/SGM)",
+                badge: "Scene 6 of 7 • Compliance",
+                mascotImg: "/uploads/mascot/resi_pointing.jpg",
+                caption: "Keep your society 100% audit-ready. Draft AGM notices, upload statutory documents, and record official committee resolutions that are permanently archived for your society's registrar.",
+                voiceText: "Keep your society 100% audit-ready. Draft AGM notices, upload statutory documents, and record official committee resolutions that are permanently archived for your society's registrar.",
+                duration: 14,
+                visualHtml: `
+                    <div class="w-full h-full p-6 bg-[#0F172A] flex items-center justify-center">
+                        <div class="w-full max-w-md bg-white text-gray-900 rounded-2xl p-6 shadow-2xl border border-gray-100 space-y-4 text-left">
+                            <div class="flex justify-between items-center border-b pb-2">
+                                <h4 class="font-bold text-xs text-gray-900"><i class="fa-solid fa-gavel text-indigo-600 mr-1.5"></i> AGM 2026 - Resolution Record</h4>
+                                <span class="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded">Passed</span>
+                            </div>
+                            <div class="space-y-2 text-xs">
+                                <div class="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                                    <p class="font-bold text-gray-800 mb-1">Resolution #04: Redevelopment Tender</p>
+                                    <p class="text-gray-500 text-[11px]">Approved 35% extra carpet area tender for Wing A redevelopment.</p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <span class="text-[10px] font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded"><i class="fa-solid fa-file-pdf text-red-500 mr-1"></i> Audit_Report_2026.pdf</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                title: "Ready to Upgrade Your Society?",
+                badge: "Scene 7 of 7 • Get Started",
+                mascotImg: "/uploads/mascot/resi_waving.jpg",
+                caption: "Ready to upgrade your housing society? Visit ResiEase today and start your free trial!",
+                voiceText: "Ready to upgrade your housing society? Visit ResiEase today and start your free trial!",
+                duration: 10,
+                visualHtml: `
+                    <div class="w-full h-full flex flex-col items-center justify-center p-8 bg-gradient-to-t from-indigo-950 via-slate-900 to-slate-900 text-center">
+                        <div class="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center text-white text-3xl shadow-xl mb-4">
+                            <i class="fa-solid fa-rocket"></i>
+                        </div>
+                        <h2 class="text-3xl md:text-4xl font-extrabold text-white mb-3">Upgrade Your Society with ResiEase</h2>
+                        <p class="text-gray-300 max-w-md text-sm mb-6">Digitize bills, automate tenant registers, and simplify meetings today.</p>
+                        <div class="flex gap-3">
+                            <a href="/register" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-600/30">Start Free Trial &rarr;</a>
+                            <a href="/login" class="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm">Sign In to Dashboard</a>
+                        </div>
+                    </div>
+                `
+            }
+        ];
+
+        let currentSceneIndex = 0;
+        let isPlaying = false;
+        let isVoiceEnabled = true;
+        let timer = null;
+        let elapsedSeconds = 0;
+        let totalDuration = scenes.reduce((sum, s) => sum + s.duration, 0);
+
+        function renderScene(index) {
+            const s = scenes[index];
+            document.getElementById('scene-badge').innerText = s.badge;
+            document.getElementById('scene-title').innerText = s.title;
+            document.getElementById('caption-text').innerText = `"${s.caption}"`;
+            document.getElementById('speech-bubble').innerText = s.caption;
+            document.getElementById('mascot-img').src = s.mascotImg;
+            document.getElementById('video-screen').innerHTML = s.visualHtml;
+
+            // Highlight scene tab
+            document.querySelectorAll('.scene-tab').forEach((tab, i) => {
+                if (i === index) {
+                    tab.className = 'scene-tab text-[11px] font-bold px-2.5 py-1 rounded-lg bg-indigo-600 text-white transition-colors';
+                } else {
+                    tab.className = 'scene-tab text-[11px] font-bold px-2.5 py-1 rounded-lg bg-gray-800 text-gray-400 hover:text-white transition-colors';
+                }
+            });
+
+            if (isVoiceEnabled && isPlaying) {
+                speakNarration(s.voiceText);
+            }
+        }
+
+        function speakNarration(text) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel(); // Clear existing
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.05;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            const icon = document.getElementById('play-icon');
+            if (isPlaying) {
+                icon.className = 'fa-solid fa-pause text-sm';
+                renderScene(currentSceneIndex);
+                startPlayback();
+            } else {
+                icon.className = 'fa-solid fa-play text-sm';
+                clearInterval(timer);
+                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            }
+        }
+
+        function startPlayback() {
+            clearInterval(timer);
+            timer = setInterval(() => {
+                elapsedSeconds++;
+                updateProgress();
+
+                let sceneStart = 0;
+                for (let i = 0; i < scenes.length; i++) {
+                    if (elapsedSeconds >= sceneStart && elapsedSeconds < sceneStart + scenes[i].duration) {
+                        if (currentSceneIndex !== i) {
+                            currentSceneIndex = i;
+                            renderScene(i);
+                        }
+                        break;
+                    }
+                    sceneStart += scenes[i].duration;
+                }
+
+                if (elapsedSeconds >= totalDuration) {
+                    elapsedSeconds = 0;
+                    currentSceneIndex = 0;
+                    togglePlay();
+                }
+            }, 1000);
+        }
+
+        function updateProgress() {
+            const pct = (elapsedSeconds / totalDuration) * 100;
+            document.getElementById('progress-bar').style.width = `${pct}%`;
+            
+            const currM = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0');
+            const currS = (elapsedSeconds % 60).toString().padStart(2, '0');
+            const totM = Math.floor(totalDuration / 60).toString().padStart(2, '0');
+            const totS = (totalDuration % 60).toString().padStart(2, '0');
+            document.getElementById('timer-display').innerText = `${currM}:${currS} / ${totM}:${totS}`;
+        }
+
+        function jumpToScene(index) {
+            currentSceneIndex = index;
+            let accTime = 0;
+            for (let i = 0; i < index; i++) accTime += scenes[i].duration;
+            elapsedSeconds = accTime;
+            updateProgress();
+            renderScene(index);
+        }
+
+        function nextScene() {
+            if (currentSceneIndex < scenes.length - 1) {
+                jumpToScene(currentSceneIndex + 1);
+            }
+        }
+
+        function prevScene() {
+            if (currentSceneIndex > 0) {
+                jumpToScene(currentSceneIndex - 1);
+            }
+        }
+
+        function toggleVoice() {
+            isVoiceEnabled = !isVoiceEnabled;
+            const btn = document.getElementById('voice-btn');
+            const icon = document.getElementById('voice-icon');
+            const label = document.getElementById('voice-label');
+            if (isVoiceEnabled) {
+                icon.className = 'fa-solid fa-volume-high';
+                label.innerText = 'Voiceover ON';
+                btn.className = 'text-xs font-semibold px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-indigo-400 flex items-center gap-1.5 transition-colors';
+                if (isPlaying) speakNarration(scenes[currentSceneIndex].voiceText);
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark';
+                label.innerText = 'Voiceover MUTED';
+                btn.className = 'text-xs font-semibold px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-500 flex items-center gap-1.5 transition-colors';
+                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            }
+        }
+
+        function seekVideo(event) {
+            const bar = event.currentTarget;
+            const rect = bar.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const ratio = clickX / rect.width;
+            elapsedSeconds = Math.floor(ratio * totalDuration);
+            updateProgress();
+            
+            let sceneStart = 0;
+            for (let i = 0; i < scenes.length; i++) {
+                if (elapsedSeconds >= sceneStart && elapsedSeconds < sceneStart + scenes[i].duration) {
+                    currentSceneIndex = i;
+                    renderScene(i);
+                    break;
+                }
+                sceneStart += scenes[i].duration;
+            }
+        }
+
+        // Initialize Scene 1
+        renderScene(0);
+        updateProgress();
+    </script>
+</body>
+</html>
