@@ -2120,10 +2120,14 @@ if (typeof tailwind !== 'undefined') {
                     return;
                 }
                 
-                tbody.innerHTML = data.members.map(m => `
+                const currentUserEmail = (window.stateData?.currentUser?.email || '').toLowerCase().trim();
+                
+                tbody.innerHTML = data.members.map(m => {
+                    const isSelf = m.email.toLowerCase().trim() === currentUserEmail;
+                    return `
                     <tr class="hover:bg-gray-50/50 transition-colors group border-b border-gray-50" data-email="${escapeHtml(m.email)}">
                         <td class="px-4 py-3 font-semibold text-gray-800">${escapeHtml(m.name || '-')}</td>
-                        <td class="px-4 py-3 text-gray-600">${escapeHtml(m.email)}</td>
+                        <td class="px-4 py-3 text-gray-600 font-mono text-xs">${escapeHtml(m.email)}</td>
                         <td class="px-4 py-3">
                             <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
                                 m.role === 'super_admin' ? 'bg-purple-100 text-purple-700' :
@@ -2135,14 +2139,18 @@ if (typeof tailwind !== 'undefined') {
                             </span>
                         </td>
                         <td class="px-4 py-3 text-gray-600">${escapeHtml(m.flat_no || '-')}</td>
-                        <td class="px-4 py-3 text-right space-x-1 whitespace-nowrap">
-                            <button type="button" class="resend-member-btn inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 px-2.5 py-1 rounded-lg transition-colors" title="Resend Login Credentials">
+                        <td class="px-4 py-3 text-right space-x-2 whitespace-nowrap">
+                            <button type="button" onclick="window.resendMemberCredentials('${escapeHtml(m.email)}')" class="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 px-3 py-1.5 rounded-lg border border-brand-200 transition-colors" title="Resend Login Credentials">
                                 <i class="fa-solid fa-key"></i> Resend
                             </button>
-                            ${m.role !== 'super_admin' ? `<button type="button" class="remove-member-btn text-gray-400 hover:text-red-500 transition-colors p-1" title="Revoke Access"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+                            ${!isSelf ? `
+                            <button type="button" onclick="window.removeMember('${escapeHtml(m.email)}', this)" class="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 hover:text-red-700 px-3 py-1.5 rounded-lg border border-red-200 transition-colors" title="Delete Member">
+                                <i class="fa-solid fa-trash-can"></i> Delete
+                            </button>` : `<span class="text-[10px] text-gray-400 font-semibold px-2 py-1 bg-gray-100 rounded-md">You (Admin)</span>`}
                         </td>
                     </tr>
-                `).join('');
+                `;
+                }).join('');
             } catch (err) {
                 const tbody = document.getElementById('members-table-body');
                 if(tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-red-500 text-xs">Error loading members</td></tr>';
@@ -2150,14 +2158,14 @@ if (typeof tailwind !== 'undefined') {
         }
 
         async function removeMember(email, btnEl) {
-            if (!confirm(`Are you sure you want to delete member "${email}"? They will no longer be able to log in.`)) return;
+            if (!confirm(`Are you sure you want to permanently delete member "${email}"? They will no longer be able to log in.`)) return;
             
             try {
                 if (btnEl) {
                     btnEl.disabled = true;
-                    btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                    btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Deleting...';
                 }
-                const res = await fetch('/api/mdc/member', {
+                const res = await fetch('/api/mdc/member?email=' + encodeURIComponent(email), {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })
@@ -2169,9 +2177,17 @@ if (typeof tailwind !== 'undefined') {
                     loadMdcMembers();
                 } else {
                     showToast(data.error || 'Failed to delete member', 'error');
+                    if (btnEl) {
+                        btnEl.disabled = false;
+                        btnEl.innerHTML = '<i class="fa-solid fa-trash-can"></i> Delete';
+                    }
                 }
             } catch (err) {
                 showToast('Network error while deleting member', 'error');
+                if (btnEl) {
+                    btnEl.disabled = false;
+                    btnEl.innerHTML = '<i class="fa-solid fa-trash-can"></i> Delete';
+                }
             }
         }
 
@@ -2195,25 +2211,18 @@ if (typeof tailwind !== 'undefined') {
                 showToast('Network error while clearing members', 'error');
             }
         }
+
+        // Attach functions to global window scope
+        window.removeMember = removeMember;
+        window.clearAllMembers = clearAllMembers;
+        window.resendMemberCredentials = resendMemberCredentials;
+        window.loadMdcMembers = loadMdcMembers;
+        window.showCredentialsModal = showCredentialsModal;
+        window.closeCredentialsModal = closeCredentialsModal;
+        window.copyGeneratedPassword = copyGeneratedPassword;
+        window.copyAllCredentials = copyAllCredentials;
         
         // Initial load of members when dashboard loads
         document.addEventListener("DOMContentLoaded", () => {
             setTimeout(loadMdcMembers, 1000); // Load after main dashboard is ready
-            
-            // Event delegation for member actions
-            document.addEventListener('click', function(e) {
-                const removeBtn = e.target.closest('.remove-member-btn');
-                if (removeBtn) {
-                    const email = removeBtn.closest('tr')?.dataset?.email;
-                    if (email) removeMember(email, removeBtn);
-                    return;
-                }
-
-                const resendBtn = e.target.closest('.resend-member-btn');
-                if (resendBtn) {
-                    const email = resendBtn.closest('tr')?.dataset?.email;
-                    if (email) resendMemberCredentials(email);
-                    return;
-                }
-            });
         });

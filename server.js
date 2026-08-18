@@ -2025,8 +2025,8 @@ function validateSocietyRegistrationNo(regNo) {
         return sendJson(res, 403, { error: 'Only super admin can manage team members.' });
       }
       const delResult = await pool.query(
-        "DELETE FROM user_profiles WHERE society_id = $1 AND role != 'super_admin'",
-        [session.society_id]
+        "DELETE FROM user_profiles WHERE society_id = $1 AND LOWER(email) != LOWER($2)",
+        [session.society_id, session.email]
       );
       await pool.query('DELETE FROM sessions WHERE email NOT IN (SELECT email FROM user_profiles)');
       await pool.query("DELETE FROM users WHERE is_master_admin = false AND email NOT IN (SELECT email FROM user_profiles)");
@@ -2038,11 +2038,21 @@ function validateSocietyRegistrationNo(regNo) {
       if (session.role !== 'super_admin') {
         return sendJson(res, 403, { error: 'Only super admin can manage team members.' });
       }
-      const rawBody = await readJsonBody(req);
-      const val = validatePayload(schemas.deleteMember, rawBody);
-      if (!val.valid) return sendJson(res, 400, { error: val.error, details: val.details });
-      const { email } = val.data;
-      if (email.toLowerCase() === session.email.toLowerCase()) {
+      let targetEmail = url.searchParams.get('email');
+      if (!targetEmail) {
+        try {
+          const rawBody = await readJsonBody(req);
+          const val = validatePayload(schemas.deleteMember, rawBody);
+          if (val.valid) targetEmail = val.data.email;
+        } catch (e) {
+          // ignore
+        }
+      }
+      if (!targetEmail) {
+        return sendJson(res, 400, { error: 'Email parameter is required.' });
+      }
+      const email = targetEmail.trim().toLowerCase();
+      if (email === session.email.toLowerCase()) {
         return sendJson(res, 400, { error: 'Cannot remove your own access.' });
       }
       
