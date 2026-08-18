@@ -201,9 +201,9 @@ const seedData = {
     registrationNo: 'MUM/WP/HSG/TC/12345/2026'
   },
   users: [
-    { email: 'ajay@gmail.com',          password: 'masterpassword', is_master_admin: true, name: 'Ajay (Master)', role: 'master_admin' },
+    { email: 'ajay@gmail.com',          password: 'masterpassword', is_master_admin: true, name: 'Ajay (Master)', role: 'super_admin' },
     { email: 'admin@society.com',       password: 'admin123',       role: 'super_admin',   name: 'Society Admin' },
-    { email: 'committee@society.com',   password: 'committee123',   role: 'society_admin', name: 'Committee Member' },
+    { email: 'committee@society.com',   password: 'committee123',   role: 'super_admin',   name: 'Committee Member' },
     { email: 'accountant@society.com',  password: 'accountant123',  role: 'accountant',    name: 'Society Accountant' },
     { email: 'resident@society.com',    password: 'resident123',    role: 'resident',      name: 'Resident Member' }
   ],
