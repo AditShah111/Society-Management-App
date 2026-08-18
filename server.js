@@ -196,6 +196,23 @@ async function getSessionFromToken(token) {
 }
 
 
+// Audit Logger — fire-and-forget, never blocks a response
+async function logAudit({ societyId, actorEmail, action, entity, entityId, oldValue, newValue, ipAddress }) {
+  if (!pool) return;
+  try {
+    await pool.query(
+      `INSERT INTO audit_logs (society_id, actor_email, action, entity, entity_id, old_value, new_value, ip_address)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [societyId || null, actorEmail, action, entity || null, entityId || null,
+       oldValue ? JSON.stringify(oldValue) : null,
+       newValue ? JSON.stringify(newValue) : null,
+       ipAddress || null]
+    );
+  } catch (err) {
+    console.error('[AUDIT] Failed to write audit log:', err.message);
+  }
+}
+
 // Schema Initializer
 async function initializeDatabase() {
   if (!pool) return;
@@ -438,6 +455,24 @@ async function initializeDatabase() {
       );
     `);
     await client.query('ALTER TABLE complaints ADD COLUMN IF NOT EXISTS society_id UUID;');
+
+    // ── STEP 5.5: Audit Logs — immutable trail of every sensitive action (legal req for accounting SaaS)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS audit_logs (
+        id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        society_id  UUID REFERENCES societies(id) ON DELETE SET NULL,
+        actor_email VARCHAR(255) NOT NULL,
+        action      VARCHAR(100) NOT NULL,
+        entity      VARCHAR(100),
+        entity_id   TEXT,
+        old_value   JSONB,
+        new_value   JSONB,
+        ip_address  VARCHAR(50),
+        created_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+    `);
+    await client.query('CREATE INDEX IF NOT EXISTS idx_audit_logs_society ON audit_logs(society_id);');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_audit_logs_actor ON audit_logs(actor_email);');
 
     // ── STEP 6: Row-Level Security (RLS) — real policies using app.current_tenant
     const tenantTables = [
@@ -1446,6 +1481,7 @@ function validateSocietyRegistrationNo(regNo) {
       );
 
       const db = await getFullStateFromDb(session.society_id);
+      logAudit({ societyId: session.society_id, actorEmail: session.email, action: 'ADD_FINANCIAL_RECORD', entity: 'financial_records', entityId: id, newValue: { date, month, accountHead, type, amount }, ipAddress: req.socket.remoteAddress });
       return sendJson(res, 201, { record: { id, ...payload, amount: Number(amount) }, dashboard: deriveDashboard(db) });
     }
 
@@ -1661,6 +1697,7 @@ function validateSocietyRegistrationNo(regNo) {
         console.error('Failed to send email:', err);
       }
       
+      logAudit({ societyId: session.society_id, actorEmail: session.email, action: 'ADD_MEMBER', entity: 'user_profiles', entityId: email, newValue: { name, email, role, flatNo }, ipAddress: req.socket.remoteAddress });
       return sendJson(res, 200, { success: true });
     }
 
@@ -1679,6 +1716,7 @@ function validateSocietyRegistrationNo(regNo) {
       await pool.query('DELETE FROM user_profiles WHERE LOWER(email) = LOWER($1) AND society_id = $2', [email, session.society_id]);
       await pool.query('DELETE FROM users WHERE LOWER(email) = LOWER($1)', [email]);
       
+      logAudit({ societyId: session.society_id, actorEmail: session.email, action: 'REMOVE_MEMBER', entity: 'user_profiles', entityId: email, oldValue: { email }, ipAddress: req.socket.remoteAddress });
       return sendJson(res, 200, { success: true });
     }
 
@@ -1781,6 +1819,7 @@ function validateSocietyRegistrationNo(regNo) {
       );
 
       const db = await getFullStateFromDb(session.society_id);
+      logAudit({ societyId: session.society_id, actorEmail: session.email, action: 'APPROVE_BILLS', entity: 'maintenance_bills', entityId: month, newValue: { month, approvedCount: updateRes.rowCount }, ipAddress: req.socket.remoteAddress });
       return sendJson(res, 200, { success: true, message: `Approved ${updateRes.rowCount} bills for ${month}. Ready to send to members.`, maintenanceBills: db.maintenanceBills, dashboard: deriveDashboard(db) });
     }
 
@@ -1929,12 +1968,25 @@ async function serveStatic(req, res, url) {
     // H1 FIXED: Add comprehensive security headers to ALL HTML page responses, not just API responses
     const isHtml = type.includes('text/html');
     const pageSecurityHeaders = isHtml ? {
-      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none';",
+      'Content-Security-Policy': [
+        "default-src 'self'",
+        // Removed 'unsafe-inline' — inline scripts are XSS attack surface
+        "script-src 'self' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com https://apis.google.com",
+        // Styles still need unsafe-inline for Tailwind/FontAwesome utility classes
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
+        "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
+        "img-src 'self' data: https:",
+        "connect-src 'self' https://accounts.google.com",
+        "frame-src https://accounts.google.com",
+        "frame-ancestors 'none'",
+        "upgrade-insecure-requests"
+      ].join('; '),
       'X-Frame-Options': 'DENY',
       'X-Content-Type-Options': 'nosniff',
       'X-XSS-Protection': '1; mode=block',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
-      'Strict-Transport-Security': 'max-age=31536000; includeSubDomains'
+      'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+      'Permissions-Policy': 'geolocation=(), microphone=(), camera=()'
     } : {};
     res.writeHead(200, { 
       'content-type': type,

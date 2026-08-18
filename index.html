@@ -1055,7 +1055,11 @@
             }
             
             toast.className = `${bgClass} text-white px-4 py-3 rounded-lg shadow-lg text-sm font-medium transform transition-all duration-300 translate-y-4 opacity-0 flex items-center z-50`;
-            toast.innerHTML = `<i class="fa-solid ${iconClass} mr-2"></i> ${message}`;
+            const icon = document.createElement('i');
+            icon.className = `fa-solid ${iconClass} mr-2`;
+            toast.appendChild(icon);
+            const msgNode = document.createTextNode(message);
+            toast.appendChild(msgNode);
             
             container.appendChild(toast);
             
@@ -3369,9 +3373,9 @@
                 }
                 
                 tbody.innerHTML = data.members.map(m => `
-                    <tr class="hover:bg-gray-50/50 transition-colors group border-b border-gray-50">
-                        <td class="px-4 py-3 font-semibold text-gray-800">${m.name || '-'}</td>
-                        <td class="px-4 py-3 text-gray-600">${m.email}</td>
+                    <tr class="hover:bg-gray-50/50 transition-colors group border-b border-gray-50" data-email="${escapeHtml(m.email)}">
+                        <td class="px-4 py-3 font-semibold text-gray-800">${escapeHtml(m.name || '-')}</td>
+                        <td class="px-4 py-3 text-gray-600">${escapeHtml(m.email)}</td>
                         <td class="px-4 py-3">
                             <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
                                 m.role === 'super_admin' ? 'bg-purple-100 text-purple-700' :
@@ -3379,12 +3383,12 @@
                                 m.role === 'accountant' ? 'bg-blue-100 text-blue-700' :
                                 'bg-gray-100 text-gray-700'
                             }">
-                                ${(m.role || '').replace('_', ' ')}
+                                ${escapeHtml((m.role || '').replace('_', ' '))}
                             </span>
                         </td>
-                        <td class="px-4 py-3 text-gray-600">${m.flat_no || '-'}</td>
+                        <td class="px-4 py-3 text-gray-600">${escapeHtml(m.flat_no || '-')}</td>
                         <td class="px-4 py-3 text-right">
-                            ${m.role !== 'super_admin' ? `<button onclick="removeMember('${m.email}')" class="text-gray-400 hover:text-red-500 transition-colors p-1" title="Revoke Access"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+                            ${m.role !== 'super_admin' ? `<button class="remove-member-btn text-gray-400 hover:text-red-500 transition-colors p-1" title="Revoke Access"><i class="fa-solid fa-trash-can"></i></button>` : ''}
                         </td>
                     </tr>
                 `).join('');
@@ -3419,6 +3423,15 @@
         // Initial load of members when dashboard loads
         document.addEventListener("DOMContentLoaded", () => {
             setTimeout(loadMdcMembers, 2000); // Load after main dashboard is ready
+            
+            // Safe event delegation for remove-member buttons — avoids XSS via onclick injection
+            document.addEventListener('click', function(e) {
+                const btn = e.target.closest('.remove-member-btn');
+                if (btn) {
+                    const email = btn.closest('tr')?.dataset?.email;
+                    if (email) removeMember(email);
+                }
+            });
         });
     </script>
 
