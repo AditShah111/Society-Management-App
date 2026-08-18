@@ -369,10 +369,10 @@ async function logAudit({ societyId, actorEmail, action, entity, entityId, oldVa
   }
 }
 
-// Safe Non-Blocking Email Dispatcher (Short timeouts, never blocks API)
-async function sendEmailSafely({ to, subject, text, fromName = 'ResiEase' }) {
-  const gmailUser = process.env.GMAIL_USER;
-  const gmailPass = process.env.GMAIL_PASS;
+// Safe Non-Blocking Live Email Dispatcher (Real Gmail SMTP with HTML support)
+async function sendEmailSafely({ to, subject, text, html, fromName = 'ResiEase' }) {
+  const gmailUser = process.env.GMAIL_USER || 'adit.shah01@gmail.com';
+  const gmailPass = process.env.GMAIL_PASS || 'dpluzmknxjakwtfz';
 
   if (!gmailUser || !gmailPass) {
     console.log(`[EMAIL-SIMULATION] No GMAIL_USER/PASS configured. Simulated email to ${to}:`);
@@ -385,18 +385,19 @@ async function sendEmailSafely({ to, subject, text, fromName = 'ResiEase' }) {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: { user: gmailUser, pass: gmailPass },
-      connectionTimeout: 4000,
-      greetingTimeout: 4000,
-      socketTimeout: 5000
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 10000
     });
 
     const info = await transporter.sendMail({
       from: `"${fromName}" <${gmailUser}>`,
       to,
       subject,
-      text
+      text,
+      html: html || undefined
     });
-    console.log(`[EMAIL-SENT] Successfully sent email to ${to}, id: ${info.messageId}`);
+    console.log(`[EMAIL-SENT] Successfully dispatched live email to ${to}, id: ${info.messageId}`);
     return { sent: true, messageId: info.messageId };
   } catch (err) {
     console.error(`[EMAIL-ERROR] Failed to send email to ${to}:`, err.message);
@@ -1409,12 +1410,32 @@ function validateSocietyRegistrationNo(regNo) {
         [societyName, registrationNo, societyId]
       );
 
-      // Dispatch Onboarding Credentials Email (non-blocking)
+      // Dispatch Onboarding Credentials Email (non-blocking, HTML formatted)
       sendEmailSafely({
         to: email,
         subject: 'Welcome to ResiEase - Your Admin Credentials',
         fromName: 'ResiEase Registration',
-        text: `Hello ${name},\n\nYour society "${societyName}" has been successfully registered on ResiEase.\n\nHere are your super admin login credentials:\nEmail: ${email}\nPassword: ${generatedPassword}\n\nPlease sign in at https://society-management-app-xh6q.onrender.com/login and change your password in the settings as soon as possible.\n\nRegards,\nThe ResiEase Team`
+        text: `Hello ${name},\n\nYour society "${societyName}" has been successfully registered on ResiEase.\n\nHere are your super admin login credentials:\nEmail: ${email}\nPassword: ${generatedPassword}\n\nPlease sign in at https://society-management-app-xh6q.onrender.com/login and change your password in the settings as soon as possible.\n\nRegards,\nThe ResiEase Team`,
+        html: `
+          <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:540px;margin:0 auto;padding:24px;border:1px solid #e5e7eb;border-radius:16px;background:#ffffff;">
+            <div style="margin-bottom:20px;">
+              <h2 style="margin:0;color:#111827;font-size:20px;font-weight:800;">🏢 ResiEase</h2>
+              <p style="margin:2px 0 0 0;color:#6b7280;font-size:13px;">Housing Society & Tenant Management Platform</p>
+            </div>
+            <div style="padding:20px;background:#f9fafb;border-radius:12px;border:1px solid #f3f4f6;margin-bottom:20px;">
+              <h3 style="margin:0 0 10px 0;font-size:15px;color:#1f2937;">Society Admin Account Created</h3>
+              <p style="margin:0 0 14px 0;font-size:13px;color:#4b5563;line-height:1.5;">Hello <strong>${name}</strong>, your society <strong>${societyName}</strong> has been registered. Here are your super admin credentials:</p>
+              <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;margin-bottom:16px;">
+                <div style="font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:600;margin-bottom:4px;">Login Email</div>
+                <div style="font-size:14px;font-weight:600;color:#111827;margin-bottom:12px;">${email}</div>
+                <div style="font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:600;margin-bottom:4px;">Temporary Password</div>
+                <div style="font-size:18px;font-family:monospace;font-weight:700;color:#4f46e5;letter-spacing:1px;">${generatedPassword}</div>
+              </div>
+              <a href="https://society-management-app-xh6q.onrender.com/login" style="display:inline-block;background:#4f46e5;color:#ffffff;font-size:13px;font-weight:600;text-decoration:none;padding:10px 20px;border-radius:8px;">Sign In to Dashboard &rarr;</a>
+            </div>
+            <p style="margin:0;font-size:11px;color:#9ca3af;text-align:center;">For security, please change your password after logging in.</p>
+          </div>
+        `
       }).catch(err => console.error('[ONBOARD-EMAIL-FAIL]', err));
 
       return sendJson(res, 200, { success: true });
@@ -1451,12 +1472,25 @@ function validateSocietyRegistrationNo(regNo) {
         );
       }
 
-      // Send OTP via email safely
+      // Send OTP via email safely with HTML styling
       const mailResult = await sendEmailSafely({
         to: email,
         subject: 'Your ResiEase Login Passcode',
         fromName: 'ResiEase Security',
-        text: `Your one-time login passcode is: ${otp}\n\nThis code expires in 5 minutes. Do not share it with anyone.`
+        text: `Your one-time login passcode is: ${otp}\n\nThis code expires in 5 minutes. Do not share it with anyone.`,
+        html: `
+          <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:480px;margin:0 auto;padding:24px;border:1px solid #e5e7eb;border-radius:16px;background:#ffffff;">
+            <div style="margin-bottom:20px;">
+              <h2 style="margin:0;color:#111827;font-size:20px;font-weight:800;">🏢 ResiEase</h2>
+              <p style="margin:2px 0 0 0;color:#6b7280;font-size:13px;">Secure Login Passcode</p>
+            </div>
+            <div style="padding:20px;background:#f9fafb;border-radius:12px;border:1px solid #f3f4f6;text-align:center;margin-bottom:16px;">
+              <p style="margin:0 0 12px 0;font-size:13px;color:#4b5563;">Use the following one-time passcode to sign in:</p>
+              <div style="font-size:32px;font-family:monospace;font-weight:800;letter-spacing:6px;color:#4f46e5;background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;padding:12px;display:inline-block;margin-bottom:12px;">${otp}</div>
+              <p style="margin:0;font-size:12px;color:#9ca3af;">This code expires in <strong>5 minutes</strong>. Do not share it with anyone.</p>
+            </div>
+          </div>
+        `
       });
       console.log(`[AUTH-OTP] Passcode generated for ${email}: ${otp} (Email dispatched: ${mailResult.sent})`);
 
@@ -1897,12 +1931,32 @@ function validateSocietyRegistrationNo(regNo) {
         );
       }
 
-      // Dispatch credentials email asynchronously (never blocks response)
+      // Dispatch credentials email asynchronously with rich HTML
       sendEmailSafely({
         to: email,
         subject: 'Welcome to ResiEase - Your Login Credentials',
         fromName: 'ResiEase Registration',
-        text: `Hello ${name},\n\nYou have been registered as a ${role.replace('_', ' ')} in ResiEase.\n\nHere are your login credentials:\nEmail: ${email}\nPassword: ${generatedPassword}\n\nPlease sign in at https://society-management-app-xh6q.onrender.com/login and change your password in the settings as soon as possible, or use OTP login.\n\nRegards,\nThe ResiEase Team`
+        text: `Hello ${name},\n\nYou have been registered as a ${role.replace('_', ' ')} in ResiEase.\n\nHere are your login credentials:\nEmail: ${email}\nPassword: ${generatedPassword}\n\nPlease sign in at https://society-management-app-xh6q.onrender.com/login and change your password in the settings as soon as possible, or use OTP login.\n\nRegards,\nThe ResiEase Team`,
+        html: `
+          <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:540px;margin:0 auto;padding:24px;border:1px solid #e5e7eb;border-radius:16px;background:#ffffff;">
+            <div style="margin-bottom:20px;">
+              <h2 style="margin:0;color:#111827;font-size:20px;font-weight:800;">🏢 ResiEase</h2>
+              <p style="margin:2px 0 0 0;color:#6b7280;font-size:13px;">Housing Society & Tenant Management Platform</p>
+            </div>
+            <div style="padding:20px;background:#f9fafb;border-radius:12px;border:1px solid #f3f4f6;margin-bottom:20px;">
+              <h3 style="margin:0 0 10px 0;font-size:15px;color:#1f2937;">Welcome to ResiEase</h3>
+              <p style="margin:0 0 14px 0;font-size:13px;color:#4b5563;line-height:1.5;">Hello <strong>${name}</strong>, you have been registered as a <strong>${role.replace('_', ' ')}</strong>. Here are your login credentials:</p>
+              <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;margin-bottom:16px;">
+                <div style="font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:600;margin-bottom:4px;">Login Email</div>
+                <div style="font-size:14px;font-weight:600;color:#111827;margin-bottom:12px;">${email}</div>
+                <div style="font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:600;margin-bottom:4px;">Temporary Password</div>
+                <div style="font-size:18px;font-family:monospace;font-weight:700;color:#4f46e5;letter-spacing:1px;">${generatedPassword}</div>
+              </div>
+              <a href="https://society-management-app-xh6q.onrender.com/login" style="display:inline-block;background:#4f46e5;color:#ffffff;font-size:13px;font-weight:600;text-decoration:none;padding:10px 20px;border-radius:8px;">Sign In to ResiEase &rarr;</a>
+            </div>
+            <p style="margin:0;font-size:11px;color:#9ca3af;text-align:center;">You can also sign in anytime using one-time login passcodes (OTP).</p>
+          </div>
+        `
       }).catch(err => console.error('[MDC-EMAIL-FAIL]', err));
 
       logAudit({ societyId: session.society_id, actorEmail: session.email, action: 'ADD_OR_UPDATE_MEMBER', entity: 'user_profiles', entityId: email, newValue: { name, email, role, flatNo }, ipAddress: req.socket.remoteAddress });
@@ -1937,7 +1991,27 @@ function validateSocietyRegistrationNo(regNo) {
         to: email,
         subject: 'ResiEase - Your Updated Login Credentials',
         fromName: 'ResiEase Registration',
-        text: `Hello ${profile.name || 'Member'},\n\nYour ResiEase login credentials have been reset.\n\nEmail: ${email}\nPassword: ${generatedPassword}\n\nPlease sign in at https://society-management-app-xh6q.onrender.com/login and change your password in settings, or use OTP login.\n\nRegards,\nThe ResiEase Team`
+        text: `Hello ${profile.name || 'Member'},\n\nYour ResiEase login credentials have been reset.\n\nEmail: ${email}\nPassword: ${generatedPassword}\n\nPlease sign in at https://society-management-app-xh6q.onrender.com/login and change your password in settings, or use OTP login.\n\nRegards,\nThe ResiEase Team`,
+        html: `
+          <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:540px;margin:0 auto;padding:24px;border:1px solid #e5e7eb;border-radius:16px;background:#ffffff;">
+            <div style="margin-bottom:20px;">
+              <h2 style="margin:0;color:#111827;font-size:20px;font-weight:800;">🏢 ResiEase</h2>
+              <p style="margin:2px 0 0 0;color:#6b7280;font-size:13px;">Login Credentials Reset</p>
+            </div>
+            <div style="padding:20px;background:#f9fafb;border-radius:12px;border:1px solid #f3f4f6;margin-bottom:20px;">
+              <h3 style="margin:0 0 10px 0;font-size:15px;color:#1f2937;">Your New Login Credentials</h3>
+              <p style="margin:0 0 14px 0;font-size:13px;color:#4b5563;line-height:1.5;">Hello <strong>${profile.name || 'Member'}</strong>, your login password has been reset by your society administrator:</p>
+              <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;margin-bottom:16px;">
+                <div style="font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:600;margin-bottom:4px;">Login Email</div>
+                <div style="font-size:14px;font-weight:600;color:#111827;margin-bottom:12px;">${email}</div>
+                <div style="font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:600;margin-bottom:4px;">New Temporary Password</div>
+                <div style="font-size:18px;font-family:monospace;font-weight:700;color:#4f46e5;letter-spacing:1px;">${generatedPassword}</div>
+              </div>
+              <a href="https://society-management-app-xh6q.onrender.com/login" style="display:inline-block;background:#4f46e5;color:#ffffff;font-size:13px;font-weight:600;text-decoration:none;padding:10px 20px;border-radius:8px;">Sign In to ResiEase &rarr;</a>
+            </div>
+            <p style="margin:0;font-size:11px;color:#9ca3af;text-align:center;">For security, please change your password after logging in.</p>
+          </div>
+        `
       }).catch(err => console.error('[RESEND-EMAIL-FAIL]', err));
 
       logAudit({ societyId: session.society_id, actorEmail: session.email, action: 'RESEND_CREDENTIALS', entity: 'user_profiles', entityId: email, newValue: { email }, ipAddress: req.socket.remoteAddress });
