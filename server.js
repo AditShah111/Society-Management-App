@@ -35,7 +35,13 @@ const schemas = {
   }),
   verifyOtp: z.object({
     email: z.string().email("Invalid email format").toLowerCase(),
-    otp: z.string().min(4).max(10)
+    otp: z.string().optional(),
+    code: z.string().optional()
+  }).transform(data => ({
+    email: data.email,
+    otp: (data.otp || data.code || '').trim()
+  })).refine(data => data.otp.length >= 4 && data.otp.length <= 10, {
+    message: "A valid verification passcode is required"
   }),
   importResidents: z.array(z.object({
     name: z.string().min(1, "Resident name is required"),
@@ -2144,16 +2150,13 @@ async function serveStatic(req, res, url) {
     const pageSecurityHeaders = isHtml ? {
       'Content-Security-Policy': [
         "default-src 'self'",
-        // Removed 'unsafe-inline' — inline scripts are XSS attack surface
-        "script-src 'self' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com https://apis.google.com",
-        // Styles still need unsafe-inline for Tailwind/FontAwesome utility classes
+        "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com https://apis.google.com",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
-        "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
-        "img-src 'self' data: https:",
+        "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
+        "img-src 'self' data: https: blob:",
         "connect-src 'self' https://accounts.google.com",
         "frame-src https://accounts.google.com",
-        "frame-ancestors 'none'",
-        "upgrade-insecure-requests"
+        "frame-ancestors 'none'"
       ].join('; '),
       'X-Frame-Options': 'DENY',
       'X-Content-Type-Options': 'nosniff',
