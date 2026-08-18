@@ -2149,38 +2149,63 @@ if (typeof tailwind !== 'undefined') {
             }
         }
 
-        async function removeMember(email) {
-            if (!confirm(`Are you sure you want to revoke access for ${email}? They will no longer be able to log in.`)) return;
+        async function removeMember(email, btnEl) {
+            if (!confirm(`Are you sure you want to delete member "${email}"? They will no longer be able to log in.`)) return;
             
             try {
+                if (btnEl) {
+                    btnEl.disabled = true;
+                    btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                }
                 const res = await fetch('/api/mdc/member', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })
                 });
                 
+                const data = await res.json();
                 if (res.ok) {
-                    showToast('Access revoked successfully', 'success');
+                    showToast(data.message || 'Member deleted successfully', 'success');
                     loadMdcMembers();
                 } else {
-                    const data = await res.json();
-                    showToast(data.error || 'Failed to revoke access', 'error');
+                    showToast(data.error || 'Failed to delete member', 'error');
                 }
             } catch (err) {
-                showToast('Network error', 'error');
+                showToast('Network error while deleting member', 'error');
+            }
+        }
+
+        async function clearAllMembers() {
+            if (!confirm('Are you sure you want to delete ALL members in this society? All resident and accountant logins will be removed.')) return;
+            
+            try {
+                showToast('Deleting all members...');
+                const res = await fetch('/api/mdc/members/all', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(data.message || 'All members deleted successfully!', 'success');
+                    loadMdcMembers();
+                } else {
+                    showToast(data.error || 'Failed to clear members', 'error');
+                }
+            } catch (err) {
+                showToast('Network error while clearing members', 'error');
             }
         }
         
         // Initial load of members when dashboard loads
         document.addEventListener("DOMContentLoaded", () => {
-            setTimeout(loadMdcMembers, 2000); // Load after main dashboard is ready
+            setTimeout(loadMdcMembers, 1000); // Load after main dashboard is ready
             
-            // Safe event delegation for member actions
+            // Event delegation for member actions
             document.addEventListener('click', function(e) {
                 const removeBtn = e.target.closest('.remove-member-btn');
                 if (removeBtn) {
                     const email = removeBtn.closest('tr')?.dataset?.email;
-                    if (email) removeMember(email);
+                    if (email) removeMember(email, removeBtn);
                     return;
                 }
 

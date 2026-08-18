@@ -2018,6 +2018,20 @@ function validateSocietyRegistrationNo(regNo) {
       return sendJson(res, 200, { success: true, message: 'New credentials generated and dispatched.', email, name: profile.name, role: profile.role, tempPassword: generatedPassword });
     }
 
+    if (req.method === 'DELETE' && url.pathname === '/api/mdc/members/all') {
+      if (session.role !== 'super_admin') {
+        return sendJson(res, 403, { error: 'Only super admin can manage team members.' });
+      }
+      const delResult = await pool.query(
+        "DELETE FROM user_profiles WHERE society_id = $1 AND role != 'super_admin'",
+        [session.society_id]
+      );
+      await pool.query('DELETE FROM sessions WHERE email NOT IN (SELECT email FROM user_profiles)');
+      await pool.query("DELETE FROM users WHERE is_master_admin = false AND email NOT IN (SELECT email FROM user_profiles)");
+      logAudit({ societyId: session.society_id, actorEmail: session.email, action: 'CLEAR_ALL_MEMBERS', entity: 'user_profiles', newValue: { count: delResult.rowCount }, ipAddress: req.socket.remoteAddress });
+      return sendJson(res, 200, { success: true, message: `Removed ${delResult.rowCount} member accounts successfully.` });
+    }
+
     if (req.method === 'DELETE' && url.pathname === '/api/mdc/member') {
       if (session.role !== 'super_admin') {
         return sendJson(res, 403, { error: 'Only super admin can manage team members.' });
@@ -2031,10 +2045,15 @@ function validateSocietyRegistrationNo(regNo) {
       }
       
       await pool.query('DELETE FROM user_profiles WHERE LOWER(email) = LOWER($1) AND society_id = $2', [email, session.society_id]);
-      await pool.query('DELETE FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+      await pool.query('DELETE FROM sessions WHERE LOWER(email) = LOWER($1)', [email]);
+      
+      const otherProf = await pool.query('SELECT email FROM user_profiles WHERE LOWER(email) = LOWER($1)', [email]);
+      if (otherProf.rows.length === 0) {
+        await pool.query('DELETE FROM users WHERE LOWER(email) = LOWER($1) AND is_master_admin = false', [email]);
+      }
       
       logAudit({ societyId: session.society_id, actorEmail: session.email, action: 'REMOVE_MEMBER', entity: 'user_profiles', entityId: email, oldValue: { email }, ipAddress: req.socket.remoteAddress });
-      return sendJson(res, 200, { success: true });
+      return sendJson(res, 200, { success: true, message: `Member ${email} deleted successfully.` });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/documents') {

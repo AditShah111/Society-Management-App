@@ -951,9 +951,14 @@
                                 <h3 class="text-md font-bold text-gray-800 flex items-center gap-2"><i class="fa-solid fa-users-gear text-brand-500"></i> Team Members & Login Access</h3>
                                 <p class="text-xs text-gray-400 mt-1">Add residents, accountants, and committee members. They will receive login credentials by email.</p>
                             </div>
-                            <button onclick="openAddMemberModal()" class="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-brand-500/20">
-                                <i class="fa-solid fa-user-plus"></i> Add Member
-                            </button>
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="clearAllMembers()" class="flex items-center gap-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-2.5 rounded-xl transition-all">
+                                    <i class="fa-solid fa-trash-can"></i> Clear All Members
+                                </button>
+                                <button type="button" onclick="openAddMemberModal()" class="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-brand-500/20">
+                                    <i class="fa-solid fa-user-plus"></i> Add Member
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Members Table -->
