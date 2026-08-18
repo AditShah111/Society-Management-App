@@ -36,33 +36,33 @@
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Tailwind CSS (Direct CDN for clean compilation) -->
+    <!-- Tailwind CSS (Direct CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-                    },
-                    colors: {
-                        brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            200: '#c7d2fe',
-                            400: '#818cf8',
-                            500: '#4f46e5', /* Indigo CTA Accent */
-                            600: '#4338ca',
-                            700: '#3730a3',
-                            900: '#0B0F19', /* Premium Dark */
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    <script src="/landing.js"></script>
 
     <style>
+        /* Original Brand Color Theme Enforcement */
+        :root {
+            --brand-50: #eef2ff;
+            --brand-100: #e0e7ff;
+            --brand-200: #c7d2fe;
+            --brand-400: #818cf8;
+            --brand-500: #4f46e5;
+            --brand-600: #4338ca;
+            --brand-700: #3730a3;
+            --brand-900: #0B0F19;
+        }
+        .bg-brand-900 { background-color: #0B0F19 !important; }
+        .text-brand-900 { color: #0B0F19 !important; }
+        .bg-brand-500 { background-color: #4f46e5 !important; }
+        .hover\:bg-brand-500:hover { background-color: #4f46e5 !important; }
+        .text-brand-500 { color: #4f46e5 !important; }
+        .hover\:text-brand-500:hover { color: #4f46e5 !important; }
+        .text-brand-600 { color: #4338ca !important; }
+        .text-brand-700 { color: #3730a3 !important; }
+        .bg-brand-100 { background-color: #e0e7ff !important; }
+        .bg-brand-50 { background-color: #eef2ff !important; }
+        .border-brand-500 { border-color: #4f46e5 !important; }
         html {
             scroll-behavior: smooth;
         }
@@ -528,220 +528,7 @@
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
 
-    <!-- Interactive script for FAQ, ROI Calculator, nav, and animation -->
-    <script>
-        function toggleFaq(button) {
-            const expanded = button.getAttribute('aria-expanded') === 'true';
-            const panel = document.getElementById(button.getAttribute('aria-controls'));
-            const icon = button.querySelector('i');
-
-            button.setAttribute('aria-expanded', String(!expanded));
-            panel.style.gridTemplateRows = expanded ? '0fr' : '1fr';
-            icon.classList.toggle('rotate-180', !expanded);
-        }
-
-        function animateCount(el, toValue) {
-            const from = { v: parseFloat(el.textContent) || 0 };
-            if (window.gsap) {
-                gsap.to(from, {
-                    v: toValue,
-                    duration: 0.6,
-                    ease: 'power2.out',
-                    onUpdate: function () { el.textContent = Math.round(from.v); }
-                });
-            } else {
-                el.textContent = toValue;
-            }
-        }
-
-        function calculateRoi() {
-            const slider = document.getElementById('flat-slider');
-            const flatCount = parseInt(slider.value, 10);
-
-            document.getElementById('flat-count-display').innerText = `${flatCount} Flats`;
-
-            // Compute hours saved (approx 0.35 hours per flat per month for invoice matching and manual reconciliation)
-            const hours = Math.round(flatCount * 0.35);
-            const timeSavedEl = document.getElementById('time-saved');
-            timeSavedEl.dataset.value = hours;
-            animateCount(timeSavedEl, hours);
-        }
-
-        // Mobile menu
-        (function () {
-            const btn = document.getElementById('mobile-menu-btn');
-            const menu = document.getElementById('mobile-menu');
-            const icon = document.getElementById('menu-icon');
-
-            function closeMenu() {
-                menu.classList.add('hidden');
-                btn.setAttribute('aria-expanded', 'false');
-                icon.classList.remove('fa-xmark');
-                icon.classList.add('fa-bars');
-            }
-            function openMenu() {
-                menu.classList.remove('hidden');
-                btn.setAttribute('aria-expanded', 'true');
-                icon.classList.remove('fa-bars');
-                icon.classList.add('fa-xmark');
-            }
-
-            btn.addEventListener('click', function () {
-                const isOpen = btn.getAttribute('aria-expanded') === 'true';
-                isOpen ? closeMenu() : openMenu();
-            });
-            menu.querySelectorAll('.mobile-nav-link').forEach(function (link) {
-                link.addEventListener('click', closeMenu);
-            });
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape') closeMenu();
-            });
-        })();
-
-        // Header scroll shadow + back-to-top visibility
-        (function () {
-            const header = document.getElementById('site-header');
-            const backToTop = document.getElementById('back-to-top');
-            let ticking = false;
-
-            function onScroll() {
-                const y = window.scrollY;
-                header.classList.toggle('is-scrolled', y > 8);
-                if (y > 480) {
-                    backToTop.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-2');
-                } else {
-                    backToTop.classList.add('opacity-0', 'pointer-events-none', 'translate-y-2');
-                }
-                ticking = false;
-            }
-            window.addEventListener('scroll', function () {
-                if (!ticking) {
-                    requestAnimationFrame(onScroll);
-                    ticking = true;
-                }
-            }, { passive: true });
-            onScroll();
-
-            backToTop.addEventListener('click', function () {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            });
-        })();
-
-        // Bold animation layer — GSAP + ScrollTrigger. Everything here only runs when the
-        // visitor has no reduced-motion preference; gsap.from()/ScrollTrigger set their
-        // hidden starting state via inline styles at runtime, so a no-JS client or a
-        // reduced-motion client simply sees the plain, fully visible HTML — nothing is
-        // ever hidden by default CSS.
-        (function () {
-            calculateRoi();
-
-            if (!window.gsap || !window.ScrollTrigger) return;
-            gsap.registerPlugin(ScrollTrigger);
-
-            const mm = gsap.matchMedia();
-
-            mm.add('(prefers-reduced-motion: no-preference)', function () {
-                // Hero entrance: badge, headline, copy, CTAs stagger in; visual scales+fades in alongside.
-                const heroTl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-                heroTl
-                    .from('.hero-item', { opacity: 0, y: 28, duration: 0.8, stagger: 0.15 })
-                    .from('#hero-visual-card', { opacity: 0, scale: 1.06, duration: 1 }, 0.15)
-                    .from('#hero-chip', { opacity: 0, y: 16, duration: 0.6 }, '-=0.3');
-
-                // Slow continuous zoom on the hero photo — a living, premium feel.
-                gsap.to('#hero-visual-img', {
-                    scale: 1.08,
-                    duration: 16,
-                    ease: 'sine.inOut',
-                    yoyo: true,
-                    repeat: -1,
-                    transformOrigin: 'center center'
-                });
-
-                // Mouse-tilt parallax on the hero visual card (desktop/fine-pointer only).
-                if (window.matchMedia('(pointer: fine)').matches) {
-                    const wrap = document.querySelector('.hero-visual-wrap');
-                    const card = document.getElementById('hero-visual-card');
-                    if (wrap && card) {
-                        const setRotX = gsap.quickTo(card, 'rotationX', { duration: 0.6, ease: 'power3' });
-                        const setRotY = gsap.quickTo(card, 'rotationY', { duration: 0.6, ease: 'power3' });
-                        wrap.addEventListener('mousemove', function (e) {
-                            const r = wrap.getBoundingClientRect();
-                            const px = (e.clientX - r.left) / r.width - 0.5;
-                            const py = (e.clientY - r.top) / r.height - 0.5;
-                            setRotY(px * 10);
-                            setRotX(-py * 10);
-                        });
-                        wrap.addEventListener('mouseleave', function () {
-                            setRotX(0);
-                            setRotY(0);
-                        });
-                    }
-                }
-
-                // Scroll-linked parallax on the ambient hero orbs.
-                gsap.utils.toArray('.parallax-orb').forEach(function (orb, i) {
-                    gsap.to(orb, {
-                        y: i % 2 === 0 ? 140 : -140,
-                        ease: 'none',
-                        scrollTrigger: {
-                            trigger: orb.closest('section'),
-                            start: 'top bottom',
-                            end: 'bottom top',
-                            scrub: 1
-                        }
-                    });
-                });
-                gsap.to('.parallax-orb-cta', {
-                    y: 80,
-                    ease: 'none',
-                    scrollTrigger: {
-                        trigger: '.parallax-orb-cta',
-                        start: 'top bottom',
-                        end: 'bottom top',
-                        scrub: 1
-                    }
-                });
-
-                // Section heading blocks: fade + rise once, on first scroll into view.
-                gsap.utils.toArray('.fade-single').forEach(function (el) {
-                    gsap.from(el, {
-                        opacity: 0,
-                        y: 50,
-                        duration: 0.8,
-                        scrollTrigger: { trigger: el, start: 'top 82%', toggleActions: 'play none none none' }
-                    });
-                });
-
-                // Card grids / lists: staggered rise, once, on first scroll into view.
-                gsap.utils.toArray('.fade-group').forEach(function (group) {
-                    const items = group.querySelectorAll('.fade-item');
-                    gsap.from(items, {
-                        opacity: 0,
-                        y: 50,
-                        duration: 0.7,
-                        stagger: 0.15,
-                        scrollTrigger: { trigger: group, start: 'top 85%', toggleActions: 'play none none none' }
-                    });
-                });
-
-                // ROI stat counters: count up once when the calculator scrolls into view.
-                ScrollTrigger.create({
-                    trigger: '#roi-stats',
-                    start: 'top 85%',
-                    once: true,
-                    onEnter: function () {
-                        document.querySelectorAll('#roi-stats [data-value]').forEach(function (el) {
-                            animateCount(el, parseFloat(el.dataset.value));
-                        });
-                    }
-                });
-
-                return function cleanup() {
-                    // gsap.matchMedia auto-reverts inline styles / kills tweens+triggers on media change.
-                };
-            });
-        })();
-    </script>
+    <!-- External Interactive script for FAQ, ROI Calculator, nav, and animation -->
+    <script src="/landing.js"></script>
 </body>
 </html>
