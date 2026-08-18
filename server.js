@@ -383,11 +383,13 @@ async function sendEmailSafely({ to, subject, text, html, fromName = 'ResiEase' 
 
   try {
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
       auth: { user: gmailUser, pass: gmailPass },
-      connectionTimeout: 8000,
-      greetingTimeout: 8000,
-      socketTimeout: 10000
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000
     });
 
     const info = await transporter.sendMail({
@@ -397,8 +399,8 @@ async function sendEmailSafely({ to, subject, text, html, fromName = 'ResiEase' 
       text,
       html: html || undefined
     });
-    console.log(`[EMAIL-SENT] Successfully dispatched live email to ${to}, id: ${info.messageId}`);
-    return { sent: true, messageId: info.messageId };
+    console.log(`[EMAIL-SENT] Successfully dispatched live email to ${to}, id: ${info.messageId}, response: ${info.response}`);
+    return { sent: true, messageId: info.messageId, response: info.response };
   } catch (err) {
     console.error(`[EMAIL-ERROR] Failed to send email to ${to}:`, err.message);
     return { sent: false, error: err.message };
@@ -1931,8 +1933,8 @@ function validateSocietyRegistrationNo(regNo) {
         );
       }
 
-      // Dispatch credentials email asynchronously with rich HTML
-      sendEmailSafely({
+      // Dispatch credentials email synchronously using direct SSL to ensure cloud delivery completes
+      const mailResult = await sendEmailSafely({
         to: email,
         subject: 'Welcome to ResiEase - Your Login Credentials',
         fromName: 'ResiEase Registration',
@@ -1957,10 +1959,10 @@ function validateSocietyRegistrationNo(regNo) {
             <p style="margin:0;font-size:11px;color:#9ca3af;text-align:center;">You can also sign in anytime using one-time login passcodes (OTP).</p>
           </div>
         `
-      }).catch(err => console.error('[MDC-EMAIL-FAIL]', err));
+      });
 
       logAudit({ societyId: session.society_id, actorEmail: session.email, action: 'ADD_OR_UPDATE_MEMBER', entity: 'user_profiles', entityId: email, newValue: { name, email, role, flatNo }, ipAddress: req.socket.remoteAddress });
-      return sendJson(res, 200, { success: true, message: 'Member credentials generated and dispatched.', email, name, role, tempPassword: generatedPassword });
+      return sendJson(res, 200, { success: true, message: mailResult.sent ? 'Member added & email delivered successfully.' : 'Member added. Credentials displayed below.', email, name, role, tempPassword: generatedPassword, emailDelivered: mailResult.sent });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/mdc/member/resend-credentials') {
@@ -1987,7 +1989,7 @@ function validateSocietyRegistrationNo(regNo) {
         [salt, hash, email]
       );
 
-      sendEmailSafely({
+      const mailResult = await sendEmailSafely({
         to: email,
         subject: 'ResiEase - Your Updated Login Credentials',
         fromName: 'ResiEase Registration',
@@ -2012,10 +2014,10 @@ function validateSocietyRegistrationNo(regNo) {
             <p style="margin:0;font-size:11px;color:#9ca3af;text-align:center;">For security, please change your password after logging in.</p>
           </div>
         `
-      }).catch(err => console.error('[RESEND-EMAIL-FAIL]', err));
+      });
 
       logAudit({ societyId: session.society_id, actorEmail: session.email, action: 'RESEND_CREDENTIALS', entity: 'user_profiles', entityId: email, newValue: { email }, ipAddress: req.socket.remoteAddress });
-      return sendJson(res, 200, { success: true, message: 'New credentials generated and dispatched.', email, name: profile.name, role: profile.role, tempPassword: generatedPassword });
+      return sendJson(res, 200, { success: true, message: mailResult.sent ? 'New credentials emailed successfully.' : 'New credentials generated.', email, name: profile.name, role: profile.role, tempPassword: generatedPassword, emailDelivered: mailResult.sent });
     }
 
     if (req.method === 'DELETE' && url.pathname === '/api/mdc/members/all') {
